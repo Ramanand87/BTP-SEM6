@@ -30,10 +30,8 @@ const AuthPage = () => {
     const [signupStep, setSignupStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
-  const [cropMode, setCropMode] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [documents, setDocuments] = useState([]);
-  const [cropAspect, setCropAspect] = useState(1);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -236,12 +234,12 @@ const AuthPage = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="phone">Username</Label>
                       <Input
-                        id="phone"
+                        id="username"
                         type="tel"
                         className="border-green-200 focus:ring-green-500"
-                        placeholder="Phone Number"
+                        placeholder="Username"
                         required
                       />
                     </div>
@@ -367,6 +365,16 @@ const AuthPage = () => {
       transition={{ duration: 0.5 }}
     >
       <div className="space-y-2">
+      <div className="mb-4 space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        className="border-green-200 focus:ring-green-500"
+                        placeholder="Phone Number"
+                        required
+                      />
+                    </div>
         <Label htmlFor="password">Password</Label>
         <div className="relative">
           <Input
