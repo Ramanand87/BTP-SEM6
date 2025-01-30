@@ -9,6 +9,7 @@ import authReducer from './features/authFeature';
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    [authApi.reducerPath]: authApi.reducer,
     
   },
   middleware: (getDefaultMiddleware) =>

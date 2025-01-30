@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -23,19 +22,34 @@ import {
 import Image from "next/image";
 import { motion } from "framer-motion";
 import FarmerLogo from "@/components/assets/FramerLogo";
+import { useRegisterMutation } from "@/redux/Service/auth"; 
 
 const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [signupStep, setSignupStep] = useState(1);
+  const [signupStep, setSignupStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [documents, setDocuments] = useState([]);
+  const [formData, setFormData] = useState({
+    name: "",
+    username: "",
+    address: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    profileImage: null,
+    documents: [],
+    
+  });
+
+  const [register] = useRegisterMutation();
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setFormData({ ...formData, profileImage: file });
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result);
@@ -46,6 +60,7 @@ const AuthPage = () => {
 
   const handleDocumentUpload = (e) => {
     const files = Array.from(e.target.files);
+    setFormData({ ...formData, documents: [...formData.documents, ...files] });
     const newDocs = files.map((file) => ({
       name: file.name,
       type: file.type,
@@ -60,20 +75,46 @@ const AuthPage = () => {
     URL.revokeObjectURL(newDocs[index].url);
     newDocs.splice(index, 1);
     setDocuments(newDocs);
+    const updatedFiles = [...formData.documents];
+    updatedFiles.splice(index, 1);
+    setFormData({ ...formData, documents: updatedFiles });
   };
 
-  const handleCropComplete = () => {
-    // Here you would normally handle the cropped image
-    setCropMode(false);
-  };
-
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("username", formData.username);
+      data.append("address", formData.address);
+      data.append("phone", formData.phone);
+      data.append("password", formData.password);
+      if (formData.profileImage) {
+        data.append("profileImage", formData.profileImage);
+      }
+      formData.documents.forEach((doc, index) => {
+        data.append(`documents[${index}]`, doc);
+      });
+
+      console.log("FormData Entries:");
+      for (const pair of data.entries()) {
+        console.log(pair[0], pair[1]);
+      }      const response = await register(data).unwrap();
+      console.log("Registration successful:", response);
       setShowSuccess(true);
-    }, 2000);
+    } catch (error) {
+      console.error("Registration failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const AnimatedBackgroundElements = () => (
@@ -135,28 +176,24 @@ const AuthPage = () => {
         <Droplets className="text-blue-400 h-10 w-10" />
       </motion.div>
     </div>
-  )
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-green-50 flex items-center justify-center p-4">
-      {/* Animated background elements */}
-
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-      <AnimatedBackgroundElements />
-
+        <AnimatedBackgroundElements />
       </div>
 
       <Card className="w-full max-w-md bg-white/90 backdrop-blur">
-      <CardHeader className="space-y-2">
-      <div className="flex justify-center mb-6">
-              <FarmerLogo width={80} height={80} className="drop-shadow-md" />
-            </div>
+        <CardHeader className="space-y-2">
+          <div className="flex justify-center mb-6">
+            <FarmerLogo width={80} height={80} className="drop-shadow-md" />
+          </div>
           <CardTitle className="text-center text-2xl font-bold text-green-800">
             Secure Your Harvest,
             <br />
             Connect with Buyers
           </CardTitle>
-         
         </CardHeader>
         <CardContent className="p-6">
           <Tabs defaultValue="login" className="space-y-4">
@@ -230,16 +267,23 @@ const AuthPage = () => {
                         id="name"
                         className="border-green-200 focus:ring-green-500"
                         placeholder="Full Name"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Username</Label>
+                      <Label htmlFor="username">Username</Label>
                       <Input
                         id="username"
-                        type="tel"
                         className="border-green-200 focus:ring-green-500"
                         placeholder="Username"
+                        value={formData.username}
+                        onChange={(e) =>
+                          setFormData({ ...formData, username: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -249,6 +293,10 @@ const AuthPage = () => {
                         id="address"
                         className="border-green-200 focus:ring-green-500"
                         placeholder="Address"
+                        value={formData.address}
+                        onChange={(e) =>
+                          setFormData({ ...formData, address: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -358,68 +406,88 @@ const AuthPage = () => {
 
                 {signupStep === 3 && (
                   <div className="space-y-4 animate-fadeIn">
-                   <motion.div
-      className="space-y-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="space-y-2">
-      <div className="mb-4 space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        className="border-green-200 focus:ring-green-500"
-                        placeholder="Phone Number"
-                        required
-                      />
-                    </div>
-        <Label htmlFor="password">Password</Label>
-        <div className="relative">
-          <Input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            className="border-green-200 focus:ring-green-500 pr-10"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-          >
-            {showPassword ? (
-              <Eye className="h-4 w-4 text-gray-500" />
-            ) : (
-              <EyeOff className="h-4 w-4 text-gray-500" />
-            )}
-          </button>
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm Password</Label>
-        <div className="relative">
-          <Input
-            id="confirmPassword"
-            type={showConfirmPassword ? "text" : "password"}
-            className="border-green-200 focus:ring-green-500 pr-10"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-          >
-            {showConfirmPassword ? (
-              <Eye className="h-4 w-4 text-gray-500" />
-            ) : (
-              <EyeOff className="h-4 w-4 text-gray-500" />
-            )}
-          </button>
-        </div>
-      </div>
-    </motion.div>
+                    <motion.div
+                      className="space-y-4"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <div className="space-y-2">
+                        <div className="mb-4 space-y-2">
+                          <Label htmlFor="phone">Phone Number</Label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            className="border-green-200 focus:ring-green-500"
+                            placeholder="Phone Number"
+                            value={formData.phone}
+                            onChange={(e) =>
+                              setFormData({ ...formData, phone: e.target.value })
+                            }
+                            required
+                          />
+                        </div>
+                        <Label htmlFor="password">Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            className="border-green-200 focus:ring-green-500 pr-10"
+                            value={formData.password}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                password: e.target.value,
+                              })
+                            }
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2"
+                          >
+                            {showPassword ? (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            className="border-green-200 focus:ring-green-500 pr-10"
+                            value={formData.confirmPassword}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                confirmPassword: e.target.value,
+                              })
+                            }
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2"
+                          >
+                            {showConfirmPassword ? (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
 
                     {showSuccess && (
                       <Alert className="bg-green-50 border-green-200">
