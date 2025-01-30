@@ -10,9 +10,7 @@ class userSerializers(ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def validate(self, data):
-        if self.initial_data.get("password1")!=data.get("password"):
-            raise ValidationError({'error':'password does not match'})
-        elif User.objects.filter(username=data.get("username")).exists():
+        if User.objects.filter(username=data.get("username")).exists():
             raise ValidationError({'error':'Username already taken'})
         elif models.Profile.objects.filter(phoneno=self.initial_data.get("phoneno")).exists():
             raise ValidationError({'error':'Phone no already taken'})
