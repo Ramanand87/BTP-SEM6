@@ -31,8 +31,8 @@ export function Navbar() {
       <nav className="container flex h-16 items-center justify-between">
         {/* Desktop Logo */}
         <Link href="/" className="hidden items-center space-x-2 md:flex">
-        <FarmerLogo width={40} height={40} className="drop-shadow-md" />
-          <span className="text-2xl font-bold text-green-700">FarmFresh</span>
+        <FarmerLogo width={38} height={38} className="drop-shadow-md" />
+          <span className="text-2xl font-bold text-green-700">AgriConnect</span>
         </Link>
 
         {/* Mobile Menu */}
