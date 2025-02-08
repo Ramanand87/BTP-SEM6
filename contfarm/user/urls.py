@@ -5,4 +5,6 @@ urlpatterns = [
     path('signup/',views.SignUp.as_view()),
     path('login/',views.Login.as_view()),
     path('token/refresh/', TokenRefreshView.as_view()),
+    path('profile/<str:pk>/', views.ProfileView.as_view()),
+    path('profile/', views.ProfileView.as_view()),
 ]
