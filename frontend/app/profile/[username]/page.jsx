@@ -1,4 +1,4 @@
-"use client"; // Required for client-side interactivity
+"use client"; 
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -12,14 +12,12 @@ import { FileText, Star, Bell, CreditCard, User, Shield } from "lucide-react";
 export default function ProfilePage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Profile Header */}
       <motion.div
         className="flex flex-col md:flex-row items-center gap-8 mb-12"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Profile Image */}
         <div className="relative">
           <Avatar className="w-32 h-32">
             <AvatarImage src="/profile.jpg" alt="Profile" />
@@ -35,9 +33,8 @@ export default function ProfilePage() {
           </Button>
         </div>
 
-        {/* Profile Information */}
         <div className="text-center md:text-left">
-          <h1 className="text-3xl font-bold text-green-900 mb-2">John Doe</h1>
+          <h1 className="text-3xl font-bold text-green-900 mb-2">Ramanand</h1>
           <p className="text-brown-700 mb-1">+91 98765 43210</p>
           <p className="text-brown-700">123 Farm Lane, Green Valley, India</p>
           <Button className="mt-4 bg-green-600 hover:bg-green-700">

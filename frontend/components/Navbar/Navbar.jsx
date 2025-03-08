@@ -1,4 +1,3 @@
-// components/Navbar.tsx
 'use client';
 
 import { useState } from 'react';
@@ -29,13 +28,11 @@ export function Navbar() {
 >
 
       <nav className="container flex h-16 items-center justify-between">
-        {/* Desktop Logo */}
         <Link href="/" className="hidden items-center space-x-2 md:flex">
         <FarmerLogo width={38} height={38} className="drop-shadow-md" />
           <span className="text-2xl font-bold text-green-700">AgriConnect</span>
         </Link>
 
-        {/* Mobile Menu */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild className="md:hidden">
             <Button variant="ghost" size="icon">
@@ -65,7 +62,6 @@ export function Navbar() {
           </SheetContent>
         </Sheet>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex md:items-center md:gap-8">
           {navItems.map((item) => (
             <Link
@@ -78,10 +74,9 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* Call to Action */}
         <div className="flex items-center gap-4">
           <Button variant="outline" className="hidden md:flex">
-            Login
+            <Link href={'/login'}>Login</Link>
           </Button>
           <Button className="bg-green-700 hover:bg-green-800">Shop Now</Button>
         </div>
