@@ -13,7 +13,7 @@ class Profile(models.Model):
         return self.user.username
 
 class Documents(models.Model):
-    doc_user=models.ForeignKey(User,on_delete=models.CASCADE)
+    doc_user=models.ForeignKey(User,on_delete=models.CASCADE) 
     doc= models.FileField(upload_to='documents/')
     def __str__(self):
         return self.doc_user.username
