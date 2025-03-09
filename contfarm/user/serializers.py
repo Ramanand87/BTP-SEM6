@@ -3,6 +3,7 @@ from rest_framework.serializers import ModelSerializer,ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from . import models
+
 class userSerializers(ModelSerializer):
     class Meta:
         model = User
@@ -34,3 +35,10 @@ class userSerializers(ModelSerializer):
 
         models.Documents.objects.create(doc_user=user,doc=self.initial_data.get("documents"))
         return user
+    
+class ProfileSerializer(ModelSerializer):
+    user=userSerializers()
+    class Meta:
+        model=models.Profile
+        fields='__all__'
+    
