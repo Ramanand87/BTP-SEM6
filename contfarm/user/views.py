@@ -9,16 +9,33 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+import os
+from .signals import verify
 class SignUp(APIView):
     authentication_classes = []
     permission_classes = []
-    def post(self,request):
+
+    def post(self, request):
         serializer = serializers.userSerializers(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({'Sucess':'User registered sucessfully'},status=status.HTTP_201_CREATED)
-        
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+            user_data = {
+                "name": request.data.get("name"),
+                "dob": request.data.get("dob"),
+            }
+            aadhaar_image = request.FILES.get("aadhaar_image")
+            if not aadhaar_image:
+                return Response({"error": "Aadhaar image is required"}, status=status.HTTP_400_BAD_REQUEST)
+            image_path = f"temp_{aadhaar_image.name}"
+            with open(image_path, "wb") as img_file:
+                img_file.write(aadhaar_image.read())
+            
+            if verify(user_data,image_path):
+                serializer.save()
+                return Response({"success": "User registered successfully"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"error": "Aadhaar details do not match"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class Login(APIView):
     authentication_classes = []
@@ -43,8 +60,7 @@ class ProfileView(APIView):
         prof=get_object_or_404(models.Profile,user=prof_user)
         serial=serializers.ProfileSerializer(prof)
         return Response({'data':serial.data},status=status.HTTP_200_OK)
-
-        
+     
     def put(self,request,pk=None):
         user=request.user
         prof=get_object_or_404(models.Profile,user=user)

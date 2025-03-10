@@ -8,6 +8,8 @@ class Profile(models.Model):
     address=models.TextField()
     phoneno=models.CharField(max_length=15, unique=True)
     image=CloudinaryField('image')
+    screenshot=CloudinaryField('image')
+    isValid=models.BooleanField(default=False)
 
     def __str__(self):
         return self.user.username
