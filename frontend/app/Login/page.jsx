@@ -30,6 +30,7 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [signupStep, setSignupStep] = useState(1);
+  const [document, setDocument] = useState(null); // Single document
   const [isLoading, setIsLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -45,6 +46,7 @@ const AuthPage = () => {
     phone: "",
     password: "",
     confirmPassword: "",
+    document: null, // Single document
     profileImage: null,
     aadharDocument: null,
     verificationScreenshot: null,
@@ -59,6 +61,20 @@ const AuthPage = () => {
     setFormData({ ...formData, profileImage: imageSrc });
     setIsCameraActive(false); // Close the camera after capturing
   };
+    // Handle document upload
+    const handleDocumentUpload = (e) => {
+      const file = e.target.files[0]; // Only take the first file
+      if (file) {
+        setFormData({ ...formData, document: file });
+        setDocument(file);
+      }
+    };
+  
+    // Remove document
+    const removeDocument = () => {
+      setFormData({ ...formData, document: null });
+      setDocument(null);
+    };
 
   const handleAadharDocumentUpload = (e) => {
     const file = e.target.files[0];
@@ -107,10 +123,13 @@ const AuthPage = () => {
         data.append("image", formData.profileImage);
       }
       if (formData.aadharDocument) {
-        data.append("aadharDocument", formData.aadharDocument);
+        data.append("aadhaar_image", formData.aadharDocument);
+      }
+      if (formData.document) {
+        data.append("documents", formData.document); // Append single document
       }
       if (formData.verificationScreenshot) {
-        data.append("verificationScreenshot", formData.verificationScreenshot);
+        data.append("ss", formData.verificationScreenshot);
       }
 
       const response = await register(data).unwrap();
@@ -455,7 +474,73 @@ const AuthPage = () => {
                     </div>
                   </div>
                 )}
-                {signupStep === 3 && (
+
+{signupStep === 3 && (
+                  <div className="space-y-4 animate-fadeIn">
+                    
+
+                    <div className="space-y-2">
+                      <Label>Kisan Card Document</Label>
+                      <div className="border-2 border-dashed border-green-200 rounded-lg p-4">
+                        <input
+                          type="file"
+                          accept=".pdf,image/*"
+                          className="hidden"
+                          id="document"
+                          onChange={handleDocumentUpload}
+                        />
+                        <Label
+                          htmlFor="document"
+                          className="cursor-pointer block text-center"
+                        >
+                          <Upload />
+                          <span className="mt-2 text-sm text-gray-600 block">
+                            Upload document (PDF or Image)
+                          </span>
+                        </Label>
+
+                        {/* Document Preview Section */}
+                        {document && (
+                          <div className="mt-4 space-y-2">
+                            <div className="flex items-center justify-between bg-green-50 p-2 rounded">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium">
+                                  {document.name}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  ({(document.size / 1024).toFixed(1)} KB)
+                                </span>
+                              </div>
+                              <div className="flex space-x-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    window.open(URL.createObjectURL(document))
+                                  }
+                                  className="text-green-600 border-green-200"
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={removeDocument}
+                                  className="text-red-600 border-red-200"
+                                >
+                                  <Trash />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {signupStep === 4 && (
                   <div className="space-y-4 animate-fadeIn">
                     <div className="space-y-2">
                       <Label>Aadhar Card Verification</Label>
@@ -532,7 +617,7 @@ const AuthPage = () => {
                     </div>
                   </div>
                 )}
-                {signupStep === 4 && (
+                {signupStep ===5 && (
                   <div className="space-y-4 animate-fadeIn">
                     <motion.div
                       className="space-y-4"
@@ -641,7 +726,7 @@ const AuthPage = () => {
                     </Button>
                   )}
 
-                  {signupStep < 4 ? (
+                  {signupStep < 5 ? (
                     <Button
                       type="button"
                       onClick={() => setSignupStep((step) => step + 1)}
