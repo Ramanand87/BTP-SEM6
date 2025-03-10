@@ -3,6 +3,7 @@ from rest_framework.serializers import ModelSerializer,ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from . import models
+from rest_framework import serializers
 
 class userSerializers(ModelSerializer):
     class Meta:
@@ -29,6 +30,7 @@ class userSerializers(ModelSerializer):
             "phoneno": self.initial_data.get("phoneno"),
             "address": self.initial_data.get("address"),
             "image": self.initial_data.get("image"),
+            "screenshot": self.initial_data.get("ss"),
             "user": user
         }
         models.Profile.objects.create(**profile_data)
@@ -38,7 +40,16 @@ class userSerializers(ModelSerializer):
     
 class ProfileSerializer(ModelSerializer):
     user=userSerializers()
+    image = serializers.SerializerMethodField()
+    screenshot = serializers.SerializerMethodField()
     class Meta:
         model=models.Profile
         fields='__all__'
-    
+    def get_image(self, obj):
+        if obj.image and hasattr(obj.image, 'url'):
+            return obj.image.url  
+        return None
+    def get_screenshot(self, obj):
+        if obj.screenshot and hasattr(obj.screenshot, 'url'):
+            return obj.screenshot.url  
+        return None

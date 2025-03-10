@@ -17,9 +17,14 @@ def extract_aadhaar_details(text):
     return details
 
 
-def verify(data,image_path):
-    dict=extract_aadhaar_details(extract_text_from_image(image_path))
-    if dict['name']==data['name'] and dict['dob']==data['dob']:
+def verify(data, image_file):
+    extracted_text = extract_text_from_image(image_file)
+    aadhaar_details = extract_aadhaar_details(extracted_text)
+
+    extracted_name = aadhaar_details.get("name", "")
+    input_name = data.get("name", "")
+
+    if extracted_name and input_name in extracted_name:
         return True
-    else:
-        return False
+    return False
+

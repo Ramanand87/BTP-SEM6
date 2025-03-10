@@ -31,8 +31,10 @@ class SignUp(APIView):
             
             if verify(user_data,image_path):
                 serializer.save()
+                os.remove(image_path)
                 return Response({"success": "User registered successfully"}, status=status.HTTP_201_CREATED)
             else:
+                os.remove(image_path)
                 return Response({"error": "Aadhaar details do not match"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

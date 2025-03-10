@@ -8,9 +8,9 @@ class Profile(models.Model):
     address=models.TextField()
     phoneno=models.CharField(max_length=15, unique=True)
     image=CloudinaryField('image')
-    screenshot=CloudinaryField('image')
+    screenshot=CloudinaryField('image',null=True,blank=True)
     isValid=models.BooleanField(default=False)
-
+    aadhar_image=models.FileField(upload_to='aadhar/',null=True,blank=True)
     def __str__(self):
         return self.user.username
 
