@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,11 +18,13 @@ import {
   Trash,
   Droplets,
   Cloud,
+  Camera,
 } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import FarmerLogo from "@/components/assets/FramerLogo";
-import { useRegisterMutation, useLoginMutation } from "@/redux/Service/auth"; // Import login mutation
+import { useRegisterMutation, useLoginMutation } from "@/redux/Service/auth";
+import Webcam from "react-webcam";
 
 const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +33,11 @@ const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [document, setDocument] = useState(null); // Single document
+  const [aadharDocument, setAadharDocument] = useState(null);
+  const [verificationScreenshot, setVerificationScreenshot] = useState(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const webcamRef = useRef(null);
+
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -40,41 +46,46 @@ const AuthPage = () => {
     password: "",
     confirmPassword: "",
     profileImage: null,
-    document: null, // Single document
+    aadharDocument: null,
+    verificationScreenshot: null,
   });
 
   const [register] = useRegisterMutation();
-  const [login] = useLoginMutation(); // Login mutation
+  const [login] = useLoginMutation();
 
-  // Handle image upload
-  const handleImageUpload = (e) => {
+  const captureImage = () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setPreviewImage(imageSrc);
+    setFormData({ ...formData, profileImage: imageSrc });
+    setIsCameraActive(false); // Close the camera after capturing
+  };
+
+  const handleAadharDocumentUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData({ ...formData, profileImage: file });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result);
-      };
-      reader.readAsDataURL(file);
+      setFormData({ ...formData, aadharDocument: file });
+      setAadharDocument(file);
     }
   };
 
-  // Handle document upload
-  const handleDocumentUpload = (e) => {
-    const file = e.target.files[0]; // Only take the first file
+  const handleVerificationScreenshotUpload = (e) => {
+    const file = e.target.files[0];
     if (file) {
-      setFormData({ ...formData, document: file });
-      setDocument(file);
+      setFormData({ ...formData, verificationScreenshot: file });
+      setVerificationScreenshot(file);
     }
   };
 
-  // Remove document
-  const removeDocument = () => {
-    setFormData({ ...formData, document: null });
-    setDocument(null);
+  const removeAadharDocument = () => {
+    setFormData({ ...formData, aadharDocument: null });
+    setAadharDocument(null);
   };
 
-  // Handle signup form submission
+  const removeVerificationScreenshot = () => {
+    setFormData({ ...formData, verificationScreenshot: null });
+    setVerificationScreenshot(null);
+  };
+
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
 
@@ -95,13 +106,11 @@ const AuthPage = () => {
       if (formData.profileImage) {
         data.append("image", formData.profileImage);
       }
-      if (formData.document) {
-        data.append("documents", formData.document); // Append single document
+      if (formData.aadharDocument) {
+        data.append("aadharDocument", formData.aadharDocument);
       }
-
-      console.log("FormData Entries:");
-      for (const pair of data.entries()) {
-        console.log(pair[0], pair[1]);
+      if (formData.verificationScreenshot) {
+        data.append("verificationScreenshot", formData.verificationScreenshot);
       }
 
       const response = await register(data).unwrap();
@@ -114,7 +123,6 @@ const AuthPage = () => {
     }
   };
 
-  // Handle login form submission
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     const username = e.target.loginId.value;
@@ -130,7 +138,6 @@ const AuthPage = () => {
     try {
       const response = await login({ username, password }).unwrap();
       console.log("Login successful:", response);
-      // Redirect or handle successful login (e.g., store token, update state)
     } catch (error) {
       console.error("Login failed:", error);
       alert("Login failed. Please check your credentials.");
@@ -288,7 +295,7 @@ const AuthPage = () => {
               <div className="relative w-full h-2 bg-green-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-green-700 transition-all duration-300 ease-in-out rounded-full"
-                  style={{ width: `${signupStep * 33.33}%` }}
+                  style={{ width: `${signupStep * 25}%` }}
                 />
               </div>
 
@@ -341,67 +348,82 @@ const AuthPage = () => {
                     <div className="space-y-2">
                       <Label>Profile Image</Label>
                       <div className="border-2 border-dashed border-green-200 rounded-lg p-4 text-center">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          id="profileImage"
-                          onChange={handleImageUpload}
-                        />
-                        <Label
-                          htmlFor="profileImage"
-                          className="cursor-pointer block"
-                        >
-                          {previewImage ? (
-                            <Image
-                              src={previewImage}
-                              alt="Profile preview"
-                              width={400}
-                              height={400}
-                              className="mx-auto h-32 w-32 rounded-full object-cover"
+                        {isCameraActive ? (
+                          <div className="flex flex-col items-center">
+                            <Webcam
+                              audio={false}
+                              ref={webcamRef}
+                              screenshotFormat="image/jpeg"
+                              className="w-full h-auto"
                             />
-                          ) : (
-                            <div className="flex flex-col items-center">
-                              <Upload className="h-12 w-12 text-green-500" />
-                              <span className="mt-2 text-sm text-gray-600">
-                                Click to upload profile image
-                              </span>
-                            </div>
-                          )}
-                        </Label>
+                            <Button
+                              onClick={captureImage}
+                              className="mt-2 bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              Capture Photo
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center">
+                            {previewImage ? (
+                              <div className="flex flex-col items-center">
+                                <Image
+                                  src={previewImage}
+                                  alt="Profile preview"
+                                  width={400}
+                                  height={400}
+                                  className="mx-auto h-32 w-32 rounded-full object-cover"
+                                />
+                                <Button
+                                  onClick={() => setIsCameraActive(true)}
+                                  className="mt-2 bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  Retake Photo
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                onClick={() => setIsCameraActive(true)}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                              >
+                                <Camera className="mr-2 h-4 w-4" />
+                                Capture Photo
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Kisan Card Document</Label>
+                      <Label>Aadhar Card Upload</Label>
                       <div className="border-2 border-dashed border-green-200 rounded-lg p-4">
                         <input
                           type="file"
                           accept=".pdf,image/*"
                           className="hidden"
-                          id="document"
-                          onChange={handleDocumentUpload}
+                          id="aadharDocument"
+                          onChange={handleAadharDocumentUpload}
                         />
                         <Label
-                          htmlFor="document"
+                          htmlFor="aadharDocument"
                           className="cursor-pointer block text-center"
                         >
                           <Upload />
                           <span className="mt-2 text-sm text-gray-600 block">
-                            Upload document (PDF or Image)
+                            Upload Aadhar card (PDF or Image)
                           </span>
                         </Label>
 
-                        {/* Document Preview Section */}
-                        {document && (
+                        {aadharDocument && (
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between bg-green-50 p-2 rounded">
                               <div className="flex items-center space-x-2">
                                 <span className="text-sm font-medium">
-                                  {document.name}
+                                  {aadharDocument.name}
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  ({(document.size / 1024).toFixed(1)} KB)
+                                  ({(aadharDocument.size / 1024).toFixed(1)} KB)
                                 </span>
                               </div>
                               <div className="flex space-x-2">
@@ -410,7 +432,7 @@ const AuthPage = () => {
                                   size="sm"
                                   variant="outline"
                                   onClick={() =>
-                                    window.open(URL.createObjectURL(document))
+                                    window.open(URL.createObjectURL(aadharDocument))
                                   }
                                   className="text-green-600 border-green-200"
                                 >
@@ -420,7 +442,7 @@ const AuthPage = () => {
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  onClick={removeDocument}
+                                  onClick={removeAadharDocument}
                                   className="text-red-600 border-red-200"
                                 >
                                   <Trash />
@@ -433,8 +455,84 @@ const AuthPage = () => {
                     </div>
                   </div>
                 )}
-
                 {signupStep === 3 && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="space-y-2">
+                      <Label>Aadhar Card Verification</Label>
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-600">
+                          Please verify your Aadhar card using the official UIDAI website. Follow these steps:
+                        </p>
+                        <ol className="list-decimal list-inside text-sm text-gray-600 mt-2">
+                          <li>Visit the official UIDAI website: <a href="https://uidai.gov.in/" target="_blank" rel="noopener noreferrer" className="text-green-600 underline">https://uidai.gov.in/</a>.</li>
+                          <li>Use the "Verify Aadhar" feature to verify your Aadhar card.</li>
+                          <li>Once verified, take a screenshot of the verification page.</li>
+                          <li>Upload the screenshot below as proof of verification.</li>
+                        </ol>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Upload Verification Screenshot</Label>
+                      <div className="border-2 border-dashed border-green-200 rounded-lg p-4">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          id="verificationScreenshot"
+                          onChange={handleVerificationScreenshotUpload}
+                        />
+                        <Label
+                          htmlFor="verificationScreenshot"
+                          className="cursor-pointer block text-center"
+                        >
+                          <Upload />
+                          <span className="mt-2 text-sm text-gray-600 block">
+                            Upload verification screenshot (Image)
+                          </span>
+                        </Label>
+
+                        {verificationScreenshot && (
+                          <div className="mt-4 space-y-2">
+                            <div className="flex items-center justify-between bg-green-50 p-2 rounded">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium">
+                                  {verificationScreenshot.name}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  ({(verificationScreenshot.size / 1024).toFixed(1)} KB)
+                                </span>
+                              </div>
+                              <div className="flex space-x-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    window.open(URL.createObjectURL(verificationScreenshot))
+                                  }
+                                  className="text-green-600 border-green-200"
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={removeVerificationScreenshot}
+                                  className="text-red-600 border-red-200"
+                                >
+                                  <Trash />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {signupStep === 4 && (
                   <div className="space-y-4 animate-fadeIn">
                     <motion.div
                       className="space-y-4"
@@ -543,7 +641,7 @@ const AuthPage = () => {
                     </Button>
                   )}
 
-                  {signupStep < 3 ? (
+                  {signupStep < 4 ? (
                     <Button
                       type="button"
                       onClick={() => setSignupStep((step) => step + 1)}
