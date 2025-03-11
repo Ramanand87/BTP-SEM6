@@ -15,7 +15,7 @@ class Rating(models.Model):
     rated_user=models.ForeignKey(User,on_delete=models.CASCADE,related_name="received_ratings")
     rating_user=models.ForeignKey(User,on_delete=models.CASCADE,related_name="given_ratings")
     description=models.TextField(blank=True)
-    images=CloudinaryField('image')
+    images=CloudinaryField('image',blank=True)
     rate=models.IntegerField(choices=RATING_CHOICES)
 
     def __str__(self):
