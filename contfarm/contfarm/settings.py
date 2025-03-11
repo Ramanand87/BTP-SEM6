@@ -66,22 +66,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'contfarm.wsgi.application'
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': "neondb",
-#         'USER': "neondb_owner",
-#         'PASSWORD': "npg_05YQIebDXURo",
-#         'HOST':"ep-muddy-bush-a1wh79cw-pooler.ap-southeast-1.aws.neon.tech",
-#         'PORT': "5432"
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('NAME'),
+        'USER': os.environ.get('USER'),
+        'PASSWORD': os.environ.get('PASSWORD'),
+        'HOST': os.environ.get('HOST'),
+        'PORT': "5432"
+    }
+}
 
 
 AUTH_PASSWORD_VALIDATORS = [
