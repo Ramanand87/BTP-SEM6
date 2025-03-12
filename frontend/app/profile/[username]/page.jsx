@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Star, Bell, CreditCard, User, Shield } from "lucide-react";
+import { FileText, Star, Bell, CreditCard, User, Shield, Crop } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
+  const router = useRouter();
+
   return (
     <div className="container mx-auto px-4 py-8">
       <motion.div
@@ -37,10 +40,19 @@ export default function ProfilePage() {
           <h1 className="text-3xl font-bold text-green-900 mb-2">Ramanand</h1>
           <p className="text-brown-700 mb-1">+91 98765 43210</p>
           <p className="text-brown-700">123 Farm Lane, Green Valley, India</p>
-          <Button className="mt-4 bg-green-600 hover:bg-green-700">
-            <User className="w-4 h-4 mr-2" />
-            Edit Profile
-          </Button>
+          <div className="flex gap-4 mt-4">
+            <Button className="bg-green-600 hover:bg-green-700">
+              <User className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => router.push("/your-crops")}
+            >
+              <Crop className="w-4 h-4 mr-2" />
+              Your Crops
+            </Button>
+          </div>
         </div>
       </motion.div>
 
