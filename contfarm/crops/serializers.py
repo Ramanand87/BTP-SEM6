@@ -7,7 +7,12 @@ class CropsSeralizer(ModelSerializer):
     class Meta:
         model=models.Crops
         fields='__all__'
-
+    
+    def get_crop_image(self, obj):
+        if obj.crop_image and hasattr(obj.crop_image, 'url'):
+            return obj.crop_image.url  
+        return None
+    
     def create(self, validated_data):
         request = self.context.get('request')
         if request and request.user:

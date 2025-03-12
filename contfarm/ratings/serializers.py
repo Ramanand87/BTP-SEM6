@@ -1,4 +1,5 @@
 from rest_framework.serializers import ModelSerializer,SerializerMethodField
+from rest_framework import serializers
 from . import models
 from django.contrib.auth.models import User
 
@@ -8,6 +9,11 @@ class RatingSerializer(ModelSerializer):
     class Meta:
         model=models.Rating
         fields='__all__'
+    
+    def get_image(self, obj):
+        if obj.image and hasattr(obj.image, 'url'):
+            return obj.image.url  
+        return None
     def get_rated_user(self, obj):
         return obj.rated_user.username
 
