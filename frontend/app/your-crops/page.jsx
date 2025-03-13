@@ -6,48 +6,56 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Trash, Edit, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-const initialCrops = [
-  {
-    id: 1,
-    name: "Organic Tomatoes",
-    publisher: "Ramanand",
-    image: "/tomatoes.jpg",
-    price: 50,
-    quantity: "100 kg",
-    description: "Fresh organic tomatoes, grown without pesticides.",
-    location: "Green Valley Farms, Maharashtra",
-    harvested_time: "2024-01-15",
-  },
-  {
-    id: 2,
-    name: "Basmati Rice",
-    publisher: "Ramanand",
-    image: "/rice.jpg",
-    price: 30,
-    quantity: "500 kg",
-    description: "High-quality basmati rice, perfect for export.",
-    location: "Green Valley Farms, Maharashtra",
-    harvested_time: "2024-02-01",
-  },
-];
+import { useGetCropsQuery, useAddCropMutation, useUpdateCropMutation, useDeleteCropMutation } from "@/redux/Service/cropApi";
 
 export default function YourCropsPage() {
-  const [crops, setCrops] = useState(initialCrops);
+  const { data: crops = [], isLoading, isError } = useGetCropsQuery();
+  const [addCrop] = useAddCropMutation();
+  const [updateCrop] = useUpdateCropMutation();
+  const [deleteCrop] = useDeleteCropMutation();
   const [editingCrop, setEditingCrop] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const router = useRouter();
 
-  const handleDelete = (id) => {
-    setCrops(crops.filter((crop) => crop.id !== id));
+  // Mock data for testing (remove this when backend is online)
+  const mockCrops = [
+    {
+      id: 1,
+      name: "Organic Tomatoes",
+      publisher: "Ramanand",
+      image: "/tomatoes.jpg",
+      price: 50,
+      quantity: "100 kg",
+      description: "Fresh organic tomatoes, grown without pesticides.",
+      location: "Green Valley Farms, Maharashtra",
+      harvested_time: "2024-01-15",
+    },
+    {
+      id: 2,
+      name: "Basmati Rice",
+      publisher: "Ramanand",
+      image: "/rice.jpg",
+      price: 30,
+      quantity: "500 kg",
+      description: "High-quality basmati rice, perfect for export.",
+      location: "Green Valley Farms, Maharashtra",
+      harvested_time: "2024-02-01",
+    },
+  ];
+
+  // Use mock data if backend is offline
+  const displayedCrops = isError ? mockCrops : crops;
+
+  const handleDelete = async (id) => {
+    await deleteCrop(id);
   };
 
-  const handleSave = (crop) => {
+  const handleSave = async (crop) => {
     if (editingCrop) {
-      setCrops(crops.map((c) => (c.id === crop.id ? crop : c)));
+      await updateCrop({ id: crop.id, ...crop });
       setEditingCrop(null);
     } else {
-      setCrops([...crops, { ...crop, id: Date.now() }]);
+      await addCrop(crop);
     }
     setIsAdding(false);
   };
@@ -58,6 +66,9 @@ export default function YourCropsPage() {
     const diffInMonths = (currentDate.getFullYear() - harvestedDate.getFullYear()) * 12 + (currentDate.getMonth() - harvestedDate.getMonth());
     return `${diffInMonths} month${diffInMonths !== 1 ? "s" : ""} ago`;
   };
+
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error fetching crops. Backend might be offline.</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -119,7 +130,7 @@ export default function YourCropsPage() {
 
       {/* List of Crops */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {crops.map((crop) => (
+        {displayedCrops.map((crop) => (
           <Card key={crop.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <img

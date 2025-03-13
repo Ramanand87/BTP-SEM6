@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +39,7 @@ const AuthPage = () => {
   const [verificationScreenshot, setVerificationScreenshot] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const webcamRef = useRef(null);
+  const router= useRouter();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -157,6 +159,8 @@ const AuthPage = () => {
     try {
       const response = await login({ username, password }).unwrap();
       console.log("Login successful:", response);
+      router.push('/')
+
     } catch (error) {
       console.error("Login failed:", error);
       alert("Login failed. Please check your credentials.");
