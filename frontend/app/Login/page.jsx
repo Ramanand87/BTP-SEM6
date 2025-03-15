@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,8 @@ import { motion } from "framer-motion";
 import FarmerLogo from "@/components/assets/FramerLogo";
 import { useRegisterMutation, useLoginMutation } from "@/redux/Service/auth";
 import Webcam from "react-webcam";
+import { useDispatch, useSelector } from "react-redux";
+import { setCredentials } from "@/redux/features/authFeature"; 
 
 const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +41,18 @@ const AuthPage = () => {
   const [verificationScreenshot, setVerificationScreenshot] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const webcamRef = useRef(null);
-  const router= useRouter();
+  const router = useRouter();
+  const dispatch = useDispatch();
+
+  // Retrieve user info from Redux state
+  const userInfo = useSelector((state) => state.auth.userInfo);
+
+  // Redirect authenticated users
+  useEffect(() => {
+    if (userInfo) {
+      router.push('/'); // Redirect to home page or dashboard
+    }
+  }, [userInfo, router]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -63,20 +76,21 @@ const AuthPage = () => {
     setFormData({ ...formData, profileImage: imageSrc });
     setIsCameraActive(false); // Close the camera after capturing
   };
-    // Handle document upload
-    const handleDocumentUpload = (e) => {
-      const file = e.target.files[0]; // Only take the first file
-      if (file) {
-        setFormData({ ...formData, document: file });
-        setDocument(file);
-      }
-    };
-  
-    // Remove document
-    const removeDocument = () => {
-      setFormData({ ...formData, document: null });
-      setDocument(null);
-    };
+
+  // Handle document upload
+  const handleDocumentUpload = (e) => {
+    const file = e.target.files[0]; // Only take the first file
+    if (file) {
+      setFormData({ ...formData, document: file });
+      setDocument(file);
+    }
+  };
+
+  // Remove document
+  const removeDocument = () => {
+    setFormData({ ...formData, document: null });
+    setDocument(null);
+  };
 
   const handleAadharDocumentUpload = (e) => {
     const file = e.target.files[0];
@@ -159,8 +173,12 @@ const AuthPage = () => {
     try {
       const response = await login({ username, password }).unwrap();
       console.log("Login successful:", response);
-      router.push('/')
 
+      // Dispatch setCredentials to store user info in Redux and local storage
+      dispatch(setCredentials(response));
+
+      // Redirect to the home page or dashboard
+      router.push('/');
     } catch (error) {
       console.error("Login failed:", error);
       alert("Login failed. Please check your credentials.");
@@ -229,6 +247,11 @@ const AuthPage = () => {
       </motion.div>
     </div>
   );
+
+  // If the user is logged in, don't render the login/signup page
+  if (userInfo) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-green-50 flex items-center justify-center p-4">
@@ -313,6 +336,7 @@ const AuthPage = () => {
                 </Button>
               </form>
             </TabsContent>
+
             {/* Signup Section */}
             <TabsContent value="signup" className="space-y-4">
               <div className="relative w-full h-2 bg-green-100 rounded-full overflow-hidden">

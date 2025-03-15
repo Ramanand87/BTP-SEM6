@@ -50,7 +50,7 @@ class Login(APIView):
 
     def post(self, request):
         username = request.data.get('username')
-        password = request.data.get('password')
+        password = request.data.get('password') 
         user = authen(username, password)
         if user is not None:
             serial = serializers.userSerializers(user)
@@ -58,6 +58,7 @@ class Login(APIView):
             return Response({
                 'Success': 'User Logged in Successfully',
                 'data': serial.data,
+                'role': user.type,
                 'refresh': str(refresh),
                 'access': str(refresh.access_token)
             }, status=status.HTTP_202_ACCEPTED)
