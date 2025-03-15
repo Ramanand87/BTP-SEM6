@@ -145,3 +145,5 @@ CLOUDINARY_STORAGE = {
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticCloudinaryStorage'
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+AUTH_USER_MODEL = 'user.User'

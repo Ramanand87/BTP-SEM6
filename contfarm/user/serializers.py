@@ -11,6 +11,9 @@ class userSerializers(ModelSerializer):
         fields = ["username", "email", "password"]
         extra_kwargs = {"password": {"write_only": True}}
 
+    def get_role(self, obj):
+        return obj.type 
+
     def validate(self, data):
         if models.User.objects.filter(username=data.get("username")).exists():
             raise ValidationError({'error': 'Username already taken'})

@@ -5,6 +5,8 @@ import requests
 import easyocr
 import re
 def authen(username, password):
+    print(username.isdigit())
+    print(password)
     if username.isdigit():
         try:
             prof = FarmerProfile.objects.get(phoneno=username)
@@ -15,7 +17,7 @@ def authen(username, password):
             prof = ContractorProfile.objects.get(phoneno=username)
             return authenticate(username=prof.user.username, password=password)
         except ContractorProfile.DoesNotExist:
-            return None  
+            return None 
     return authenticate(username=username, password=password)
     
 def validate_gstin(gstin):
