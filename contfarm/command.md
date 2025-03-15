@@ -8,5 +8,5 @@ uvicorn core.asgi:application --port 8000 --workers 4 --log-level debug --reload
 for lucky rand
 virtualenv venv
 venv/Scripts/activate 
-pip freeze > requirements.txt
+pip install -r requirements.txt
 python manage.py runserver

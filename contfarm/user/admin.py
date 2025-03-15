@@ -1,5 +1,6 @@
 from django.contrib import admin
 from . import models
-# Register your models here.
-admin.site.register(models.Profile)
+
+admin.site.register(models.ContractorProfile)
+admin.site.register(models.FarmerProfile)
 admin.site.register(models.Documents)

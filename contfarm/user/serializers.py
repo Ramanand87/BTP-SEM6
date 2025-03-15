@@ -1,81 +1,77 @@
-import time
-import requests
-import os
-from dotenv import load_dotenv
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from rest_framework.serializers import ModelSerializer, ValidationError
-from rest_framework import serializers
 from . import models
+from rest_framework import serializers
 
-load_dotenv()
-GSTIN_API_URL = "https://gstincheck.co.in/api/gstin/"
-GSTIN_API_KEY = os.getenv("GSTIN_API_KEY")
+# User = get_user_model()
 
 class userSerializers(ModelSerializer):
-    gstin = serializers.CharField(required=False, allow_blank=True)
-    documents = serializers.FileField(write_only=True)
     class Meta:
-        model = User
-        fields = ["username", "email", "password", "gstin", "documents"]
+        model = models.User
+        fields = ["username", "email", "password"]
         extra_kwargs = {"password": {"write_only": True}}
-    def validate(self, data):
-        errors = {}
-        role = self.initial_data.get("role")
-        gstin = self.initial_data.get("gstin", "").strip()
-        if User.objects.filter(username=data.get("username")).exists():
-            errors["username"] = "Username already taken"
-        if models.Profile.objects.filter(phoneno=self.initial_data.get("phoneno")).exists():
-            errors["phoneno"] = "Phone number already taken"
-        if "documents" not in self.initial_data:
-            errors["documents"] = "Documents cannot be empty"
-        if role == "contractor":
-            if not gstin:
-                errors["gstin"] = "GSTIN is required for contractors."
-            else:
-                headers = {
-                    "Authorization": f"Bearer {GSTIN_API_KEY}",
-                    "Content-Type": "application/json"
-                }
 
-                for attempt in range(3):
-                    response = requests.get(f"{GSTIN_API_URL}{gstin}", headers=headers)
-                    if response.status_code == 200:
-                        break  
-                    elif attempt < 2:
-                        time.sleep(2)
-                    else:
-                        errors["gstin"] = "Invalid GSTIN after multiple attempts."
-        else:
-            if gstin:
-                errors["gstin"] = "Farmers should not provide GSTIN."
-        if errors:
-            raise ValidationError(errors)
+    def validate(self, data):
+        if models.User.objects.filter(username=data.get("username")).exists():
+            raise ValidationError({'error': 'Username already taken'})
+        elif models.FarmerProfile.objects.filter(phoneno=self.initial_data.get("phoneno")).exists() or \
+             models.ContractorProfile.objects.filter(phoneno=self.initial_data.get("phoneno")).exists():
+            raise ValidationError({'error': 'Phone no already taken'})
+        elif not self.initial_data.get("documents"):
+            raise ValidationError({'error': 'Documents empty'})
         return data
 
     def create(self, validated_data):
-        gstin = validated_data.pop("gstin", None)
-        documents = self.initial_data.get("documents")
-        role = self.initial_data.get("role")
-        user = User(username=validated_data["username"])
+        print(self.initial_data.get("role"))
+        user = models.User(username=validated_data["username"], type=self.initial_data.get("role"))
         user.set_password(validated_data["password"])
         user.save()
+
         profile_data = {
             "name": self.initial_data.get("name"),
             "phoneno": self.initial_data.get("phoneno"),
             "address": self.initial_data.get("address"),
             "image": self.initial_data.get("image"),
-            "user": user,
-            "role": role,
+            "user": user
         }
-        if role == "contractor":
-            profile_data["gstin"] = gstin
-        models.Profile.objects.create(**profile_data)
-        models.Documents.objects.create(doc_user=user, doc=documents)
+        if user.type == "farmer":
+            profile_data["screenshot"] = self.initial_data.get("screenshot")
+            models.FarmerProfile.objects.create(**profile_data)
+        elif user.type == "contractor":
+            profile_data["gstin"] = self.initial_data.get("gstin")
+            models.ContractorProfile.objects.create(**profile_data)
+
+        models.Documents.objects.create(doc_user=user, doc=self.initial_data.get("documents"))
         return user
 
-class ProfileSerializer(ModelSerializer):
+class FarmerProfileSerializer(ModelSerializer):
     user = userSerializers()
+    image = serializers.SerializerMethodField()
+    screenshot = serializers.SerializerMethodField()
 
     class Meta:
-        model = models.Profile
+        model = models.FarmerProfile 
         fields = '__all__'
+
+    def get_image(self, obj):
+        if obj.image and hasattr(obj.image, 'url'):
+            return obj.image.url
+        return None
+
+    def get_screenshot(self, obj):
+        if obj.screenshot and hasattr(obj.screenshot, 'url'):
+            return obj.screenshot.url
+        return None
+
+class ContractorProfileSerializer(ModelSerializer):
+    user = userSerializers()
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.ContractorProfile
+        fields = '__all__'
+
+    def get_image(self, obj):
+        if obj.image and hasattr(obj.image, 'url'):
+            return obj.image.url
+        return None

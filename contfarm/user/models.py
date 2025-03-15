@@ -1,38 +1,45 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from cloudinary.models import CloudinaryField
-import re
 
-class Profile(models.Model):
-    FARMER = "farmer"
+class User(AbstractUser):
+    class Types(models.TextChoices):
+        FARMER = "farmer", "Farmer"
+        CONTRACTOR = "contractor", "Contractor"
 
-    ROLE_CHOICES = [
-        ('farmer', 'Farmer'),
-        ('contractor', 'Contractor'),
-    ]
+    type = models.CharField(max_length=20, choices=Types.choices)
+    groups = models.ManyToManyField(Group, related_name="custom_user_groups", blank=True)
+    user_permissions = models.ManyToManyField(Permission, related_name="custom_user_permissions", blank=True)
+    def __str__(self):
+        return self.username
+
+class FarmerProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="farmer_profile")
     name = models.CharField(max_length=100)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     address = models.TextField()
     phoneno = models.CharField(max_length=15, unique=True)
     image = CloudinaryField('image')
-    aadhar_image = models.FileField(upload_to='aadhar/', null=True, blank=True)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES,default=FARMER)
     screenshot = CloudinaryField('image', null=True, blank=True)
-    isValid = models.BooleanField(default=False)
-    gstin = models.CharField(max_length=15, null=True, blank=True, unique=True)
+    aadhar_image = models.FileField(upload_to='aadhar/', null=True, blank=True)
+
     def __str__(self):
-        return f"{self.user.username} - {self.role}"
-    
-    def save(self, *args, **kwargs):
-        if self.role == "farmer":
-            self.gstin = None
-        elif self.role == "contractor":
-            self.screenshot = None 
-            self.isValid = False
-        super().save(*args, **kwargs)
+        return self.user.username
+
+class ContractorProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="contractor_profile")
+    name = models.CharField(max_length=100)
+    address = models.TextField()
+    phoneno = models.CharField(max_length=15, unique=True)
+    image = CloudinaryField('image')
+    gstin = models.CharField(max_length=15, unique=True)
+    aadhar_image = models.FileField(upload_to='aadhar/', null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username
+
 
 class Documents(models.Model):
-    doc_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    doc_user = models.ForeignKey(User, on_delete=models.CASCADE) 
     doc = models.FileField(upload_to='documents/')
 
     def __str__(self):
