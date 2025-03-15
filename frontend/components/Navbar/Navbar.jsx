@@ -1,16 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, X } from 'lucide-react';
-
+import { Menu, X, LogOut } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '@/redux/features/authFeature';
 import FarmerLogo from "@/components/assets/FramerLogo";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+  const dispatch = useDispatch();
+
+  // Retrieve user info from Redux state
+  const userInfo = useSelector((state) => state.auth.userInfo);
 
   const navItems = [
     { name: 'Home', href: '/' },
@@ -19,17 +26,22 @@ export function Navbar() {
     { name: 'Contact', href: '/contact' },
   ];
 
+  // Handle logout
+  const handleLogout = () => {
+    dispatch(logout()); // Clear user info from Redux and local storage
+    router.push('/login'); // Redirect to login page
+  };
+
   return (
     <motion.header
-  initial={{ y: -100, opacity: 0 }}
-  animate={{ y: 0, opacity: 1 }}
-  transition={{ duration: 0.5 }}
-  className="sticky top-0 z-50 w-full border-b bg-white flex justify-center"
->
-
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="sticky top-0 z-50 w-full border-b bg-white flex justify-center"
+    >
       <nav className="container flex h-16 items-center justify-between">
         <Link href="/" className="hidden items-center space-x-2 md:flex">
-        <FarmerLogo width={38} height={38} className="drop-shadow-md" />
+          <FarmerLogo width={38} height={38} className="drop-shadow-md" />
           <span className="text-2xl font-bold text-green-700">AgriConnect</span>
         </Link>
 
@@ -75,10 +87,40 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Button variant="outline" className="hidden md:flex">
-            <Link href={'/login'}>Login</Link>
-          </Button>
-          <Button className="bg-green-700 hover:bg-green-800">Shop Now</Button>
+          {userInfo ? (
+            <div className="flex items-center gap-4">
+              {/* Display user profile image and name */}
+              <div className="flex items-center gap-2">
+                {userInfo.profileImage && (
+                  <img
+                    src={userInfo.profileImage}
+                    alt="Profile"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                )}
+                <span className="text-sm font-medium text-green-700">
+                  Hi, {userInfo.name}
+                </span>
+              </div>
+
+              {/* Logout button */}
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Button variant="outline" className="hidden md:flex">
+                <Link href={'/login'}>Login</Link>
+              </Button>
+              <Button className="bg-green-700 hover:bg-green-800">Shop Now</Button>
+            </>
+          )}
         </div>
       </nav>
     </motion.header>

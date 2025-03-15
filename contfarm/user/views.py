@@ -60,6 +60,7 @@ class Login(APIView):
                 'Success': 'User Logged in Successfully',
                 'data': serial.data,
                 'role': user.type,
+                'role': user.type,
                 'refresh': str(refresh),
                 'access': str(refresh.access_token)
             }, status=status.HTTP_202_ACCEPTED)

@@ -4,9 +4,9 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const cropApi = createApi({
   reducerPath: 'cropApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'https://your-api-endpoint.com/api',
+    baseUrl: 'http://127.0.0.1:8000/crops/detail',
     prepareHeaders: (headers, { getState }) => {
-      const token = getState().auth.token; // Assuming you have an auth slice
+      const token = getState().auth.userInfo?.access; 
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
@@ -16,12 +16,12 @@ export const cropApi = createApi({
   tagTypes: ['Crop'],
   endpoints: (builder) => ({
     getCrops: builder.query({
-      query: () => '/crops',
+      query: () => '/',
       providesTags: ['Crop'],
     }),
     addCrop: builder.mutation({
       query: (newCrop) => ({
-        url: '/crops',
+        url: '/',
         method: 'POST',
         body: newCrop,
       }),
@@ -29,7 +29,7 @@ export const cropApi = createApi({
     }),
     updateCrop: builder.mutation({
       query: ({ id, ...patch }) => ({
-        url: `/crops/${id}`,
+        url: `/${id}`,
         method: 'PATCH',
         body: patch,
       }),
@@ -37,7 +37,7 @@ export const cropApi = createApi({
     }),
     deleteCrop: builder.mutation({
       query: (id) => ({
-        url: `/crops/${id}`,
+        url: `/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Crop'],
