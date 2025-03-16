@@ -1,9 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-export const cropApi = createApi({
-  reducerPath: "cropApi",
+export const demandApi = createApi({
+  reducerPath: "demandApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://127.0.0.1:8000/crops/detail/",
+    baseUrl: "http://127.0.0.1:8000/demands",
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth.userInfo?.access;
       if (token) {
@@ -12,46 +12,46 @@ export const cropApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Crop"],
+  tagTypes: ["Demand"],
   endpoints: (builder) => ({
-    getCrops: builder.query({
+    getDemands: builder.query({
       query: () => "/curr/",
-      providesTags: ["Crop"],
+      providesTags: ["Demand"],
     }),
-    getAllCrops: builder.query({
+    getAllDemands: builder.query({
       query: () => "/",
-      providesTags: ["Crop"],
+      providesTags: ["Demand"],
     }),
-    addCrop: builder.mutation({
-      query: (newCrop) => ({
+    addDemand: builder.mutation({
+      query: (newDemand) => ({
         url: "/",
         method: "POST",
-        body: newCrop,
+        body: newDemand,
       }),
-      invalidatesTags: ["Crop"],
+      invalidatesTags: ["Demand"],
     }),
-    updateCrop: builder.mutation({
+    updateDemand: builder.mutation({
       query: ({ id, updateData }) => ({
         url: `/${id}`,
         method: "PUT",
         body: updateData,
       }),
-      invalidatesTags: ["Crop"],
+      invalidatesTags: ["Demand"],
     }),
-    deleteCrop: builder.mutation({
+    deleteDemand: builder.mutation({
       query: (id) => ({
         url: `/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Crop"],
+      invalidatesTags: ["Demand"],
     }),
   }),
 });
 
 export const {
-  useGetCropsQuery,
-  useAddCropMutation,
-  useUpdateCropMutation,
-  useDeleteCropMutation,
-  useGetAllCropsQuery,
-} = cropApi;
+  useGetDemandsQuery,
+  useAddDemandMutation,
+  useUpdateDemandMutation,
+  useDeleteDemandMutation,
+  useGetAllDemandsQuery,
+} = demandApi;

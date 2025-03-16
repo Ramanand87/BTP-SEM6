@@ -4,8 +4,6 @@ import requests
 import easyocr
 import re
 def authen(username, password):
-    print(username.isdigit())
-    print(password)
     if username.isdigit():
         try:
             prof = FarmerProfile.objects.get(phoneno=username)

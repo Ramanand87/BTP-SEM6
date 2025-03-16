@@ -64,7 +64,7 @@ class Login(APIView):
             refresh = RefreshToken.for_user(user)
             return Response({
                 'Success': 'User Logged in Successfully',
-                'data': serial.data,
+                'data':serial.data,
                 'role': user.type,
                 'profile':serialprof.data,
                 'refresh': str(refresh),

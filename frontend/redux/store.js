@@ -7,6 +7,8 @@ import { authApi } from './Service/auth';
 import authReducer from './features/authFeature';
 import { cropApi } from './Service/cropApi';
 import { profileApi } from './Service/profileApi';
+import { marketApi } from './Service/marketApi';
+import { demandApi } from './Service/demandApi';
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +17,8 @@ export const store = configureStore({
     [authApi.reducerPath]: authApi.reducer,
     [cropApi.reducerPath]:cropApi.reducer,
     [profileApi.reducerPath]:profileApi.reducer,
+    [marketApi.reducerPath]:marketApi.reducer,
+    [demandApi.reducerPath]:demandApi.reducer,
     
   },
   middleware: (getDefaultMiddleware) =>
@@ -22,6 +26,8 @@ export const store = configureStore({
       authApi.middleware,
       cropApi.middleware,
       profileApi.middleware,
+      marketApi.middleware,
+      demandApi.middleware,
       
     ),
 });

@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'crops',
     'ratings',
-
+    'demands',
 ]
 
 MIDDLEWARE = [
