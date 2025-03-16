@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Trash, Edit, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useGetCropsQuery, useAddCropMutation, useUpdateCropMutation, useDeleteCropMutation } from "@/redux/Service/cropApi";
+import { useGetCropsQuery,  useAddCropMutation, useUpdateCropMutation, useDeleteCropMutation } from "@/redux/Service/cropApi";
 
 export default function YourCropsPage() {
   const { data: crops = [], isLoading, isError } = useGetCropsQuery();
+  console.log('crops:', crops)
   const [addCrop] = useAddCropMutation();
   const [updateCrop] = useUpdateCropMutation();
   const [deleteCrop] = useDeleteCropMutation();
@@ -17,45 +18,26 @@ export default function YourCropsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const router = useRouter();
 
-  // Mock data for testing (remove this when backend is online)
-  const mockCrops = [
-    {
-      id: 1,
-      name: "Organic Tomatoes",
-      publisher: "Ramanand",
-      image: "/tomatoes.jpg",
-      price: 50,
-      quantity: "100 kg",
-      description: "Fresh organic tomatoes, grown without pesticides.",
-      location: "Green Valley Farms, Maharashtra",
-      harvested_time: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "Basmati Rice",
-      publisher: "Ramanand",
-      image: "/rice.jpg",
-      price: 30,
-      quantity: "500 kg",
-      description: "High-quality basmati rice, perfect for export.",
-      location: "Green Valley Farms, Maharashtra",
-      harvested_time: "2024-02-01",
-    },
-  ];
-
-  // Use mock data if backend is offline
-  const displayedCrops = isError ? mockCrops : crops;
-
   const handleDelete = async (id) => {
     await deleteCrop(id);
   };
 
   const handleSave = async (crop) => {
+    const formData = new FormData();
+    formData.append("crop_name", crop.crop_name);
+    formData.append("crop_image", crop.crop_image);
+    formData.append("crop_price", crop.crop_price);
+    formData.append("quantity", crop.quantity);
+    formData.append("Description", crop.Description);
+    formData.append("harvested_time", crop.harvested_time);
+    formData.append("location", crop.location);
+
     if (editingCrop) {
-      await updateCrop({ id: crop.id, ...crop });
+      await updateCrop({ id: editingCrop.crop_id, body: formData }).unwrap();
       setEditingCrop(null);
     } else {
-      await addCrop(crop);
+      console.log('formdata',formData)
+      await addCrop(formData).unwrap();
     }
     setIsAdding(false);
   };
@@ -86,25 +68,24 @@ export default function YourCropsPage() {
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const newCrop = {
-                  id: editingCrop?.id || Date.now(),
-                  name: formData.get("name"),
-                  publisher: "Ramanand", // Auto-fill with logged-in farmer's name
-                  image: formData.get("image"),
-                  price: parseFloat(formData.get("price")),
+                  crop_name: formData.get("crop_name"),
+                  crop_image: formData.get("crop_image"),
+                  crop_price: parseFloat(formData.get("crop_price")),
                   quantity: formData.get("quantity"),
-                  description: formData.get("description"),
+                  Description: formData.get("Description"),
                   location: formData.get("location"),
                   harvested_time: formData.get("harvested_time"),
                 };
                 handleSave(newCrop);
               }}
               className="space-y-4"
+              encType="multipart/form-data"
             >
-              <Input name="name" placeholder="Crop Name" defaultValue={editingCrop?.name} required />
-              <Input name="image" placeholder="Image URL" defaultValue={editingCrop?.image} required />
-              <Input name="price" type="number" placeholder="Price (₹/kg)" defaultValue={editingCrop?.price} required />
+              <Input name="crop_name" placeholder="Crop Name" defaultValue={editingCrop?.crop_name} required />
+              <Input name="crop_image" type="file" placeholder="Crop Image" required />
+              <Input name="crop_price" type="number" placeholder="Price (₹/kg)" defaultValue={editingCrop?.crop_price} required />
               <Input name="quantity" placeholder="Quantity" defaultValue={editingCrop?.quantity} required />
-              <Input name="description" placeholder="Description" defaultValue={editingCrop?.description} required />
+              <Input name="Description" placeholder="Description" defaultValue={editingCrop?.Description} required />
               <Input name="location" placeholder="Location" defaultValue={editingCrop?.location} required />
               <Input name="harvested_time" type="date" placeholder="Harvested Time" defaultValue={editingCrop?.harvested_time} required />
               <div className="flex gap-4">
@@ -130,23 +111,23 @@ export default function YourCropsPage() {
 
       {/* List of Crops */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayedCrops.map((crop) => (
-          <Card key={crop.id} className="hover:shadow-lg transition-shadow">
+        {crops?.map((crop) => (
+          <Card key={crop.crop_id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <img
-                src={crop.image}
-                alt={crop.name}
+                src={crop.crop_image}
+                alt={crop.crop_name}
                 className="w-full h-48 object-cover rounded-lg"
               />
             </CardHeader>
             <CardContent>
-              <CardTitle className="text-xl">{crop.name}</CardTitle>
+              <CardTitle className="text-xl">{crop.crop_name}</CardTitle>
               <div className="space-y-2 mt-4">
-                <p className="text-green-600 font-semibold">₹{crop.price}/kg</p>
+                <p className="text-green-600 font-semibold">₹{crop.crop_price}/kg</p>
                 <p className="text-sm text-gray-600">Quantity: {crop.quantity}</p>
                 <p className="text-sm text-gray-600">Location: {crop.location}</p>
                 <p className="text-sm text-gray-600">Harvested: {formatHarvestedTime(crop.harvested_time)}</p>
-                <p className="text-gray-700">{crop.description}</p>
+                <p className="text-gray-700">{crop.Description}</p>
               </div>
             </CardContent>
             <CardFooter className="flex gap-4">
@@ -159,7 +140,7 @@ export default function YourCropsPage() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => handleDelete(crop.id)}
+                onClick={() => handleDelete(crop.crop_id)}
               >
                 <Trash className="w-4 h-4 mr-2" />
                 Delete

@@ -16,9 +16,15 @@ export const cropApi = createApi({
   tagTypes: ['Crop'],
   endpoints: (builder) => ({
     getCrops: builder.query({
-      query: () => '/',
-      providesTags: ['Crop'],
+      query: () => '/curr/',
+      providesTags: [{ type: 'Crop', id: 'USER' }],
     }),
+    getAllCrops: builder.query({
+      query: () => '/',
+      providesTags: [{ type: 'Crop', id: 'ALL' }],
+    }),
+    
+
     addCrop: builder.mutation({
       query: (newCrop) => ({
         url: '/',
@@ -28,10 +34,10 @@ export const cropApi = createApi({
       invalidatesTags: ['Crop'],
     }),
     updateCrop: builder.mutation({
-      query: ({ id, ...patch }) => ({
+      query: ({ id, ...update }) => ({
         url: `/${id}`,
         method: 'PATCH',
-        body: patch,
+        body: update,
       }),
       invalidatesTags: ['Crop'],
     }),
@@ -45,4 +51,4 @@ export const cropApi = createApi({
   }),
 });
 
-export const { useGetCropsQuery, useAddCropMutation, useUpdateCropMutation, useDeleteCropMutation } = cropApi;
+export const { useGetCropsQuery, useAddCropMutation, useUpdateCropMutation, useDeleteCropMutation,useGetAllCropsQuery } = cropApi;

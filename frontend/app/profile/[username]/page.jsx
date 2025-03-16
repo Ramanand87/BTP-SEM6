@@ -1,10 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useParams } from "next/navigation";
+import { useGetProfileQuery } from "@/redux/Service/profileApi";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Star, Bell, CreditCard, User, Shield, Crop } from "lucide-react";
@@ -12,6 +14,12 @@ import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { username } = useParams(); // Extract username from URL
+  const { data: profile, error, isLoading } = useGetProfileQuery(username); // Fetch profile
+  console.log(profile)
+
+  if (isLoading) return <div className="text-center py-10">Loading profile...</div>;
+  if (error) return <div className="text-center py-10 text-red-500">Error fetching profile.</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -23,8 +31,8 @@ export default function ProfilePage() {
       >
         <div className="relative">
           <Avatar className="w-32 h-32">
-            <AvatarImage src="/profile.jpg" alt="Profile" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={profile?.data.image || "/profile.jpg"} alt="Profile" />
+            <AvatarFallback>{profile?.data.name?.charAt(0) || "U"}</AvatarFallback>
           </Avatar>
           <Button
             variant="outline"
@@ -37,9 +45,11 @@ export default function ProfilePage() {
         </div>
 
         <div className="text-center md:text-left">
-          <h1 className="text-3xl font-bold text-green-900 mb-2">Ramanand</h1>
-          <p className="text-brown-700 mb-1">+91 98765 43210</p>
-          <p className="text-brown-700">123 Farm Lane, Green Valley, India</p>
+          <h1 className="text-3xl font-bold text-green-900 mb-2">{profile?.data.name || "N/A"}</h1>
+          <p className="text-brown-700">Username: {profile?.data?.user.username}</p>
+          <p className="text-brown-700 mb-1">Phone no.: +91{profile?.data.phoneno || "N/A"}</p>
+          <p className="text-brown-700">Address: {profile?.data.address || "N/A"}</p>
+
           <div className="flex gap-4 mt-4">
             <Button className="bg-green-600 hover:bg-green-700">
               <User className="w-4 h-4 mr-2" />

@@ -8,42 +8,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Search, Filter, List, Grid } from "lucide-react";
 import Link from "next/link";
+import { useGetAllCropsQuery } from "@/redux/Service/cropApi";
 
-const crops = [
-  {
-    crop_id: 1,
-    crop_name: "Organic Tomatoes",
-    publisher: "John Doe",
-    crop_image: "https://drearth.com/wp-content/uploads/tomato-iStock-174932787.jpg",
-    crop_price: 50,
-    quantity: "100 kg",
-    description: "Fresh organic tomatoes, grown without pesticides.",
-  },
-  {
-    crop_id: 2,
-    crop_name: "Basmati Rice",
-    publisher: "Green Valley Farms",
-    crop_image: "https://kj1bcdn.b-cdn.net/media/31514/basmati.jpg",
-    crop_price: 30,
-    quantity: "500 kg",
-    description: "High-quality basmati rice, perfect for export.",
-  },
-  {
-    crop_id: 3,
-    crop_name: "Alphonso Mangoes",
-    publisher: "Mango King",
-    crop_image: "https://www.tripsavvy.com/thmb/g3helIwN2IUykkj_NHteMnK1mPQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-852133484-5ad41c4cfa6bcc0036af1a4d.jpg",
-    crop_price: 80,
-    quantity: "200 kg",
-    description: "Sweet and juicy Alphonso mangoes, hand-picked.",
-  },
-];
+// const crops = [
+//   {
+//     crop_id: 1,
+//     crop_name: "Organic Tomatoes",
+//     publisher: "John Doe",
+//     crop_image: "https://drearth.com/wp-content/uploads/tomato-iStock-174932787.jpg",
+//     crop_price: 50,
+//     quantity: "100 kg",
+//     description: "Fresh organic tomatoes, grown without pesticides.",
+//   },
+//   {
+//     crop_id: 2,
+//     crop_name: "Basmati Rice",
+//     publisher: "Green Valley Farms",
+//     crop_image: "https://kj1bcdn.b-cdn.net/media/31514/basmati.jpg",
+//     crop_price: 30,
+//     quantity: "500 kg",
+//     description: "High-quality basmati rice, perfect for export.",
+//   },
+//   {
+//     crop_id: 3,
+//     crop_name: "Alphonso Mangoes",
+//     publisher: "Mango King",
+//     crop_image: "https://www.tripsavvy.com/thmb/g3helIwN2IUykkj_NHteMnK1mPQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-852133484-5ad41c4cfa6bcc0036af1a4d.jpg",
+//     crop_price: 80,
+//     quantity: "200 kg",
+//     description: "Sweet and juicy Alphonso mangoes, hand-picked.",
+//   },
+// ];
 
 export default function MarketPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [priceRange, setPriceRange] = useState([0, 100]);
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState("grid");
+
+  const { data: allCrops, error, isLoading } = useGetAllCropsQuery();
+  console.log('getallcrsp',allCrops)
+  console.log(error)
+  const crops=allCrops?.data;
 
   const filteredCrops = crops
     .filter((crop) =>

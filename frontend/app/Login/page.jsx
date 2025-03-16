@@ -27,7 +27,7 @@ import FarmerLogo from "@/components/assets/FramerLogo";
 import { useRegisterMutation, useLoginMutation } from "@/redux/Service/auth";
 import Webcam from "react-webcam";
 import { useDispatch, useSelector } from "react-redux";
-import { setCredentials } from "@/redux/features/authFeature"; 
+import { setCredentials } from "@/redux/features/authFeature";
 
 const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -55,6 +55,7 @@ const AuthPage = () => {
   }, [userInfo, router]);
 
   const [formData, setFormData] = useState({
+    role: "", // Add role field
     name: "",
     username: "",
     address: "",
@@ -126,10 +127,16 @@ const AuthPage = () => {
       return;
     }
 
+    if (!formData.role) {
+      alert("Please select a role (Farmer or Buyer).");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const data = new FormData();
+      data.append("role", formData.role); // Append role to FormData
       data.append("name", formData.name);
       data.append("username", formData.username);
       data.append("address", formData.address);
@@ -349,6 +356,28 @@ const AuthPage = () => {
               <form onSubmit={handleSignupSubmit} className="space-y-4">
                 {signupStep === 1 && (
                   <div className="space-y-4 animate-fadeIn">
+                    <div className="space-y-2">
+                      <Label>Select Your Role</Label>
+                      <div className="flex gap-4">
+                        <Button
+                          type="button"
+                          variant={formData.role === "farmer" ? "default" : "outline"}
+                          onClick={() => setFormData({ ...formData, role: "farmer" })}
+                          className="w-full"
+                        >
+                          Farmer
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={formData.role === "buyer" ? "default" : "outline"}
+                          onClick={() => setFormData({ ...formData, role: "buyer" })}
+                          className="w-full"
+                        >
+                          Buyer
+                        </Button>
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name</Label>
                       <Input

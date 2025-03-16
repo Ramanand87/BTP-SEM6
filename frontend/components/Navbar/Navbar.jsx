@@ -42,7 +42,7 @@ export function Navbar() {
       <nav className="container flex h-16 items-center justify-between">
         <Link href="/" className="hidden items-center space-x-2 md:flex">
           <FarmerLogo width={38} height={38} className="drop-shadow-md" />
-          <span className="text-2xl font-bold text-green-700">AgriConnect</span>
+          <span className="text-2xl font-bold text-green-700">GreenPact</span>
         </Link>
 
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -90,18 +90,18 @@ export function Navbar() {
           {userInfo ? (
             <div className="flex items-center gap-4">
               {/* Display user profile image and name */}
-              <div className="flex items-center gap-2">
-                {userInfo.profileImage && (
+              <Link href={`/profile/${userInfo.data.username}`} className="flex items-center gap-2">
+                {userInfo.profile.image && (
                   <img
-                    src={userInfo.profileImage}
+                    src={userInfo.profile.image}
                     alt="Profile"
                     className="h-8 w-8 rounded-full object-cover"
                   />
                 )}
                 <span className="text-sm font-medium text-green-700">
-                  Hi, {userInfo.name}
+                  Hi, {userInfo.profile.name}
                 </span>
-              </div>
+              </Link>
 
               {/* Logout button */}
               <Button
