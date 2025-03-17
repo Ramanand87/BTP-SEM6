@@ -7,7 +7,6 @@ class Demand(models.Model):
     demand_id=models.UUIDField(primary_key = True,default=uuid.uuid4,editable=False)
     crop_name=models.CharField(max_length=256) 
     demand_user=models.ForeignKey(CustomUser,on_delete=models.CASCADE)
-    crop_image=CloudinaryField('image',blank=True)
     crop_price=models.IntegerField()
     contact_no=models.CharField(max_length=10) 
     quantity=models.IntegerField()

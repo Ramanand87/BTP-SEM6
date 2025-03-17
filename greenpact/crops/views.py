@@ -41,18 +41,25 @@ class CropView(APIView):
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def put(self,request,pk):
+    def put(self, request, pk):
         try:
-            crop=get_object_or_404(models.Crops,crop_id=pk)
-            serial=serializers.CropsSeralizer(crop,data=request.data,partial=True)
+            # Print incoming request data for debugging
+            print("Incoming request data:", request.data)
+            
+            crop = get_object_or_404(models.Crops, crop_id=pk)
+            serial = serializers.CropsSeralizer(crop, data=request.data, partial=True)
+            
             if serial.is_valid():
                 serial.save()
-                return Response({'Sucess':'Crop Advertisement Created'},status=status.HTTP_201_CREATED)
+                return Response({'Success': 'Crop Advertisement Updated'}, status=status.HTTP_200_OK)
             else:
-                return Response({'Error':serial.errors},status=status.HTTP_400_BAD_REQUEST)
+                # Print serializer errors for debugging
+                print("Serializer errors:", serial.errors)
+                return Response({'Error': serial.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+            # Print exception for debugging
+            print("Exception:", str(e))
+            return Response({'Error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def delete(self,request,pk):
         crop=get_object_or_404(models.Crops,crop_id=pk)

@@ -31,10 +31,11 @@ export const cropApi = createApi({
       invalidatesTags: ["Crop"],
     }),
     updateCrop: builder.mutation({
-      query: ({ id, updateData }) => ({
+      query: ({ id, body }) => ({
         url: `/${id}`,
         method: "PUT",
-        body: updateData,
+        body: body,
+        // Do not set Content-Type header manually
       }),
       invalidatesTags: ["Crop"],
     }),
