@@ -8,6 +8,20 @@ export default {
   ],
   theme: {
   	extend: {
+		scrollbar: {
+			thin: "thin",
+			thumb: {
+			  green: {
+				300: "#86efac",
+				400: "#4ade80",
+			  },
+			},
+			track: {
+			  green: {
+				50: "#f0fdf4",
+			  },
+			},
+		  },
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
@@ -79,5 +93,5 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwind-scrollbar"),require("tailwindcss-animate")],
 };
