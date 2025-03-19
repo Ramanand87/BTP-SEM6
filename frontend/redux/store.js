@@ -9,6 +9,7 @@ import { cropApi } from './Service/cropApi';
 import { profileApi } from './Service/profileApi';
 import { marketApi } from './Service/marketApi';
 import { demandApi } from './Service/demandApi';
+import { ratingApi } from './Service/ratingApi';
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ export const store = configureStore({
     [profileApi.reducerPath]:profileApi.reducer,
     [marketApi.reducerPath]:marketApi.reducer,
     [demandApi.reducerPath]:demandApi.reducer,
+    [ratingApi.reducerPath]:ratingApi.reducer,
     
   },
   middleware: (getDefaultMiddleware) =>
@@ -28,6 +30,7 @@ export const store = configureStore({
       profileApi.middleware,
       marketApi.middleware,
       demandApi.middleware,
+      ratingApi.middleware,
       
     ),
 });

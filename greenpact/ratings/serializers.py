@@ -11,16 +11,19 @@ class RatingSerializer(ModelSerializer):
         model=models.Rating
         fields='__all__'
     
-    def get_image(self, obj):
-        if obj.image and hasattr(obj.image, 'url'):
-            return obj.image.url  
-        return None
     def get_rated_user(self, obj):
         return obj.rated_user.username
 
     def get_rating_user(self, obj):
         return obj.rating_user.username
 
+    def to_representation(self, instance):
+        """ Ensure the full URL of rating image is included in the GET response. """
+        data = super().to_representation(instance)
+        if instance.images:
+            data['images'] = instance.images.url
+        return data
+    
     def create(self, validated_data):
         request = self.context.get('request')
         if request and request.user:

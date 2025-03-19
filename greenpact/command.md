@@ -14,3 +14,9 @@ python manage.py runserver
 
 python manage.py makemigrations
 python manage.py migrate
+
+
+//
+
+venv/Scripts/activate 
+python manage.py runserver

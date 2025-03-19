@@ -7,6 +7,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Trash, Edit, Plus, Loader2 } from "lucide-react";
 import { useGetCropsQuery, useAddCropMutation, useUpdateCropMutation, useDeleteCropMutation } from "@/redux/Service/cropApi";
+import Link from "next/link";
 
 export default function YourCropsPage() {
   const { data, isLoading, isError } = useGetCropsQuery();
@@ -138,6 +139,7 @@ export default function YourCropsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {crops.map((crop) => (
+            <Link href={`/crop/${crop?.crop_id}`}>
             <Card key={crop.crop_id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <img src={crop.crop_image} alt={crop.crop_name} className="w-full h-48 object-cover rounded-lg" />
@@ -177,7 +179,7 @@ export default function YourCropsPage() {
                   Delete
                 </Button>
               </CardFooter>
-            </Card>
+            </Card></Link>
           ))}
         </div>
       )}

@@ -50,7 +50,7 @@ class FarmerProfileSerializer(ModelSerializer):
     user = userSerializers()
     image = serializers.SerializerMethodField()
     screenshot = serializers.SerializerMethodField()
-
+    
     class Meta:
         model = models.FarmerProfile 
         fields = '__all__'

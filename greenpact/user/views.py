@@ -89,7 +89,7 @@ class ProfileView(APIView):
         else:
             return Response({"error": "Invalid role"}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({'data': serial.data}, status=status.HTTP_200_OK)
+        return Response({'data': serial.data,'role':role}, status=status.HTTP_200_OK)
 
     def put(self, request, pk=None):
         user = request.user
