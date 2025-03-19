@@ -14,15 +14,23 @@ export default function YourCropsPage() {
 
   const [addCrop, { isLoading: isAdding }] = useAddCropMutation();
   const [updateCrop, { isLoading: isUpdating }] = useUpdateCropMutation();
-  const [deleteCrop, { isLoading: isDeleting }] = useDeleteCropMutation();
+  const [deleteCrop] = useDeleteCropMutation();
 
   const [editingCrop, setEditingCrop] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null); // For previewing image
+  const [loadingDeleteId, setLoadingDeleteId] = useState(null); // Track which delete button is loading
 
   const handleDelete = async (id) => {
-    await deleteCrop(id);
+    setLoadingDeleteId(id); // Set loading state for the specific crop
+    try {
+      await deleteCrop(id).unwrap();
+    } catch (error) {
+      console.error("Error deleting crop:", error);
+    } finally {
+      setLoadingDeleteId(null); // Reset loading state after delete
+    }
   };
 
   const handleSave = async (event) => {
@@ -37,17 +45,10 @@ export default function YourCropsPage() {
       formData.append("crop_image", fileInput.files[0]);
     }
   
-    // Log FormData before sending
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
-  
     try {
       if (editingCrop) {
-        console.log("Updating crop:", editingCrop.crop_id);
         await updateCrop({ id: editingCrop.crop_id, body: formData }).unwrap();
       } else {
-        console.log("Adding new crop");
         await addCrop(formData).unwrap();
       }
   
@@ -87,7 +88,7 @@ export default function YourCropsPage() {
           </DialogHeader>
 
           <form onSubmit={handleSave} className="space-y-4" encType="multipart/form-data">
-          <Input name="crop_name" placeholder="Crop Name" defaultValue={editingCrop?.crop_name} required />
+            <Input name="crop_name" placeholder="Crop Name" defaultValue={editingCrop?.crop_name} required />
             <Input name="crop_price" type="number" placeholder="Price (₹/kg)" defaultValue={editingCrop?.crop_price} required />
             <Input name="quantity" placeholder="Quantity" defaultValue={editingCrop?.quantity} required />
             <Input name="Description" placeholder="Description" defaultValue={editingCrop?.Description} required />
@@ -163,8 +164,16 @@ export default function YourCropsPage() {
                   <Edit className="w-4 h-4 mr-2" />
                   Edit
                 </Button>
-                <Button variant="destructive" onClick={() => handleDelete(crop.crop_id)}>
-                  {isDeleting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Trash className="w-4 h-4 mr-2" />}
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleDelete(crop.crop_id)}
+                  disabled={loadingDeleteId === crop.crop_id} // Disable only the deleting button
+                >
+                  {loadingDeleteId === crop.crop_id ? (
+                    <Loader2 className="animate-spin w-4 h-4 mr-2" />
+                  ) : (
+                    <Trash className="w-4 h-4 mr-2" />
+                  )}
                   Delete
                 </Button>
               </CardFooter>
