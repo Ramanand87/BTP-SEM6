@@ -21,7 +21,7 @@ export const marketApi = createApi({
       query: () => `/`,
       providesTags: [{ type: 'Post', id: 'LIST' }],
     }),
-    getSinglePost: builder.query({
+    getSingleCrop: builder.query({
       query: (id) => `/${id}`,
     }),
     // create post
@@ -119,7 +119,7 @@ export const marketApi = createApi({
 
 export const {
   useGetAllCropsQuery,
-  useGetSinglePostQuery,
+  useGetSingleCropQuery,
   useCreatePostMutation,
   useDeletePostMutation,
   useLikePostMutation,

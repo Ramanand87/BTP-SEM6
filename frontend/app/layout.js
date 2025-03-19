@@ -6,6 +6,7 @@ import { Navbar } from "@/components/Navbar/Navbar";
 
 import "./globals.css";
 import Footer from "@/components/Footer/Footer";
+import DynamicFooter from "@/components/Footer/DynamicFooter";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +22,7 @@ export default function RootLayout({ children }) {
         <ReduxProvider>
           <Navbar/>
           <main className="">{children}</main>
-          <Footer/>
+          <DynamicFooter/>
         </ReduxProvider>
         <Toaster />
       </body>
