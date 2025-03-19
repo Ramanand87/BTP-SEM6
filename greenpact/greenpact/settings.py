@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     'crops',
     'ratings',
     'demands',
+    'chat',
+    'channels'
 ]
 
 MIDDLEWARE = [
@@ -156,3 +158,19 @@ STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticCloudinaryStorage'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 AUTH_USER_MODEL = 'user.CustomUser'
+
+ASGI_APPLICATION = 'greenpact.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(
+                os.getenv('redis_host'), 
+                6379
+            )],
+            "password": os.getenv('redis_password'),
+            "ssl": True 
+        },
+    },
+}
