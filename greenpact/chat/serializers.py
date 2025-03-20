@@ -4,10 +4,10 @@ from user.serializers import userSerializers
 
 class MessageSerializer(ModelSerializer):
     class Meta:
-        model=models.Message
+        model=models.ChatMessage
         fields='__all__'
 
 class ChatRoomSerailizer(ModelSerializer):
     class Meta:
-        model=models.Message
+        model=models.ChatRoom
         fields=["name"]

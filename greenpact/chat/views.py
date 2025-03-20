@@ -6,6 +6,7 @@ from . import models
 from . import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from uuid import uuid4
 # Create your views here.
 class MessagesView(APIView):
     authentication_classes=[JWTAuthentication]
@@ -24,7 +25,7 @@ class ChatRoomView(APIView):
     permission_classes=[IsAuthenticated]
     def get(self,request):
         try:
-            rooms=models.ChatRoom.objects.filter(user=request.user)
+            rooms=models.ChatRoom.objects.filter(participants=request.user)
             serial=serializers.ChatRoomSerailizer(rooms,many=True)
             return Response({'data':serial.data},status=status.HTTP_200_OK)
         except Exception as e:
@@ -32,10 +33,10 @@ class ChatRoomView(APIView):
     def post(self,request):
         try:
             username=request.data.get('username')
-            roomname=request.user.username + "-" + username
-            models.ChatRoom.objects.create(name=roomname,user=request.user)
+            roomname=uuid4()
+            models.ChatRoom.objects.create(name=roomname,participants=request.user)
             new_user=models.CustomUser.objects.get(username=username)
-            models.ChatRoom.objects.create(name=roomname,user=new_user)
+            models.ChatRoom.objects.create(name=roomname,participants=new_user)
             return Response({'Sucess':'Room Created','name':roomname},status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({'Error':str(e)},status=status.HTTP_200_OK)
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
