@@ -34,9 +34,8 @@ class ChatRoomView(APIView):
 
     def get(self, request):
         try:
-            # Get all rooms where the user is a participant
             rooms = models.ChatRoom.objects.filter(participants=request.user)
-            serial = serializers.ChatRoomSerailizer(rooms, many=True)
+            serial = serializers.ChatRoomSerializer(rooms, many=True)
             return Response({'data': serial.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'Error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

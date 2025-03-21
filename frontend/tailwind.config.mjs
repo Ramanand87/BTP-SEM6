@@ -33,26 +33,26 @@ export default {
   				DEFAULT: 'hsl(var(--popover))',
   				foreground: 'hsl(var(--popover-foreground))'
   			},
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
-  			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
-  			},
-  			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
-  			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
+			  primary: {
+				DEFAULT: "hsl(130, 40%, 30%)", // Forest green
+				foreground: "hsl(0, 0%, 98%)",
+			  },
+			  secondary: {
+				DEFAULT: "hsl(35, 60%, 50%)", // Wheat/harvest gold
+				foreground: "hsl(0, 0%, 9%)",
+			  },
   			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
-  			},
+				DEFAULT: "hsl(0, 65%, 45%)",
+				foreground: "hsl(0, 0%, 98%)",
+			  },
+			  muted: {
+				DEFAULT: "hsl(60, 10%, 96%)",
+				foreground: "hsl(25, 30%, 30%)", // Brown/soil
+			  },
+			  accent: {
+				DEFAULT: "hsl(65, 65%, 65%)", // Light grass/hay
+				foreground: "hsl(25, 30%, 30%)",
+			  },
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',

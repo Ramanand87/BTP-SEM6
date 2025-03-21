@@ -7,7 +7,8 @@ class MessageSerializer(ModelSerializer):
         model=models.ChatMessage
         fields='__all__'
 
-class ChatRoomSerailizer(ModelSerializer):
+class ChatRoomSerializer(ModelSerializer):
+    participants = userSerializers(many=True) 
     class Meta:
         model=models.ChatRoom
-        fields=["name"]
+        fields='__all__'
