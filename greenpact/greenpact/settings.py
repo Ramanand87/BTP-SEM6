@@ -161,16 +161,21 @@ AUTH_USER_MODEL = 'user.CustomUser'
 
 ASGI_APPLICATION = 'greenpact.asgi.application'
 
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [(
+#                 os.getenv('redis_host'), 
+#                 6379
+#             )],
+#             "password": os.getenv('redis_password'),
+#             "ssl": True 
+#         },
+#     },
+# }
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [(
-                os.getenv('redis_host'), 
-                6379
-            )],
-            "password": os.getenv('redis_password'),
-            "ssl": True 
-        },
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     },
 }

@@ -24,6 +24,8 @@ export default function YourCropsPage() {
   const [loadingDeleteId, setLoadingDeleteId] = useState(null); // Track which delete button is loading
 
   const handleDelete = async (id) => {
+    console.log(id)
+    console.log(typeof(id))
     setLoadingDeleteId(id); // Set loading state for the specific crop
     try {
       await deleteCrop(id).unwrap();

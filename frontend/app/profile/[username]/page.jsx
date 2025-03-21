@@ -52,7 +52,10 @@ export default function ProfilePage() {
   const [hasRated, setHasRated] = useState(false); // Track if the user has already rated
   const [editingRatingId, setEditingRatingId] = useState(null); // Track which rating is being edited
   const userInfo = useSelector((state) => state.auth.userInfo);
-
+  const currentUser = userInfo?.data.username;
+  const handleChatClick = () => {
+    router.push(`/chat/${username}`);
+  };
   // Check if the current user has already rated the profile user
   useEffect(() => {
     if (ratings) {
@@ -193,6 +196,11 @@ export default function ProfilePage() {
               <Crop className="w-4 h-4 mr-2" />
               Your Crops
             </Button>
+          {currentUser !== username && (
+        <Button onClick={handleChatClick} className="bg-green-600 hover:bg-green-700">
+          Chat
+        </Button>
+      )}
           </div>
         </div>
       </motion.div>

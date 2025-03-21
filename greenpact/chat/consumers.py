@@ -1,7 +1,8 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from .models import ChatRoom, ChatMessage
-from django.contrib.auth.models import User
+from user.models import CustomUser
+# from django.contrib.auth.models import User
 from asgiref.sync import sync_to_async
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -42,7 +43,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Save the message to the database
         chat_message = await sync_to_async(ChatMessage.objects.create)(
             room=room,
-            sender=user,
+            user=user,
             content=message
         )
 
@@ -71,7 +72,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def get_user(self, username):
-        return User.objects.get(username=username)
+        return CustomUser.objects.get(username=username)
 
     @sync_to_async
     def get_room(self, room_name):
@@ -83,7 +84,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         messages = ChatMessage.objects.filter(room=room).order_by('-timestamp')[:limit]
         return [
             {
-                'username': message.sender.username,
+                'username': message.user.username,
                 'message': message.content,
                 'timestamp': message.timestamp.isoformat()
             }

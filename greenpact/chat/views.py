@@ -20,23 +20,44 @@ class MessagesView(APIView):
             return Response({'Error':str(e)},status=status.HTTP_200_OK)
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from uuid import uuid4
+from . import models, serializers
+
 class ChatRoomView(APIView):
-    authentication_classes=[JWTAuthentication]
-    permission_classes=[IsAuthenticated]
-    def get(self,request):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
         try:
-            rooms=models.ChatRoom.objects.filter(participants=request.user)
-            serial=serializers.ChatRoomSerailizer(rooms,many=True)
-            return Response({'data':serial.data},status=status.HTTP_200_OK)
+            # Get all rooms where the user is a participant
+            rooms = models.ChatRoom.objects.filter(participants=request.user)
+            serial = serializers.ChatRoomSerailizer(rooms, many=True)
+            return Response({'data': serial.data}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({'Error':str(e)},status=status.HTTP_200_OK)
-    def post(self,request):
+            return Response({'Error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def post(self, request):
         try:
-            username=request.data.get('username')
-            roomname=uuid4()
-            models.ChatRoom.objects.create(name=roomname,participants=request.user)
-            new_user=models.CustomUser.objects.get(username=username)
-            models.ChatRoom.objects.create(name=roomname,participants=new_user)
-            return Response({'Sucess':'Room Created','name':roomname},status=status.HTTP_200_OK)
+            username = request.data.get('username')
+            if not username:
+                return Response({'Error': 'Username is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            roomname = str(uuid4())
+
+            new_user = models.CustomUser.objects.get(username=username)
+
+            chat_room = models.ChatRoom.objects.create(name=roomname)
+            chat_room.participants.add(request.user, new_user)
+
+            return Response({'Success': 'Room Created', 'name': roomname}, status=status.HTTP_201_CREATED)
+
+        except models.CustomUser.DoesNotExist:
+            return Response({'Error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
         except Exception as e:
-            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'Error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
