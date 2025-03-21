@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { useGetSingleCropQuery } from "@/redux/Service/marketApi";
 import { ArrowLeft, ShoppingCart, MessageCircle } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
 
@@ -67,10 +68,11 @@ const { data: crop, error, isLoading } = useGetSingleCropQuery(crop_id); // Pass
             <ShoppingCart className="w-4 h-4 mr-2" />
             Add to Cart
           </Button>
+          <Link href={`/profile/${crop?.data.publisher.username}`}>
           <Button variant="outline" className="flex-1">
             <MessageCircle className="w-4 h-4 mr-2" />
             Contact Seller
-          </Button>
+          </Button></Link>
         </CardFooter>
       </Card>
     </div>

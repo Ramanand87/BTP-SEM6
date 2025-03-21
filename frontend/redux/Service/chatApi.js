@@ -17,8 +17,8 @@ export const chatApi = createApi({
   tagTypes: ['Post'],
   endpoints: (builder) => ({
     // get all posts
-    getAllCrops: builder.query({
-      query: () => `/`,
+    getRooms: builder.query({
+      query: () => `/rooms/`,
       providesTags: [{ type: 'Post', id: 'LIST' }],
     }),
     getSingleCrop: builder.query({
@@ -119,7 +119,7 @@ export const chatApi = createApi({
 });
 
 export const {
-  useGetAllCropsQuery,
+  useGetRoomsQuery,
   useGetSingleCropQuery,
   useCreateRoomMutation,
   useDeletePostMutation,

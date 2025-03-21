@@ -35,6 +35,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { useCreateRoomMutation, useGetRoomsQuery } from "@/redux/Service/chatApi";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -45,6 +46,8 @@ export default function ProfilePage() {
   const [createRating] = useCreateRatingMutation();
   const [deleteRating] = useDeleteRatingMutation();
   const [updateRating] = useUpdateRatingMutation(); // Add update mutation
+  const { data: rooms,isError } = useGetRoomsQuery();
+  const [createRoom] = useCreateRoomMutation();
 
   const [rating, setRating] = useState(0);
   const [description, setDescription] = useState("");
@@ -53,9 +56,20 @@ export default function ProfilePage() {
   const [editingRatingId, setEditingRatingId] = useState(null); // Track which rating is being edited
   const userInfo = useSelector((state) => state.auth.userInfo);
   const currentUser = userInfo?.data.username;
-  const handleChatClick = () => {
-    router.push(`/chat/${username}`);
+  const handleChatClick = async () => {
+    if (rooms?.data?.some((room) => room.chat_user === username)) {
+      router.push(`/chat/${username}`);
+    } else {
+      try {
+        const response = await createRoom(username).unwrap();
+        console.log("Room created:", response);
+        router.push(`/chat/${username}`);
+      } catch (error) {
+        console.error("Error creating room:", error);
+      }
+    }
   };
+  
   // Check if the current user has already rated the profile user
   useEffect(() => {
     if (ratings) {
@@ -196,7 +210,7 @@ export default function ProfilePage() {
               <Crop className="w-4 h-4 mr-2" />
               Your Crops
             </Button>
-          {currentUser !== username && (
+            {currentUser !== username && (
         <Button onClick={handleChatClick} className="bg-green-600 hover:bg-green-700">
           Chat
         </Button>

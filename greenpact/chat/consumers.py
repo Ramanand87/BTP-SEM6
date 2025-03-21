@@ -72,7 +72,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @sync_to_async
     def get_chat_history(self, room_name, limit=50):
         room = ChatRoom.objects.get(name=room_name)
-        messages = ChatMessage.objects.filter(room=room).order_by('-timestamp')[:limit]
+        messages = ChatMessage.objects.filter(room=room).order_by('-timestamp').reverse()[:limit]
         return [
             {
                 'username': message.user.username,

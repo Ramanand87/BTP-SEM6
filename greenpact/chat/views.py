@@ -20,14 +20,6 @@ class MessagesView(APIView):
             return Response({'Error':str(e)},status=status.HTTP_200_OK)
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from uuid import uuid4
-from . import models, serializers
-
 class ChatRoomView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -35,7 +27,7 @@ class ChatRoomView(APIView):
     def get(self, request):
         try:
             rooms = models.ChatRoom.objects.filter(participants=request.user)
-            serial = serializers.ChatRoomSerializer(rooms, many=True)
+            serial = serializers.ChatRoomSerializer(rooms, many=True,context={"request": request})
             return Response({'data': serial.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'Error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

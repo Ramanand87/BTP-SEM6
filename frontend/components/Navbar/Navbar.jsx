@@ -24,6 +24,8 @@ export function Navbar() {
     { name: 'Market', href: '/market' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
+    { name: 'Chat', href: `/chat/`+ userInfo?.data.username} ,
+  
   ];
 
   // Handle logout

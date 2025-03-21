@@ -6,8 +6,8 @@ import Footer from "./Footer";
 export default function DynamicFooter() {
   const pathname = usePathname(); // Get current route
 
-  if (pathname === "/chat") {
-    return null; // Hide footer on /chat
+  if (pathname.startsWith("/chat/")) {
+    return null; // Hide footer for any chat username
   }
 
   return <Footer />;
