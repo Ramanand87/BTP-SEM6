@@ -19,6 +19,11 @@ export function Navbar() {
   // Retrieve user info from Redux state
   const userInfo = useSelector((state) => state.auth.userInfo);
 
+// socket.onmessage = function (event) {
+//     console.log("Message received:", event.data);
+// };
+
+
   const navItems = [
     { name: 'Home', href: '/' },
     { name: 'Market', href: '/market' },

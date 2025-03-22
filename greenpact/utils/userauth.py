@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate
 import requests
 import easyocr
 import re
+
 def authen(username, password):
     if username.isdigit():
         try:
@@ -56,3 +57,4 @@ def verify(data, image_file):
     if extracted_name and input_name in extracted_name:
         return True
     return False
+

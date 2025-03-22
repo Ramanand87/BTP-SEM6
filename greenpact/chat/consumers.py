@@ -2,9 +2,12 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from .models import ChatRoom, ChatMessage, Notification
 from user.models import CustomUser
-
 from asgiref.sync import sync_to_async
-
+from django.contrib.auth.models import AnonymousUser
+from rest_framework_simplejwt.tokens import AccessToken
+import re
+from django.db.models import Count, Max
+from django.db.models import Q, Count, Max, Subquery, OuterRef
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
@@ -28,29 +31,32 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data['message']
+        message = data.get('message',None)
         username = data['username']
 
         user = await self.get_user(username)
         room = await self.get_room(self.room_name)
 
-        chat_message = await sync_to_async(ChatMessage.objects.create)(
-            room=room,
-            user=user,
-            content=message
-        )
+        if message is None:
+            await self.mark_notifications_as_read(user)
+        else:    
+            chat_message = await sync_to_async(ChatMessage.objects.create)(
+                room=room,
+                user=user,
+                content=message
+            )
 
-        await self.notify_users(room, message, username)
+            await self.notify_users(room, message, username)
 
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': message,
-                'username': username,
-                'timestamp': chat_message.timestamp.isoformat(),
-            }
-        )
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': message,
+                    'username': username,
+                    'timestamp': chat_message.timestamp.isoformat(),
+                }
+            )
 
     async def chat_message(self, event):
         message = event['message']
@@ -110,45 +116,104 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
             for message in messages
         ]
+    @sync_to_async
+    def mark_notifications_as_read(self, user):
+        Notification.objects.filter(user=user, is_read=False).update(is_read=True)
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.user = self.scope['user']
-        if self.user.is_authenticated:
-            self.notification_group_name = f'notifications_{self.user.username}'
-            await self.channel_layer.group_add(
-                self.notification_group_name,
-                self.channel_name
-            )
-            await self.accept()
+        await self.accept()
+        self.user = None  
 
-            # ✅ Fetch unread notifications when user reconnects
-            unread_notifications = await self.get_unread_notifications(self.user)
-            await self.send(text_data=json.dumps({
-                'unread_notifications': unread_notifications
-            }))
-        else:
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        token = data.get("token")
+
+        if token:
+            self.user = await self.authenticate_user(token)
+
+        if not self.user:
             await self.close()
+            return
+
+        self.notification_group_name = f'notifications_{self.user.username}'
+        await self.channel_layer.group_add(
+            self.notification_group_name,
+            self.channel_name
+        )
+        notifications_data = await self.get_unread_notifications(self.user)
+        await self.send(text_data=json.dumps(notifications_data))
 
     async def disconnect(self, close_code):
-        if self.user.is_authenticated:
+        if self.user and self.user.is_authenticated:
             await self.channel_layer.group_discard(
                 self.notification_group_name,
                 self.channel_name
             )
 
     async def send_notification(self, event):
-        """ Send real-time notifications to connected users """
-        await self.send(text_data=json.dumps({
-            'notification': event['message'],
-            'sender': event['sender'],
-        }))
+        pattern = r"New message in (\S+) from \S+: (.+)"
+        match = re.search(pattern, event["message"])
+        
+        if match:
+            room_id = match.group(1)
+            message = match.group(2)
+
+            # Get updated notification count
+            notifications_data = await self.get_unread_notifications(self.user)
+
+            await self.send(text_data=json.dumps({
+                # "notification": {
+                #     "room": room_id,
+                #     "message": message
+                # },
+                # "sender": event["sender"],
+                **notifications_data
+            }))
+
+    @sync_to_async
+    def authenticate_user(self, token):
+        try:
+            access_token = AccessToken(token)
+            return CustomUser.objects.get(id=access_token["user_id"])
+        except Exception:
+            return None
 
     @sync_to_async
     def get_unread_notifications(self, user):
-        """ Get unread notifications for an offline user when they reconnect """
-        notifications = Notification.objects.filter(user=user, is_read=False)
-        return [
-            {'message': n.message, 'sender': n.sender.username, 'timestamp': n.timestamp.isoformat()}
-            for n in notifications
+        total_unread_count = Notification.objects.filter(user=user, is_read=False).count()
+        last_message_subquery = Notification.objects.filter(
+            room=OuterRef("room"), user=user
+        ).order_by("-timestamp").values("message")[:1]
+        last_messages = (
+            Notification.objects.filter(user=user)
+            .values("room__name")
+            .annotate(
+                last_message=Subquery(last_message_subquery),  # ✅ Fetch last message
+                unread_count=Count("id", filter=Q(is_read=False))  # ✅ Unread count
+            )
+        )
+
+        last_messages_list = [
+            {
+                room["room__name"]: {
+                    "message": room["last_message"],
+                    "unread": room["unread_count"]
+                }
+            }
+            for room in last_messages
         ]
+
+        return {
+            "total_unread": total_unread_count,
+            "lastmessages": last_messages_list
+        }
+
+
+    @sync_to_async
+    def mark_notifications_as_read(self, user, room_id=None):
+        query = Notification.objects.filter(user=user, is_read=False)
+        if room_id:
+            query = query.filter(room_=room_id)
+
+        query.update(is_read=True)
