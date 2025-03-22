@@ -1,6 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
-from .models import ChatRoom, ChatMessage
+from .models import ChatRoom, ChatMessage, Notification
 from user.models import CustomUser
 
 from asgiref.sync import sync_to_async
@@ -40,6 +40,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             content=message
         )
 
+        await self.notify_users(room, message, username)
+
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -61,6 +63,33 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'timestamp': timestamp,
         }))
 
+    async def notify_users(self, room, message, sender):
+        sender_user = await self.get_user(sender)
+        participants = await sync_to_async(list)(room.participants.exclude(username=sender))
+
+        for participant in participants:
+            await sync_to_async(Notification.objects.create)(
+                user=participant,
+                sender=sender_user,
+                room=room,
+                message=message,
+                is_read=False
+            )
+            notification_group_name = f'notifications_{participant.username}'
+            await self.channel_layer.group_send(
+                notification_group_name,
+                {
+                    'type': 'send_notification',
+                    'message': f'New message in {room.name} from {sender}: {message}',
+                    'sender': sender
+                }
+            )
+    async def send_notification(self, event):
+        await self.send(text_data=json.dumps({
+            'notification': event['message'],
+            'sender': event['sender'],
+        }))
+
     @sync_to_async
     def get_user(self, username):
         return CustomUser.objects.get(username=username)
@@ -68,7 +97,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @sync_to_async
     def get_room(self, room_name):
         return ChatRoom.objects.get(name=room_name)
-
+ 
     @sync_to_async
     def get_chat_history(self, room_name, limit=50):
         room = ChatRoom.objects.get(name=room_name)
@@ -80,4 +109,46 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'timestamp': message.timestamp.isoformat()
             }
             for message in messages
+        ]
+
+class NotificationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.user = self.scope['user']
+        if self.user.is_authenticated:
+            self.notification_group_name = f'notifications_{self.user.username}'
+            await self.channel_layer.group_add(
+                self.notification_group_name,
+                self.channel_name
+            )
+            await self.accept()
+
+            # ✅ Fetch unread notifications when user reconnects
+            unread_notifications = await self.get_unread_notifications(self.user)
+            await self.send(text_data=json.dumps({
+                'unread_notifications': unread_notifications
+            }))
+        else:
+            await self.close()
+
+    async def disconnect(self, close_code):
+        if self.user.is_authenticated:
+            await self.channel_layer.group_discard(
+                self.notification_group_name,
+                self.channel_name
+            )
+
+    async def send_notification(self, event):
+        """ Send real-time notifications to connected users """
+        await self.send(text_data=json.dumps({
+            'notification': event['message'],
+            'sender': event['sender'],
+        }))
+
+    @sync_to_async
+    def get_unread_notifications(self, user):
+        """ Get unread notifications for an offline user when they reconnect """
+        notifications = Notification.objects.filter(user=user, is_read=False)
+        return [
+            {'message': n.message, 'sender': n.sender.username, 'timestamp': n.timestamp.isoformat()}
+            for n in notifications
         ]

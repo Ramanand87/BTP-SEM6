@@ -20,7 +20,7 @@ import {
 import { FeedbackForm } from "../../components/helpandsupport/feedback-form"
 import { ResourcesSection } from "../../components/helpandsupport/resource-section"
 import { FAQSection } from "../../components/helpandsupport/faqs"
-
+import FlowChart, {flowchart} from "../../components/Flowchart/Flowchart"
 export default  function HelpAndSupport() {
   const [audioEnabled, setAudioEnabled] = useState(false)
   const [activeTab, setActiveTab] = useState("farmer")
@@ -190,7 +190,25 @@ export default  function HelpAndSupport() {
           </CardContent>
         </Card>
       </motion.div>
-      
+      <motion.div
+        className="mt-12 mb-16"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.9, duration: 0.5 }}
+      >
+        <Card>
+          <CardHeader className="bg-primary/20 rounded-t-lg">
+            <CardTitle className="flex items-center space-x-2">
+              <ThumbsUp className="w-6 h-6" />
+              <span>Flowchart</span>
+            </CardTitle>
+            <CardDescription>Understand the flow of website</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <FlowChart userType={activeTab} />
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   )
 }

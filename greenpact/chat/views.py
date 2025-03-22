@@ -7,7 +7,7 @@ from . import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from uuid import uuid4
-# Create your views here.
+
 class MessagesView(APIView):
     authentication_classes=[JWTAuthentication]
     permission_classes=[IsAuthenticated]
@@ -23,7 +23,7 @@ class MessagesView(APIView):
 class ChatRoomView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-
+ 
     def get(self, request):
         try:
             rooms = models.ChatRoom.objects.filter(participants=request.user)
@@ -52,3 +52,26 @@ class ChatRoomView(APIView):
 
         except Exception as e:
             return Response({'Error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class UnreadNotificationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            notifications = models.Notification.objects.filter(user=request.user, is_read=False)
+            serializer = serializers.NotificationSerializer(notifications, many=True)
+            return Response({"notifications": serializer.data}) 
+        except Exception as e:
+            return Response({'Error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+class MarkNotificationsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, notification_id):
+        try:
+            notification = models.Notification.objects.get(id=notification_id, user=request.user)
+            notification.is_read = True
+            notification.save()
+            return Response({"message": "Notification marked as read"})
+        except models.Notification.DoesNotExist:
+            return Response({"error": "Notification not found"}, status=404)

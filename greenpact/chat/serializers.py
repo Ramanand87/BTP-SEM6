@@ -9,6 +9,11 @@ class MessageSerializer(ModelSerializer):
         model=models.ChatMessage
         fields='__all__'
 
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Notification
+        fields = ['sender', 'message', 'is_read', 'timestamp']
+
 class ChatRoomSerializer(ModelSerializer):
     chat_user= serializers.SerializerMethodField()
     profile=serializers.SerializerMethodField()
