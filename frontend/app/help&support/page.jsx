@@ -111,43 +111,6 @@ export default  function HelpAndSupport() {
             initial="hidden"
             animate="visible"
           >
-            <motion.div variants={itemVariants}>
-              <Card className="h-full">
-                <CardHeader className="bg-primary/20 rounded-t-lg">
-                  <CardTitle className="flex items-center space-x-2">
-                    <HelpCircle className="w-6 h-6" />
-                    <span>How to Get Help</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/20">
-                        <Phone className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium">Call Helpline</h3>
-                        <p className="text-muted-foreground">1800-FARM-HELP (1800-3276-4357)</p>
-                        <p className="text-sm text-muted-foreground">Available 7 AM - 7 PM</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/20">
-                        <MessageSquare className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium">Visit Support Center</h3>
-                        <p className="text-muted-foreground">Find your nearest support center</p>
-                        <Button variant="link" className="p-0 h-auto">
-                          <span>Find Center</span>
-                          <ChevronRight className="w-4 h-4 ml-1" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
 
             <motion.div variants={itemVariants} className="md:col-span-2">
               <Card>
@@ -172,40 +135,6 @@ export default  function HelpAndSupport() {
             initial="hidden"
             animate="visible"
           >
-            <motion.div variants={itemVariants}>
-              <Card className="h-full">
-                <CardHeader className="bg-primary/20 rounded-t-lg">
-                  <CardTitle className="flex items-center space-x-2">
-                    <HelpCircle className="w-6 h-6" />
-                    <span>How to Get Help</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/20">
-                        <Phone className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium">Call Business Support</h3>
-                        <p className="text-muted-foreground">1800-CONT-HELP (1800-2668-4357)</p>
-                        <p className="text-sm text-muted-foreground">Available 9 AM - 6 PM</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/20">
-                        <MessageSquare className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium">Email Support</h3>
-                        <p className="text-muted-foreground">support@contractfarming.com</p>
-                        <p className="text-sm text-muted-foreground">Response within 24 hours</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
 
             <motion.div variants={itemVariants} className="md:col-span-2">
               <Card>
@@ -223,26 +152,6 @@ export default  function HelpAndSupport() {
           </motion.div>
         </TabsContent>
       </Tabs>
-
-      <motion.div
-        className="mt-12 mb-16"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.9, duration: 0.5 }}
-      >
-        <Card>
-          <CardHeader className="bg-primary/20 rounded-t-lg">
-            <CardTitle className="flex items-center space-x-2">
-              <ThumbsUp className="w-6 h-6" />
-              <span>Share Your Feedback</span>
-            </CardTitle>
-            <CardDescription>Help us improve our platform by sharing your experience</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <FeedbackForm userType={activeTab} />
-          </CardContent>
-        </Card>
-      </motion.div>
       <motion.div
         className="mt-12 mb-16"
         initial={{ opacity: 0 }}
@@ -262,6 +171,26 @@ export default  function HelpAndSupport() {
           </CardContent>
         </Card>
       </motion.div>
+      <motion.div
+        className="mt-12 mb-16"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.9, duration: 0.5 }}
+      >
+        <Card>
+          <CardHeader className="bg-primary/20 rounded-t-lg">
+            <CardTitle className="flex items-center space-x-2">
+              <ThumbsUp className="w-6 h-6" />
+              <span>Share Your Feedback</span>
+            </CardTitle>
+            <CardDescription>Help us improve our platform by sharing your experience</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <FeedbackForm userType={activeTab} />
+          </CardContent>
+        </Card>
+      </motion.div>
+      
     </div>
   )
 }
