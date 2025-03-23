@@ -20,7 +20,7 @@ class Notification(models.Model):
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
-
+    
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         channel_layer = get_channel_layer()

@@ -2,7 +2,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from .models import ChatRoom, ChatMessage, Notification
 from user.models import CustomUser
-from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async,async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.tokens import AccessToken
 import re
@@ -31,32 +31,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data.get('message',None)
+        message = data.get('message')
         username = data['username']
 
         user = await self.get_user(username)
         room = await self.get_room(self.room_name)
 
-        if message is None:
-            await self.mark_notifications_as_read(user)
-        else:    
-            chat_message = await sync_to_async(ChatMessage.objects.create)(
-                room=room,
-                user=user,
-                content=message
-            )
+            
+        chat_message = await sync_to_async(ChatMessage.objects.create)(
+            room=room,
+            user=user,
+            content=message
+        )
 
-            await self.notify_users(room, message, username)
+        await self.notify_users(room, message, username)
 
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'chat_message',
-                    'message': message,
-                    'username': username,
-                    'timestamp': chat_message.timestamp.isoformat(),
-                }
-            )
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'chat_message',
+                'message': message,
+                'username': username,
+                'timestamp': chat_message.timestamp.isoformat(),
+            }
+        )
 
     async def chat_message(self, event):
         message = event['message']
@@ -116,9 +114,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
             for message in messages
         ]
-    @sync_to_async
-    def mark_notifications_as_read(self, user):
-        Notification.objects.filter(user=user, is_read=False).update(is_read=True)
+    
+
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -128,7 +125,9 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         token = data.get("token")
-
+        type=data.get("type",None)
+        room_name = data.get("room_name", None)
+        
         if token:
             self.user = await self.authenticate_user(token)
 
@@ -136,6 +135,9 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
+        if type == "mark_as_read" and room_name:
+            await self.mark_notifications_as_read(self.user,room_name)
+        
         self.notification_group_name = f'notifications_{self.user.username}'
         await self.channel_layer.group_add(
             self.notification_group_name,
@@ -158,8 +160,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         if match:
             room_id = match.group(1)
             message = match.group(2)
-
-            # Get updated notification count
             notifications_data = await self.get_unread_notifications(self.user)
 
             await self.send(text_data=json.dumps({
@@ -208,12 +208,20 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             "total_unread": total_unread_count,
             "lastmessages": last_messages_list
         }
-
-
+    async def update_unread_count(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "notification_update",
+            "unread_count": event["unread_count"],
+        }))
+    
     @sync_to_async
-    def mark_notifications_as_read(self, user, room_id=None):
+    def mark_notifications_as_read(self, user, room_id):
         query = Notification.objects.filter(user=user, is_read=False)
         if room_id:
-            query = query.filter(room_=room_id)
-
+            query = query.filter(room__name=room_id)
         query.update(is_read=True)
+        unread_count = Notification.objects.filter(user=user, is_read=False).count()
+
+
+
+    

@@ -6,37 +6,73 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, X, LogOut } from 'lucide-react';
+import { Menu, X, LogOut, Bell } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '@/redux/features/authFeature';
 import FarmerLogo from "@/components/assets/FramerLogo";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [totalUnread, setTotalUnread] = useState(0);
   const router = useRouter();
   const dispatch = useDispatch();
 
   // Retrieve user info from Redux state
   const userInfo = useSelector((state) => state.auth.userInfo);
+  const token = userInfo?.access;
 
-// socket.onmessage = function (event) {
-//     console.log("Message received:", event.data);
-// };
+  useEffect(() => {
+    if (!token) return;
 
+    // Connect WebSocket
+    const ws = new WebSocket('ws://localhost:5000/ws/notifications/');
+
+    ws.onopen = () => {
+      console.log("WebSocket connected");
+      ws.send(JSON.stringify({ token })); // Send token for authentication
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("Received notification:", data);
+
+      if (data?.total_unread !== undefined) {
+        setTotalUnread(data.total_unread); // Update unread count
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket disconnected");
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    return () => {
+      if (ws) ws.close();
+    };
+  }, [token]);
 
   const navItems = [
     { name: 'Home', href: '/' },
     { name: 'Market', href: '/market' },
-    { name: 'About', href: '/about' },
+    { name: 'Help & Support', href: '/help&support' },
     { name: 'Contact', href: '/contact' },
-    { name: 'Chat', href: `/chat/`+ userInfo?.data.username} ,
-  
+    { name: 'Chat', href: `/chat/${userInfo?.data.username}` },
   ];
 
   // Handle logout
   const handleLogout = () => {
-    dispatch(logout()); // Clear user info from Redux and local storage
-    router.push('/login'); // Redirect to login page
+    dispatch(logout());
+    router.push('/login');
+  };
+
+  // Redirect to chat when clicking on the notification icon
+  const handleNotificationClick = () => {
+    if (userInfo?.data.username) {
+      router.push(`/chat/${userInfo.data.username}`);
+    }
   };
 
   return (
@@ -96,7 +132,18 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {userInfo ? (
             <div className="flex items-center gap-4">
-              {/* Display user profile image and name */}
+              {/* Notification Bell */}
+              <div className="relative cursor-pointer" onClick={handleNotificationClick}>
+  <Bell className="h-6 w-6 text-gray-700 hover:text-green-700" />
+  {totalUnread > 0 && (
+    <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center w-5 h-5">
+      {totalUnread}
+    </span>
+  )}
+</div>
+
+
+              {/* User Profile */}
               <Link href={`/profile/${userInfo.data.username}`} className="flex items-center gap-2">
                 {userInfo.profile.image && (
                   <img
@@ -110,7 +157,7 @@ export function Navbar() {
                 </span>
               </Link>
 
-              {/* Logout button */}
+              {/* Logout Button */}
               <Button
                 variant="outline"
                 onClick={handleLogout}
