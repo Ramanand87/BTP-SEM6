@@ -1,0 +1,12 @@
+{
+  "id": "1742889744361",
+  "fileName": "Contract_Purchase_Agreement_1742889744361.pdf",
+  "contractType": "Purchase Agreement",
+  "farmerName": "John Doe",
+  "customerName": "Jane Smith",
+  "productDetails": "Organic Tomatoes",
+  "quantity": "1000 kg",
+  "price": "2000",
+  "deliveryDate": "2024-04-01",
+  "createdAt": "2025-03-25T08:02:24.400Z"
+}
