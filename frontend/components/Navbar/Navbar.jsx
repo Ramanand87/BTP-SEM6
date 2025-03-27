@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -15,6 +15,7 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
   const router = useRouter();
+  const pathname = usePathname(); // Get current route
   const dispatch = useDispatch();
 
   // Retrieve user info from Redux state
@@ -107,7 +108,8 @@ export function Navbar() {
                     key={item.name}
                     href={item.href}
                     onClick={() => setIsOpen(false)}
-                    className="text-lg font-medium transition-colors hover:text-green-700"
+                    className={`text-lg font-medium transition-colors 
+                      ${pathname === item.href ? 'text-green-700 font-semibold' : 'hover:text-green-700'}`}
                   >
                     {item.name}
                   </Link>
@@ -122,7 +124,8 @@ export function Navbar() {
             <Link
               key={item.name}
               href={item.href}
-              className="text-sm font-medium transition-colors hover:text-green-700"
+              className={`text-sm font-medium transition-colors 
+                ${pathname === item.href ? 'text-green-700 font-semibold' : 'hover:text-green-700'}`}
             >
               {item.name}
             </Link>
@@ -134,14 +137,13 @@ export function Navbar() {
             <div className="flex items-center gap-4">
               {/* Notification Bell */}
               <div className="relative cursor-pointer" onClick={handleNotificationClick}>
-  <Bell className="h-6 w-6 text-gray-700 hover:text-green-700" />
-  {totalUnread > 0 && (
-    <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center w-5 h-5">
-      {totalUnread}
-    </span>
-  )}
-</div>
-
+                <Bell className="h-6 w-6 text-gray-700 hover:text-green-700" />
+                {totalUnread > 0 && (
+                  <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center w-5 h-5">
+                    {totalUnread}
+                  </span>
+                )}
+              </div>
 
               {/* User Profile */}
               <Link href={`/profile/${userInfo.data.username}`} className="flex items-center gap-2">

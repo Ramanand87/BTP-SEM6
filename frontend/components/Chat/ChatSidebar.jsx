@@ -128,7 +128,7 @@ const ChatSidebar = ({ rooms, currentChat, setCurrentChat }) => {
                 </Avatar>
                 <div className="ml-3 flex-1">
                   <p className="font-semibold">{chat.profile.name}</p>
-                  <p className={`${roomNotif?.message ? "text-black font-bold" : "text-gray-500"} text-xs`}>
+                  <p className={`${roomNotif?.message ? "text-zinc-600 font-medium" : "text-gray-500"} text-xs`}>
                     {roomNotif?.message || "@" + chat.chat_user}
                   </p>
                 </div>
