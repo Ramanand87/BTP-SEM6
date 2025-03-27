@@ -59,7 +59,7 @@ export function Navbar() {
     { name: 'Home', href: '/' },
     { name: 'Market', href: '/market' },
     { name: 'Help & Support', href: '/help&support' },
-    { name: 'Contact', href: '/contact' },
+    { name: 'Contracts', href: '/contracts' },
     { name: 'Chat', href: `/chat/${userInfo?.data.username}` },
   ];
 
