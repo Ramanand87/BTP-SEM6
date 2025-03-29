@@ -8,6 +8,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "contract-api": "file:",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "path": "^0.12.7",

@@ -4,10 +4,9 @@ from . import models
 from user.models import FarmerProfile
 from user.serializers import userSerializers,FarmerProfileSerializer
 
-class CropsSeralizer(ModelSerializer):
+class CropsSerializer(ModelSerializer):
     publisher=userSerializers(read_only=True)
     publisher_profile = serializers.SerializerMethodField()
-    # crop_image=serializers.SerializerMethodField()
     class Meta:
         model=models.Crops
         fields='__all__'

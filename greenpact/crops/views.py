@@ -18,21 +18,21 @@ class CropView(APIView):
         if pk is None:
             try:
                 crops=models.Crops.objects.all()
-                serial=serializers.CropsSeralizer(crops,many=True)
+                serial=serializers.CropsSerializer(crops,many=True)
                 return Response({'data':serial.data},status=status.HTTP_200_OK)
             except Exception as e:
                 return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             try: 
                 crops=get_object_or_404(models.Crops,crop_id=pk)
-                serial=serializers.CropsSeralizer(crops)
+                serial=serializers.CropsSerializer(crops)
                 return Response({'data':serial.data},status=status.HTTP_200_OK)
             except Exception as e:
                 return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def post(self,request):
         try:
-            serial=serializers.CropsSeralizer(data=request.data,context={'request': request})
+            serial=serializers.CropsSerializer(data=request.data,context={'request': request})
             if serial.is_valid():
                 serial.save()
                 return Response({'Sucess':'Crop Advertisement Created'},status=status.HTTP_201_CREATED)
@@ -47,7 +47,7 @@ class CropView(APIView):
             print("Incoming request data:", request.data)
             
             crop = get_object_or_404(models.Crops, crop_id=pk)
-            serial = serializers.CropsSeralizer(crop, data=request.data, partial=True)
+            serial = serializers.CropsSerializer(crop, data=request.data, partial=True)
             
             if serial.is_valid():
                 serial.save()
@@ -72,7 +72,7 @@ class CurrUserCrops(APIView):
     def get(self,request):
         try:
             crops=get_list_or_404(models.Crops,publisher=request.user)
-            serial=serializers.CropsSeralizer(crops,many=True)
+            serial=serializers.CropsSerializer(crops,many=True)
             return Response(serial.data,status=status.HTTP_200_OK)
         except Http404:
             return Response({'data':[]}, status=status.HTTP_200_OK)

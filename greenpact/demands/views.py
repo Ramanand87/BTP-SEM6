@@ -7,12 +7,10 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from . import models
 from . import serializers
 from django.http import Http404
-from rest_framework.parsers import MultiPartParser, FormParser
 
 class DemandView(APIView):
     authentication_classes=[JWTAuthentication]
     permission_classes=[IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
     
     def get(self,request,pk=None):
         if pk is None:

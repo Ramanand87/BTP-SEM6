@@ -33,7 +33,8 @@ INSTALLED_APPS = [
     'ratings',
     'demands',
     'chat',
-    'channels'
+    'contracts',
+    'channels',
 ]
 
 MIDDLEWARE = [
