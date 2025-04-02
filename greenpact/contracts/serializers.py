@@ -13,6 +13,10 @@ class ContractSerializer(serializers.ModelSerializer):
     farmer=userSerializers(read_only=True)
     buyer=userSerializers(read_only=True)
     crop=CropsSerializer(read_only=True)
+    terms = serializers.ListField(
+        child=serializers.CharField(),
+        required=False
+    )
     class Meta:
         model = models.Contract
         fields = '__all__'
@@ -28,6 +32,8 @@ class ContractSerializer(serializers.ModelSerializer):
                 return Response({'Error': 'Cant Create Contract'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             raise serializers.ValidationError({"error": str(e)})
+        
+
 class ContractDocSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ContractDoc
