@@ -11,7 +11,11 @@ router.post('/create', async (req, res) => {
             orderId,
             orderDate,
             farmerName,
+            farmerContact,
+            farmerAddress,
             customerName,
+            customerContact,
+            customerAddress,
             productDetails,
             deliveryDate,
             deliveryLocation,
@@ -49,103 +53,176 @@ router.post('/create', async (req, res) => {
         const writeStream = fs.createWriteStream(pdfPath);
         doc.pipe(writeStream);
 
-        // Helper function to draw a horizontal line
-        function drawLine() {
-            doc.moveDown(0.5);
-            doc.moveTo(50, doc.y)
-               .lineTo(doc.page.width - 50, doc.y)
-               .stroke();
-            doc.moveDown(0.5);
-        }
-
         // Title
-        doc.fontSize(16)
+        doc.fontSize(18)
            .font('Helvetica-Bold')
-           .text('Contract Agreement', { align: 'center' });
+           .fillColor('#333333')
+           .text('AGRICULTURAL SALES CONTRACT', { align: 'center' });
+        doc.moveDown(1);
+
+        // Parties Section
+        doc.fontSize(14)
+           .font('Helvetica-Bold')
+           .fillColor('#333333')
+           .text('PARTIES', { underline: true });
         doc.moveDown(0.5);
-
-        // Contract ID and Date
         doc.fontSize(10)
            .font('Helvetica')
-           .text(`Contract ID: ${contractId}`)
-           .text(`Date: ${new Date(orderDate).toLocaleDateString()}`);
-        
-        drawLine();
+           .fillColor('#000000')
+           .text('This Agricultural Sales Contract (hereinafter referred to as the "Agreement") is entered into on ' + 
+                 new Date(orderDate).toLocaleDateString() + ', by and between:');
+        doc.moveDown(1);
 
-        // Parties Involved
+        // Farmer Details
         doc.fontSize(12)
            .font('Helvetica-Bold')
-           .text('Parties Involved');
+           .fillColor('#555555')
+           .text('1. Farmer Details');
         doc.fontSize(10)
            .font('Helvetica')
-           .text(`Farmer: ${farmerName}`)
-           .text(`Customer: ${customerName}`);
-        
-        drawLine();
+           .fillColor('#000000')
+           .text('Name: ' + farmerName)
+           .text('Contact Number: ' + (farmerContact || '_______________'))
+           .text('Address: ' + (farmerAddress || '_______________'));
+        doc.moveDown(1);
 
-        // Product Details
+        // Customer Details
         doc.fontSize(12)
            .font('Helvetica-Bold')
-           .text('Product Details');
+           .fillColor('#555555')
+           .text('2. Customer Details');
         doc.fontSize(10)
            .font('Helvetica')
-           .text(`Crop Name: ${productDetails.cropName || 'Not specified'}`)
-           .text(`Quantity: ${productDetails.quantity} kg`)
-           .text(`Price per unit: ₹${productDetails.price}`)
-           .text(`Total Amount: ₹${productDetails.totalAmount}`)
-           .text(`Delivery Date: ${new Date(deliveryDate).toLocaleDateString()}`)
-           .text(`Delivery Location: ${deliveryLocation}`);
-        
-        drawLine();
+           .fillColor('#000000')
+           .text('Name: ' + customerName)
+           .text('Contact Number: ' + (customerContact || '_______________'))
+           .text('Address: ' + (customerAddress || '_______________'));
+        doc.moveDown(0.5);
+        doc.text('(All parties collectively referred to as "Parties")');
+        doc.moveDown(1);
+
+        // WHEREAS Section
+        doc.fontSize(14)
+           .font('Helvetica-Bold')
+           .fillColor('#333333')
+           .text('WHEREAS', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(10)
+           .font('Helvetica')
+           .fillColor('#000000')
+           .text('The Farmer agrees to sell and deliver the specified crop to the Customer under the terms set forth herein.')
+           .moveDown(0.5)
+           .text('The Customer agrees to purchase and accept the crop as per the agreed-upon terms.');
+        doc.moveDown(1);
+
+        // Order Details
+        doc.fontSize(14)
+           .font('Helvetica-Bold')
+           .fillColor('#333333')
+           .text('ORDER DETAILS', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(10)
+           .font('Helvetica')
+           .fillColor('#000000')
+           .text('Order ID: ' + orderId)
+           .text('Order Date: ' + new Date(orderDate).toLocaleDateString())
+           .text('Crop Name: ' + (productDetails.cropName || '_______________'))
+           .text('Quantity: ' + (productDetails.quantity || '_______________') + ' kg')
+           .text('Price per kg: ₹' + (productDetails.price || '_______________'))
+           .text('Total Amount: ₹' + (productDetails.totalAmount || '_______________'))
+           .text('Delivery Date: ' + new Date(deliveryDate).toLocaleDateString())
+           .text('Delivery Location: ' + (deliveryLocation || '_______________'));
+        doc.moveDown(1);
 
         // Terms and Conditions
-        doc.fontSize(12)
+        doc.fontSize(14)
            .font('Helvetica-Bold')
-           .text('Terms and Conditions');
-        doc.fontSize(10)
-           .font('Helvetica');
+           .fillColor('#333333')
+           .text('TERMS AND CONDITIONS', { underline: true });
+        doc.moveDown(0.5);
 
-        const terms_list = [
-            'Payment Terms: Payment will be made within 7 days of successful delivery and quality check.',
-            'Quality Compliance: The produce must meet the agreed quality standards; failure to comply may lead to rejection or reduced payment.',
-            'Delivery Terms: The farmer is responsible for delivering the produce to the agreed location on the specified date.',
-            'Force Majeure Clause: Neither party shall be held responsible for delays due to natural disasters, strikes, or other unforeseen events.',
-            'Dispute Resolution: Any disputes arising will be resolved through arbitration or local governing bodies.',
-            'Cancellation Policy: Either party may cancel the contract with 15 days\' notice, subject to applicable penalties.',
-            'Confidentiality: Personal and business details will be kept confidential and not shared with third parties without consent.',
-            'Liability Clause: Both parties agree that liability for non-performance shall not exceed the agreed contract value.',
-            'Legal Jurisdiction: Any legal disputes will be subject to the jurisdiction of the local court.',
-            'Electronic Agreement: This contract can be signed digitally and holds the same legal value as a physical signature.'
+        const terms = [
+            {
+                title: 'Payment Terms',
+                content: 'Full payment shall be made upon delivery of the crop.'
+            },
+            {
+                title: 'Quality Compliance',
+                content: 'The crop must meet the agreed-upon quality standards. The Customer reserves the right to inspect the crop upon delivery.'
+            },
+            {
+                title: 'Delivery Terms',
+                content: 'The Farmer shall ensure timely delivery on the specified date and location. Any delays must be communicated in writing.'
+            },
+            {
+                title: 'Force Majeure',
+                content: 'If an unforeseen event prevents either party from fulfilling their obligations, the contract terms may be adjusted accordingly.'
+            },
+            {
+                title: 'Dispute Resolution',
+                content: 'Any disputes arising under this contract shall be resolved through mutual discussion. If unresolved, the matter shall be referred to arbitration in accordance with the Indian Arbitration and Conciliation Act, 1996.'
+            },
+            {
+                title: 'Legal Compliance',
+                content: 'Both parties shall comply with all applicable laws and regulations regarding the sale and transportation of agricultural goods.'
+            },
+            {
+                title: 'Indemnification',
+                content: 'Each party agrees to indemnify and hold harmless the other against any losses, damages, or liabilities resulting from non-compliance with the contract.'
+            }
         ];
 
-        terms_list.forEach((term, index) => {
-            doc.text(`• ${term}`, {
-                indent: 20,
-                align: 'left',
-                lineGap: 5
-            });
+        terms.forEach(term => {
+            doc.fontSize(12)
+               .font('Helvetica-Bold')
+               .fillColor('#000000')
+               .text(term.title + ' – ' + term.content, {
+                   align: 'justify',
+                   lineGap: 5
+               });
+            doc.moveDown(0.5);
         });
-        
-        drawLine();
 
         // Signatures
-        doc.fontSize(12)
+        doc.fontSize(14)
            .font('Helvetica-Bold')
-           .text('Signatures');
-        doc.moveDown();
-
-        // Farmer's signature
+           .fillColor('#333333')
+           .text('SIGNATURES', { underline: true });
+        doc.moveDown(0.5);
         doc.fontSize(10)
            .font('Helvetica')
-           .text('Farmer\'s Signature:')
-           .text(`Name: ${signatures.farmer}`)
-           .text(`Date: ${new Date(signatures.date).toLocaleDateString()}`);
-        doc.moveDown();
+           .fillColor('#000000')
+           .text('The Parties hereby agree to the terms and conditions set forth in this Agreement as demonstrated by their signatures below:');
+        doc.moveDown(1);
+
+        // Farmer's signature
+        doc.text('Farmer\'s Signature: _______________')
+           .text('Name: ' + signatures.farmer)
+           .text('Date: ' + new Date(signatures.date).toLocaleDateString());
+        doc.moveDown(1);
 
         // Customer's signature
-        doc.text('Company Representative\'s Signature:')
-           .text(`Name: ${signatures.customer}`)
-           .text(`Date: ${new Date(signatures.date).toLocaleDateString()}`);
+        doc.text('Customer\'s Signature: _______________')
+           .text('Name: ' + signatures.customer)
+           .text('Date: ' + new Date(signatures.date).toLocaleDateString());
+        doc.moveDown(1);
+
+        // Footer
+        doc.fontSize(10)
+           .font('Helvetica')
+           .fillColor('#777777')
+           .text('"This agreement is legally binding upon signing by both parties."', { align: 'center' });
+        
+        // Add page number at the bottom right
+        doc.fontSize(10)
+           .font('Helvetica')
+           .fillColor('#777777')
+           .text(
+               'Page 1 of 1',
+               50,
+               doc.page.height - 50,
+               { align: 'right' }
+           );
 
         // Finalize PDF
         doc.end();

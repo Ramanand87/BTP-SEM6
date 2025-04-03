@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     'ratings',
     'demands',
     'chat',
-    'contracts',
+    'contract',
     'channels',
 ]
 
