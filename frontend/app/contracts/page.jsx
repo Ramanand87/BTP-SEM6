@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus, Trash2, Send } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, Send, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -33,6 +33,10 @@ const ContractsPage = () => {
 
   const [deliveryDate, setDeliveryDate] = useState();
   const [newTerm, setNewTerm] = useState('');
+  const [farmerSignature, setFarmerSignature] = useState(null);
+  const [customerSignature, setCustomerSignature] = useState(null);
+  const [farmerSignaturePreview, setFarmerSignaturePreview] = useState('');
+  const [customerSignaturePreview, setCustomerSignaturePreview] = useState('');
 
   // Available crops
   const crops = [
@@ -71,6 +75,45 @@ const ContractsPage = () => {
     }
   };
 
+  // Handle signature file upload
+  const handleSignatureUpload = (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.match(/^image\/(jpeg|png|gif)$/)) {
+      alert('Please upload an image file (JPEG, PNG, or GIF)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size should be less than 5MB');
+      return;
+    }
+
+    // Set the file in state
+    if (type === 'farmer') {
+      setFarmerSignature(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFarmerSignaturePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      console.log('Farmer signature uploaded:', file.name);
+    } else {
+      setCustomerSignature(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCustomerSignaturePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      console.log('Customer signature uploaded:', file.name);
+    }
+  };
+
   // Handle term selection
   const handleTermToggle = (termId) => {
     setFormData(prev => {
@@ -103,12 +146,46 @@ const ContractsPage = () => {
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    const contract = {
-      ...formData,
-      deliveryDate: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : null
-    };
-    console.log('Contract submitted:', contract);
+    
+    // Create FormData object to send files
+    const formDataToSend = new FormData();
+    
+    // Add all form fields
+    Object.keys(formData).forEach(key => {
+      if (Array.isArray(formData[key])) {
+        formData[key].forEach(item => {
+          formDataToSend.append(key, item);
+        });
+      } else {
+        formDataToSend.append(key, formData[key]);
+      }
+    });
+    
+    // Add delivery date
+    if (deliveryDate) {
+      formDataToSend.append('deliveryDate', format(deliveryDate, 'yyyy-MM-dd'));
+    }
+    
+    // Add signature files if available
+    if (farmerSignature) {
+      formDataToSend.append('farmerSignature', farmerSignature);
+      console.log('Farmer signature added:', farmerSignature.name);
+    }
+    
+    if (customerSignature) {
+      formDataToSend.append('customerSignature', customerSignature);
+      console.log('Customer signature added:', customerSignature.name);
+    }
+    
+    // Add signature names and date
+    formDataToSend.append('signatures[farmer]', 'Farmer Name');
+    formDataToSend.append('signatures[customer]', 'Customer Name');
+    formDataToSend.append('signatures[date]', new Date().toISOString());
+    
     // Here you would typically send to your backend
+    console.log('Contract submitted with signatures');
+    
+    // For demonstration, just show an alert
     alert('Contract created successfully!');
   };
 
@@ -230,6 +307,100 @@ const ContractsPage = () => {
                 />
               </PopoverContent>
             </Popover>
+          </div>
+        </div>
+
+        {/* Digital Signatures Section */}
+        <div className="border-2 border-green-500 p-6 rounded-lg bg-green-50 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <h3 className="text-xl font-bold text-green-800">Digital Signatures</h3>
+              <span className="bg-green-200 text-green-800 text-xs px-2 py-1 rounded-full font-medium">Required</span>
+            </div>
+          </div>
+          
+          <p className="text-sm text-gray-600 mb-6">Please upload signature images for both parties to complete the contract. Accepted formats: JPEG, PNG, GIF (max 5MB)</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Farmer Signature Upload */}
+            <div className="bg-white p-4 rounded-lg border border-green-200">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Farmer's Signature</label>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Input
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif"
+                    onChange={(e) => handleSignatureUpload(e, 'farmer')}
+                    className="hidden"
+                    id="farmer-signature"
+                  />
+                  <label
+                    htmlFor="farmer-signature"
+                    className="flex items-center justify-center px-4 py-2 border border-green-300 rounded-md bg-white hover:bg-green-50 cursor-pointer transition-colors duration-150 text-sm font-medium text-green-700"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose File
+                  </label>
+                  {farmerSignature && (
+                    <span className="text-sm text-gray-500">{farmerSignature.name}</span>
+                  )}
+                </div>
+                
+                {farmerSignaturePreview ? (
+                  <div className="border rounded-md p-2 bg-white">
+                    <img 
+                      src={farmerSignaturePreview} 
+                      alt="Farmer Signature Preview" 
+                      className="max-h-20 object-contain mx-auto"
+                    />
+                  </div>
+                ) : (
+                  <div className="border rounded-md p-4 bg-gray-50 text-center text-sm text-gray-500">
+                    No signature uploaded
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Customer Signature Upload */}
+            <div className="bg-white p-4 rounded-lg border border-green-200">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Customer's Signature</label>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Input
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif"
+                    onChange={(e) => handleSignatureUpload(e, 'customer')}
+                    className="hidden"
+                    id="customer-signature"
+                  />
+                  <label
+                    htmlFor="customer-signature"
+                    className="flex items-center justify-center px-4 py-2 border border-green-300 rounded-md bg-white hover:bg-green-50 cursor-pointer transition-colors duration-150 text-sm font-medium text-green-700"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose File
+                  </label>
+                  {customerSignature && (
+                    <span className="text-sm text-gray-500">{customerSignature.name}</span>
+                  )}
+                </div>
+                
+                {customerSignaturePreview ? (
+                  <div className="border rounded-md p-2 bg-white">
+                    <img 
+                      src={customerSignaturePreview} 
+                      alt="Customer Signature Preview" 
+                      className="max-h-20 object-contain mx-auto"
+                    />
+                  </div>
+                ) : (
+                  <div className="border rounded-md p-4 bg-gray-50 text-center text-sm text-gray-500">
+                    No signature uploaded
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

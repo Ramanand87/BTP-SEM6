@@ -11,6 +11,9 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve static files from the contracts directory
+app.use('/contracts', express.static(path.join(__dirname, 'contracts')));
+
 // Contract routes
 app.use('/api/contracts', contractRoutes);
 
@@ -26,4 +29,4 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-}); 
+});
