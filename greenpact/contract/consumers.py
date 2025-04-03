@@ -17,7 +17,7 @@ class ContractConsumer(AsyncWebsocketConsumer):
             token=data.get("token",None)
 
             if token:
-                self.user=await self.get_user(token)
+                self.user=await self.authenticate_user(token)
             if self.user:
                 self.contract_groupname=f'contract_{self.user.username}'
                 await self.channel_layer.group_add(
