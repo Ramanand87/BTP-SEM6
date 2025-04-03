@@ -48,32 +48,29 @@ class userSerializers(ModelSerializer):
 
 class FarmerProfileSerializer(ModelSerializer):
     user = userSerializers()
-    image = serializers.SerializerMethodField()
-    screenshot = serializers.SerializerMethodField()
-    
     class Meta:
         model = models.FarmerProfile 
         fields = '__all__'
 
-    def get_image(self, obj):
-        if obj.image and hasattr(obj.image, 'url'):
-            return obj.image.url
-        return None
-
-    def get_screenshot(self, obj):
-        if obj.screenshot and hasattr(obj.screenshot, 'url'):
-            return obj.screenshot.url
-        return None
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.image:
+            data['image'] = instance.image.url
+        if instance.screenshot:
+            data['screenshot'] = instance.screenshot.url
+        if instance.aadhar_image:
+            data['aadhar_image'] = instance.aadhar_image.url
+        return data
 
 class ContractorProfileSerializer(ModelSerializer):
     user = userSerializers()
-    image = serializers.SerializerMethodField()
 
     class Meta: 
         model = models.ContractorProfile
         fields = '__all__'
 
-    def get_image(self, obj):
-        if obj.image and hasattr(obj.image, 'url'):
-            return obj.image.url
-        return None
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.image:
+            data['image'] = instance.image.url
+        return data

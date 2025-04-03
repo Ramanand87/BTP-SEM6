@@ -91,7 +91,7 @@ class ProfileView(APIView):
 
         return Response({'data': serial.data,'role':role}, status=status.HTTP_200_OK)
 
-    def put(self, request, pk=None):
+    def put(self, request):
         user = request.user
         role = user.type
         if role == "farmer":

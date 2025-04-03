@@ -3,6 +3,7 @@ from user.models import CustomUser
 import uuid
 from crops.models import Crops
 from django.contrib.postgres.fields import ArrayField
+
 class Contract(models.Model):
     contract_id=models.UUIDField(primary_key = True,default=uuid.uuid4,editable=False)
     farmer = models.ForeignKey(CustomUser, related_name="farmer_contracts", on_delete=models.CASCADE)
@@ -11,7 +12,7 @@ class Contract(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     delivery_address=models.TextField()
     delivery_date=models.DateField()
-    terms = ArrayField(models.TextField(), blank=True, default=list) 
+    terms = ArrayField(models.TextField(), blank=True, default=list)
     def __str__(self):
         return f"Contract {self.farmer} & {self.buyer}"
 
