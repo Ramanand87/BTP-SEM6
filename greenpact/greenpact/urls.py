@@ -10,7 +10,7 @@ urlpatterns = [
     path('ratings/',include('ratings.urls')),
     path('demands/',include('demands.urls')),
     path('chat/',include('chat.urls')),
-    path('contracts/',include('contracts.urls')),
+    path('contracts/',include('contract.urls')),
 ]
 
 urlpatterns+=static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)   

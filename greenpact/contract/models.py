@@ -8,6 +8,8 @@ class Contract(models.Model):
     farmer = models.ForeignKey(CustomUser, related_name="farmer_contracts", on_delete=models.CASCADE)
     buyer = models.ForeignKey(CustomUser, related_name="buyer_contracts", on_delete=models.CASCADE)
     crop = models.ForeignKey(Crops, related_name="crop_detail", on_delete=models.CASCADE)
+    nego_price=models.IntegerField()
+    quantity=models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     delivery_address=models.TextField()
     delivery_date=models.DateField()
