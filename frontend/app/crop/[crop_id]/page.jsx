@@ -64,10 +64,11 @@ const { data: crop, error, isLoading } = useGetSingleCropQuery(crop_id); // Pass
           </div>
         </CardContent>
         <CardFooter className="flex gap-4">
-          <Button className="flex-1 bg-green-600 hover:bg-green-700">
+          <Link href={`/create-contract/${crop?.data.crop_id}`} className="flex-1">
+          <Button className="w-full bg-green-600 hover:bg-green-700">
             <ShoppingCart className="w-4 h-4 mr-2" />
-            Add to Cart
-          </Button>
+            Create Contract
+          </Button></Link>
           <Link href={`/profile/${crop?.data.publisher.username}`}>
           <Button variant="outline" className="flex-1">
             <MessageCircle className="w-4 h-4 mr-2" />

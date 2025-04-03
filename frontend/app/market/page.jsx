@@ -7,6 +7,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Search, Filter, List, Grid } from "lucide-react";
+import { Plus, Trash, Edit, Loader2, Calendar, MapPin, Phone, Package, DollarSign } from "lucide-react"
+
 import Link from "next/link";
 import { useGetAllCropsQuery } from "@/redux/Service/marketApi";
 
@@ -30,14 +32,46 @@ export default function MarketPage() {
               <CardHeader>
                 <img src={crop.crop_image} alt={crop.crop_name} className="w-full h-48 object-cover rounded-lg" />
               </CardHeader>
-              <CardContent>
-                <CardTitle className="text-xl">{crop.crop_name}</CardTitle>
-                <div className="space-y-2 mt-4">
-                  <p className="text-green-600 font-semibold">₹{crop.crop_price}/kg</p>
-                  <p className="text-sm text-gray-600">Quantity: {crop.quantity} Kg</p>
-                  <p className="text-sm text-gray-600">Location: {crop.location}</p>
-                  <p className="text-sm text-gray-600">Harvested: {crop.harvested_time}</p>
-                  <p className="text-gray-700">{crop.Description}</p>
+              <CardContent className="pt-6 pb-4">
+                <div className="flex justify-between items-start mb-4">
+                  <CardTitle className="text-2xl text-green-800">{crop.crop_name}</CardTitle>
+                  <div className="flex items-center bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium">
+                   ₹{crop.crop_price}
+                  </div>
+                </div>
+
+                <div className="space-y-3 mt-4">
+                  <div className="flex items-start">
+                    <Package className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
+                    <p className="text-gray-700">
+                      Quantity: <span className="font-medium">{crop.quantity}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-start">
+                    <Phone className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
+                    <p className="text-gray-700">
+                      Contact: <span className="font-medium">{crop.publisher_profile.phoneno}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-start">
+                    <MapPin className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
+                    <p className="text-gray-700">
+                      Location: <span className="font-medium">{crop.location}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-start">
+                    <Calendar className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
+                    <p className="text-gray-700">
+                      Harvested: <span className="font-medium">{crop.harvested_time}</span>
+                    </p>
+                  </div>
+
+                  <div className="pt-2">
+                    <p className="text-gray-700 line-clamp-2">{crop.description}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card></Link>
