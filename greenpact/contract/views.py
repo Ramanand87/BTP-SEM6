@@ -25,7 +25,7 @@ class ContractView(APIView):
                 return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     def post(self, request):
         try:
-            serial=serializers.ContractSerializer(data=request.data)
+            serial=serializers.ContractSerializer(data=request.data,context={'request':request})
             if serial.is_valid():
                 serial.save()
                 return Response({"Success":"Contract Successfully Created"},status=status.HTTP_200_OK)
