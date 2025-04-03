@@ -3,6 +3,8 @@ from user.models import CustomUser
 import uuid
 from crops.models import Crops
 from django.contrib.postgres.fields import ArrayField
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 class Contract(models.Model):
     contract_id=models.UUIDField(primary_key = True,default=uuid.uuid4,editable=False)
@@ -17,6 +19,31 @@ class Contract(models.Model):
     terms = ArrayField(models.TextField(), blank=True, default=list)
     def __str__(self):
         return f"Contract {self.farmer} & {self.buyer}"
+
+    def save(self, *args, **kwargs):
+        """Override save method to send WebSocket notifications on contract creation"""
+
+        super().save(*args, **kwargs)
+
+        
+        channel_layer = get_channel_layer()
+        farmer_contracts_count = Contract.objects.filter(farmer=self.farmer).count()
+        buyer_contracts_count = Contract.objects.filter(buyer=self.buyer).count()
+        async_to_sync(channel_layer.group_send)(
+            f"contract_{self.farmer.username}",
+            {
+                "type": "contract_notification",
+                "contract": farmer_contracts_count,
+            },
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            f"contract_{self.buyer.username}",
+            {
+                "type": "contract_notification",
+                "contract": buyer_contracts_count,
+            },
+        )
 
 class ContractDoc(models.Model):
     contract = models.ForeignKey(Contract, related_name="documents", on_delete=models.CASCADE)

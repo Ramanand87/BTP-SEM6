@@ -26,11 +26,7 @@ class ContractConsumer(AsyncWebsocketConsumer):
                 )
                 if action=="fetch_contracts":
                     contracts = await self.get_contracts()
-                    await self.send(text_data=json.dumps({"contracts": contracts}))
-                elif action=="update_contracts":
-                    await self.update_contracts(data)
-                    contracts = await self.get_contracts()
-                    await self.send(text_data=json.dumps({"contracts": contracts}))
+                    await self.send(text_data=json.dumps({"contracts": len(contracts)}))
                 elif action=="approve_contracts":
                     if self.user.type=="farmer":
                         await self.approve_contract(data)
@@ -82,3 +78,7 @@ class ContractConsumer(AsyncWebsocketConsumer):
             contract.save()
         except Exception:
             return None
+    
+    async def contract_notification(self, event):
+        contracts = await self.get_contracts()
+        await self.send(text_data=json.dumps({"contracts": contracts}))
