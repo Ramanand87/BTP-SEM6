@@ -1,310 +1,228 @@
-"use client";
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus, Trash2, Send } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+"use client"
 
-const ContractsPage = () => {
-  // Form state
-  const [formData, setFormData] = useState({
-    cropName: '',
-    quantity: '',
-    pricePerUnit: '',
-    totalPrice: '',
-    deliveryAddress: '',
-    paymentMethod: 'full',
-    terms: ['quality_standard', 'delivery_timeframe'],
-    additionalTerms: [],
-    specialConditions: ''
-  });
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Search, Plus, Filter, ArrowUpDown } from "lucide-react"
+import Link from "next/link"
+import { motion } from "framer-motion"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-  const [deliveryDate, setDeliveryDate] = useState();
-  const [newTerm, setNewTerm] = useState('');
+// Sample contract data
+const contracts = [
+  {
+    id: "c-001",
+    crop: "Organic Wheat",
+    farmer: "John Doe",
+    quantity: "500 kg",
+    price: "₹25,000",
+    deliveryDate: "2025-05-15",
+    status: "active",
+    createdAt: "2025-04-03",
+  },
+  {
+    id: "c-002",
+    crop: "Basmati Rice",
+    farmer: "Sarah Johnson",
+    quantity: "1000 kg",
+    price: "₹45,000",
+    deliveryDate: "2025-06-20",
+    status: "pending",
+    createdAt: "2025-04-02",
+  },
+  {
+    id: "c-003",
+    crop: "Organic Tomatoes",
+    farmer: "Michael Chen",
+    quantity: "300 kg",
+    price: "₹15,000",
+    deliveryDate: "2025-04-25",
+    status: "completed",
+    createdAt: "2025-03-28",
+  },
+  {
+    id: "c-004",
+    crop: "Cotton",
+    farmer: "Priya Sharma",
+    quantity: "800 kg",
+    price: "₹35,000",
+    deliveryDate: "2025-07-10",
+    status: "active",
+    createdAt: "2025-04-01",
+  },
+  {
+    id: "c-005",
+    crop: "Sugarcane",
+    farmer: "Robert Wilson",
+    quantity: "2000 kg",
+    price: "₹60,000",
+    deliveryDate: "2025-08-05",
+    status: "pending",
+    createdAt: "2025-03-30",
+  },
+]
 
-  // Available crops
-  const crops = [
-    'Wheat',
-    'Rice',
-    'Corn',
-    'Soybean',
-    'Cotton',
-    'Potatoes',
-    'Tomatoes',
-    'Sugarcane'
-  ];
+const statusColors = {
+  active: "bg-green-100 text-green-800 border-green-200",
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  completed: "bg-blue-100 text-blue-800 border-blue-200",
+}
 
-  // Standard terms
-  const standardTerms = [
-    { id: 'quality_standard', label: 'Quality standards must be met' },
-    { id: 'delivery_timeframe', label: 'Delivery within agreed timeframe' },
-    { id: 'payment_terms', label: 'Payment as per agreed terms' },
-    { id: 'force_majeure', label: 'Force majeure clause applies' }
-  ];
+export default function ContractsListPage() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activeTab, setActiveTab] = useState("all")
 
-  // Handle form input changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const filteredContracts = contracts.filter((contract) => {
+    const matchesSearch =
+      contract.crop.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contract.farmer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contract.id.toLowerCase().includes(searchTerm.toLowerCase())
 
-    // Calculate total price if quantity or price changes
-    if (name === 'quantity' || name === 'pricePerUnit') {
-      const quantity = name === 'quantity' ? value : formData.quantity;
-      const price = name === 'pricePerUnit' ? value : formData.pricePerUnit;
-      const total = quantity && price ? (parseFloat(quantity) * parseFloat(price)).toFixed(2) : '';
-      setFormData(prev => ({ ...prev, totalPrice: total }));
-    }
-  };
+    if (activeTab === "all") return matchesSearch
+    return matchesSearch && contract.status === activeTab
+  })
 
-  // Handle term selection
-  const handleTermToggle = (termId) => {
-    setFormData(prev => {
-      const newTerms = prev.terms.includes(termId)
-        ? prev.terms.filter(id => id !== termId)
-        : [...prev.terms, termId];
-      return { ...prev, terms: newTerms };
-    });
-  };
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  }
 
-  // Add new custom term
-  const addCustomTerm = () => {
-    if (newTerm.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        additionalTerms: [...prev.additionalTerms, newTerm.trim()]
-      }));
-      setNewTerm('');
-    }
-  };
-
-  // Remove custom term
-  const removeCustomTerm = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      additionalTerms: prev.additionalTerms.filter((_, i) => i !== index)
-    }));
-  };
-
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const contract = {
-      ...formData,
-      deliveryDate: deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : null
-    };
-    console.log('Contract submitted:', contract);
-    // Here you would typically send to your backend
-    alert('Contract created successfully!');
-  };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold text-green-800 mb-6">Create New Contract</h1>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Crop Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Crop Name</label>
-            <Select onValueChange={(value) => setFormData({...formData, cropName: value})}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a crop" />
-              </SelectTrigger>
-              <SelectContent>
-                {crops.map(crop => (
-                  <SelectItem key={crop} value={crop}>{crop}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Quantity */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity (kg)</label>
-            <Input
-              type="number"
-              name="quantity"
-              value={formData.quantity}
-              onChange={handleChange}
-              placeholder="Enter quantity"
-              min="1"
-            />
-          </div>
-        </div>
-
-        {/* Price */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price per kg (₹)</label>
-            <Input
-              type="number"
-              name="pricePerUnit"
-              value={formData.pricePerUnit}
-              onChange={handleChange}
-              placeholder="Enter price"
-              min="0"
-              step="0.01"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Total Price (₹)</label>
-            <Input
-              type="text"
-              name="totalPrice"
-              value={formData.totalPrice}
-              readOnly
-              className="bg-gray-100"
-            />
-          </div>
-
-          {/* Payment Method */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-            <Select 
-              onValueChange={(value) => setFormData({...formData, paymentMethod: value})}
-              defaultValue="full"
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select payment method" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="full">Full Payment</SelectItem>
-                <SelectItem value="emi">EMI (Installments)</SelectItem>
-                <SelectItem value="50_50">50% Advance, 50% on Delivery</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Delivery Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
-            <Textarea
-              name="deliveryAddress"
-              value={formData.deliveryAddress}
-              onChange={handleChange}
-              placeholder="Enter full delivery address"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Date</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !deliveryDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deliveryDate ? format(deliveryDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={deliveryDate}
-                  onSelect={setDeliveryDate}
-                  initialFocus
-                  fromDate={new Date()}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-
-        {/* Standard Terms and Conditions */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium text-gray-900">Standard Terms</h3>
-          <div className="space-y-2">
-            {standardTerms.map(term => (
-              <div key={term.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={term.id}
-                  checked={formData.terms.includes(term.id)}
-                  onCheckedChange={() => handleTermToggle(term.id)}
-                />
-                <label htmlFor={term.id} className="text-sm font-medium leading-none">
-                  {term.label}
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Additional Terms */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium text-gray-900">Additional Terms</h3>
-          <div className="flex gap-2">
-            <Input
-              value={newTerm}
-              onChange={(e) => setNewTerm(e.target.value)}
-              placeholder="Add custom term"
-              className="flex-1"
-            />
-            <Button type="button" onClick={addCustomTerm} variant="outline">
-              <Plus className="h-4 w-4 mr-1" /> Add
-            </Button>
-          </div>
-          
-          <div className="space-y-2 mt-2">
-            {formData.additionalTerms.map((term, index) => (
-              <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                <span className="text-sm">{term}</span>
-                <Button
-                  type="button"
-                  onClick={() => removeCustomTerm(index)}
-                  variant="ghost"
-                  size="sm"
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Special Conditions */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Special Conditions</label>
-          <Textarea
-            name="specialConditions"
-            value={formData.specialConditions}
-            onChange={handleChange}
-            placeholder="Any special conditions or notes"
-            rows={3}
-          />
+          <h1 className="text-3xl font-bold text-green-800">Contracts</h1>
+          <p className="text-gray-600 mt-1">Manage your farming contracts</p>
         </div>
-
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <Button type="submit" className="bg-green-600 hover:bg-green-700">
-            <Send className="h-4 w-4 mr-2" /> Create Contract
+        <Link href="/contracts/create">
+          <Button className="bg-green-600 hover:bg-green-700">
+            <Plus className="h-4 w-4 mr-2" /> Create Contract
           </Button>
-        </div>
-      </form>
-    </div>
-  );
-};
+        </Link>
+      </div>
 
-export default ContractsPage;
+      <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Search contracts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Filter className="h-4 w-4" /> Filter
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem>Recent first</DropdownMenuItem>
+                <DropdownMenuItem>Oldest first</DropdownMenuItem>
+                <DropdownMenuItem>Price: High to Low</DropdownMenuItem>
+                <DropdownMenuItem>Price: Low to High</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <ArrowUpDown className="h-4 w-4" /> Sort
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem>Date: Newest</DropdownMenuItem>
+                <DropdownMenuItem>Date: Oldest</DropdownMenuItem>
+                <DropdownMenuItem>Price: High to Low</DropdownMenuItem>
+                <DropdownMenuItem>Price: Low to High</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        <Tabs defaultValue="all" onValueChange={setActiveTab}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="all">All Contracts</TabsTrigger>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab} className="mt-0">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {filteredContracts.length > 0 ? (
+                filteredContracts.map((contract) => (
+                  <motion.div key={contract.id} variants={itemVariants}>
+                    <Link href={`/contracts/${contract.id}`}>
+                      <Card className="h-full hover:shadow-lg transition-shadow duration-300 cursor-pointer border-l-4 border-l-green-500">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle className="text-lg">{contract.crop}</CardTitle>
+                              <CardDescription>Contract ID: {contract.id}</CardDescription>
+                            </div>
+                            <Badge className={statusColors[contract.status]}>
+                              {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <div>
+                              <p className="text-gray-500">Farmer</p>
+                              <p className="font-medium">{contract.farmer}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Quantity</p>
+                              <p className="font-medium">{contract.quantity}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Price</p>
+                              <p className="font-medium">{contract.price}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Delivery</p>
+                              <p className="font-medium">{new Date(contract.deliveryDate).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="pt-2 text-xs text-gray-500">
+                          Created on {new Date(contract.createdAt).toLocaleDateString()}
+                        </CardFooter>
+                      </Card>
+                    </Link>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-500">No contracts found matching your criteria.</p>
+                </div>
+              )}
+            </motion.div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+}
+

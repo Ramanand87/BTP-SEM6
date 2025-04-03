@@ -58,6 +58,7 @@ export function Navbar() {
   const navItems = [
     { name: 'Home', href: '/' },
     { name: 'Market', href: '/market' },
+    { name: 'Demands', href: '/demands' },
     { name: 'Help & Support', href: '/help&support' },
     { name: 'Contracts', href: '/contracts' },
     { name: 'Chat', href: `/chat/${userInfo?.data.username}` },

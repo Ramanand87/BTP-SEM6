@@ -17,10 +17,11 @@ export const profileApi = createApi({
       query: (username) => `/${username}`,  // Fetch user profile by username
     }),
     updateProfile: builder.mutation({
-      query: ({ username, updatedData }) => ({
-        url: `/${username}`, // Update user profile by username
-        method: 'PUT',
-        body: updatedData,
+      query: (body) => ({
+        url: `/`,  
+        method: "PUT",
+        body,  
+       
       }),
     }),
   }),

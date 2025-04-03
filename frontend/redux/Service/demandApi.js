@@ -22,6 +22,9 @@ export const demandApi = createApi({
       query: () => "/",
       providesTags: ["Demand"],
     }),
+    getSingleDemand: builder.query({
+      query: (id) => `/${id}`,
+    }),
     addDemand: builder.mutation({
       query: (newDemand) => ({
         url: "/",
@@ -50,6 +53,7 @@ export const demandApi = createApi({
 
 export const {
   useGetDemandsQuery,
+  useGetSingleDemandQuery,
   useAddDemandMutation,
   useUpdateDemandMutation,
   useDeleteDemandMutation,
