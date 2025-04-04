@@ -191,55 +191,23 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Collect form data
         const formData = new FormData(form);
-        const contractData = {
-            orderId: formData.get('orderId'),
-            orderDate: formData.get('orderDate'),
-            contractType: 'farmer-customer',
-            farmerName: formData.get('farmerName'),
-            farmerContact: formData.get('farmerContact'),
-            farmerAddress: formData.get('farmerAddress'),
-            customerName: formData.get('customerName'),
-            customerContact: formData.get('customerContact'),
-            customerAddress: formData.get('customerAddress'),
-            productDetails: {
-                cropName: formData.get('cropName'),
-                quantity: formData.get('quantity'),
-                price: formData.get('pricePerUnit'),
-                totalAmount: calculateTotal()
-            },
-            deliveryDate: formData.get('deliveryDate'),
-            deliveryLocation: formData.get('deliveryLocation'),
-            terms: {
-                accepted: true,
-                acceptedDate: new Date().toISOString()
-            },
-            signatures: {
-                farmer: formData.get('farmerSignature'),
-                customer: formData.get('companySignature'),
-                date: formData.get('agreementDate')
-            }
-        };
         
         try {
             const response = await fetch('/api/contracts/create', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(contractData)
+                body: formData
             });
             
             const result = await response.json();
             
             if (response.ok) {
-                // Store the contract ID
-                currentContractId = result.contractId;
-                
+                alert('Contract created successfully!');
+
                 // Update preview and download link
-                const previewUrl = `/api/contracts/${currentContractId}`;
+                const previewUrl = result.pdfPath;
                 contractPreview.data = previewUrl;
                 previewLink.href = previewUrl;
-                
+
                 // Show modal
                 modal.style.display = "block";
             } else {
@@ -260,4 +228,21 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('agreementDate').value = today;
         totalInput.value = '';
     });
-}); 
+
+    // Add additional conditions to terms and conditions
+    const additionalConditionsInput = document.getElementById('additionalConditions');
+    const addConditionButton = document.getElementById('addConditionButton');
+    const termsContent = document.querySelector('.terms-content');
+
+    addConditionButton.addEventListener('click', function() {
+        const condition = additionalConditionsInput.value.trim();
+        if (condition) {
+            const conditionParagraph = document.createElement('p');
+            conditionParagraph.textContent = condition;
+            termsContent.appendChild(conditionParagraph);
+            additionalConditionsInput.value = ''; // Clear the input box
+        } else {
+            alert('Please enter a valid condition.');
+        }
+    });
+});

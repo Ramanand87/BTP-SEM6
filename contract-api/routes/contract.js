@@ -2,324 +2,216 @@ const express = require('express');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+
 const router = express.Router();
 
-// Create contract
-router.post('/create', async (req, res) => {
-    try {
-        const {
-            orderId,
-            orderDate,
-            farmerName,
-            farmerContact,
-            farmerAddress,
-            customerName,
-            customerContact,
-            customerAddress,
-            productDetails,
-            deliveryDate,
-            deliveryLocation,
-            signatures,
-        } = req.body;
+// Configure multer for signature image uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, '..', 'uploads', 'signatures');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
 
-        // Validate required fields
-        if (!farmerName || !customerName || !productDetails || !deliveryDate || !signatures) {
-            return res.status(400).json({
-                success: false,
-                message: 'Missing required fields'
-            });
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: function (req, file, cb) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+            return cb(new Error('Only image files are allowed!'), false);
+        }
+        cb(null, true);
+    }
+});
+
+function generateContractPDF(contractData, filePath) {
+    const doc = new PDFDocument({
+        // Set PDF metadata
+        title: 'Agricultural Sales Contract',
+        author: 'AgriContract Solutions', // Example
+        subject: 'Agricultural Sales Contract',
+        keywords: 'agriculture, sales, contract, agreement',
+        margins: { top: 50, bottom: 50, left: 50, right: 50 }
+    });
+    const stream = fs.createWriteStream(filePath);
+    doc.pipe(stream);
+
+    // Function to add a styled paragraph
+    function addParagraph(text, options = {}) {
+        const {
+            fontSize = 12,
+            font = 'Helvetica',
+            align = 'left',
+            underline = false,
+            indent = 0,
+            lineGap = 5,
+            characterSpacing = 0
+        } = options;
+
+        doc.font(font).fontSize(fontSize).text(text, {
+            align,
+            underline,
+            indent,
+            lineGap,
+            characterSpacing
+        });
+    }
+
+    // Title
+    doc.font('Helvetica-Bold').fontSize(18).text('Agricultural Sales Contract', { align: 'center' });
+    doc.moveDown(1);
+
+    // 1. Parties Involved
+    addParagraph('1. Parties Involved:', { fontSize: 14, font: 'Helvetica-Bold', underline: true });
+    addParagraph(`  * Farmer:`, { fontSize: 12, indent: 10 });
+    addParagraph(`    * Name: ${contractData.farmerName}`, { fontSize: 12, indent: 20 });
+    addParagraph(`    * Address: ${contractData.farmerAddress}`, { fontSize: 12, indent: 20 });
+    addParagraph(`    * Contact Number: ${contractData.farmerContact}`, { fontSize: 12, indent: 20 });
+    addParagraph(`  * Customer:`, { fontSize: 12, indent: 10 });
+    addParagraph(`    * Name: ${contractData.customerName}`, { fontSize: 12, indent: 20 });
+    addParagraph(`    * Address: ${contractData.customerAddress}`, { fontSize: 12, indent: 20 });
+    addParagraph(`    * Contact Number: ${contractData.customerContact}`, { fontSize: 12, indent: 20 });
+    doc.moveDown(1);
+
+    // 2. Order and Contract Details
+    addParagraph('2. Order and Contract Details:', { fontSize: 14, font: 'Helvetica-Bold', underline: true });
+    addParagraph(`  * Order ID: ${contractData.orderId}`, { fontSize: 12, indent: 10 });
+    addParagraph(`  * Order Date: ${contractData.orderDate}`, { fontSize: 12, indent: 10 });
+    addParagraph(`  * Contract ID: ${contractData.contractId}`, { fontSize: 12, indent: 10 });
+    addParagraph(`  * Contract Date: ${contractData.contractStartDate}`, { fontSize: 12, indent: 10 });
+    addParagraph(`  * Agreement Date: ${contractData.agreementDate}`, { fontSize: 12, indent: 10 });
+    doc.moveDown(1);
+
+    // 3. Crop Details
+    addParagraph('3. Crop Details:', { fontSize: 14, font: 'Helvetica-Bold', underline: true });
+    addParagraph(`  * Crop Name: ${contractData.cropName}`, { fontSize: 12, indent: 10 });
+    addParagraph(`  * Quantity: ${contractData.quantity} kg`, { fontSize: 12, indent: 10 });
+    addParagraph(`  * Price per kg: ₹${contractData.pricePerUnit}`, { fontSize: 12, indent: 10 });
+    addParagraph(`  * Total Amount: ₹${contractData.totalAmount}`, { fontSize: 12, indent: 10 });
+    doc.moveDown(1);
+
+    // 4. Delivery Details
+    addParagraph('4. Delivery Details:', { fontSize: 14, font: 'Helvetica-Bold', underline: true });
+    addParagraph(`  * Delivery Date: ${contractData.deliveryDate}`, { fontSize: 12, indent: 10 });
+    addParagraph(`  * Delivery Location: ${contractData.deliveryLocation}`, { fontSize: 12, indent: 10 });
+    doc.moveDown(1);
+
+    // 5. Terms and Conditions
+    addParagraph('5. Terms and Conditions:', { fontSize: 14, font: 'Helvetica-Bold', underline: true });
+
+    const terms = [
+        `5.1 Payment Terms: The Customer shall make full payment to the Farmer upon delivery and acceptance of the Crop at the Delivery Location. Payment shall be made in ${contractData.paymentMethod || 'Bank Transfer'} unless otherwise agreed in writing.`, // Example
+        `5.2 Quality Compliance: The Farmer warrants that the Crop shall be of good quality, merchantable, and fit for the intended purpose as communicated by the Customer.  Specific quality standards are defined as: ${contractData.qualityStandards || 'Grade A as per AGMARK standards'}.  The Customer shall have the right to inspect the Crop upon delivery and may reject any Crop that does not conform to the agreed-upon quality standards.`, // Example
+        `5.3 Delivery Terms:
+    * The Farmer shall deliver the Crop to the Delivery Location on the Delivery Date during the hours of ${contractData.deliveryHours || '9:00 AM to 5:00 PM'}.
+    * The Farmer shall provide the Customer with ${contractData.noticeDays || '3'} days' prior written notice of any anticipated delay in delivery.  If the delay exceeds ${contractData.delayDays || '7'} days, the Customer shall have the option to terminate this Contract and receive a full refund of any payments made.
+    * The Customer shall be responsible for providing access to the Delivery Location and for unloading the Crop.`,
+        `5.4 Force Majeure: Neither party shall be liable for any failure or delay in the performance of its obligations under this Contract to the extent such failure or delay is caused by a Force Majeure Event.  A "Force Majeure Event" means any event beyond the reasonable control of a party, including but not limited to acts of God, natural disasters, war, terrorism, government regulations, strikes, and other labor disputes.  The affected party shall notify the other party in writing of the Force Majeure Event and shall make all reasonable efforts to mitigate its effects.  If the Force Majeure Event continues for more than ${contractData.forceMajeureDays || '30'} days, either party may terminate this Contract upon written notice to the other party.`, // Example
+        `5.5 Dispute Resolution:
+    * Any dispute, claim, or controversy arising out of or relating to this Contract shall be resolved through amicable negotiation between the parties.
+    * If the parties are unable to resolve the dispute through negotiation within ${contractData.negotiationDays || '15'} days, either party may initiate mediation in ${contractData.mediationLocation || 'Pune, Maharashtra'}. The mediation shall be conducted in accordance with the rules of ${contractData.mediationOrganization || 'the Indian Council of Arbitration'}.
+    * If mediation is unsuccessful, the dispute shall be finally resolved by binding arbitration in accordance with the ${contractData.arbitrationAct || 'the Arbitration and Conciliation Act, 1996 (India)'} in ${contractData.arbitrationLocation || 'Pune, Maharashtra'}. The language of the arbitration shall be ${contractData.arbitrationLanguage || 'English'}. The decision of the arbitrator shall be final and binding on both parties.`,
+        `5.6 Additional Conditions: ${contractData.additionalConditions || 'None'}`,
+        `${contractData.additionalCondition6 ? `5.7  ${contractData.additionalCondition6}` : ''}`,
+        `5.8 Inspection: The Customer has the right to inspect the goods upon delivery. Acceptance of the goods implies the Customer's satisfaction with the quality and quantity of the delivered items.`,
+        `5.9 Indemnification: The Farmer agrees to indemnify and hold the Customer harmless from any and all claims, losses, damages, liabilities, costs, and expenses (including reasonable attorneys' fees) arising out of or relating to any breach by the Farmer of any of its obligations or warranties under this Contract.`,
+        `5.10 Governing Law: This Contract shall be governed by and construed in accordance with the laws of India.`,
+
+    ];
+
+    terms.forEach(term => addParagraph(term, { fontSize: 12, indent: 10, lineGap: 5 }));
+    doc.moveDown();
+
+    // 6. Signatures
+    addParagraph('6. Signatures:', { fontSize: 14, font: 'Helvetica-Bold', underline: true });
+    doc.moveDown();
+
+    // Function to add signature with label
+    function addSignature(label, signaturePath, name, date) {
+        addParagraph(label, { fontSize: 12 });
+        if (signaturePath) {
+            try {
+                doc.image(signaturePath, { fit: [150, 50], align: 'left' });
+            } catch (error) {
+                console.error("Error embedding signature image:", error);
+                addParagraph("[Signature Image Could Not Be Displayed]",{fontSize: 10, font: 'Helvetica-Oblique'})
+            }
+
+        } else {
+            doc.rect(50, doc.y, 150, 50).stroke();
+        }
+        addParagraph(`Printed Name: ${name}`, { fontSize: 10, indent: 50 });
+        addParagraph(`Date: ${date}`, { fontSize: 10, indent: 50 });
+        doc.moveDown(1);
+    }
+
+    addSignature("Farmer's Signature:", contractData.farmerSignaturePath, contractData.farmerName, contractData.agreementDate);
+    addSignature("Customer's Signature:", contractData.customerSignaturePath, contractData.customerName, contractData.agreementDate);
+
+    // 7. Entire Agreement
+    addParagraph('7. Entire Agreement:', { fontSize: 14, font: 'Helvetica-Bold', underline: true });
+    addParagraph('This Contract constitutes the entire agreement between the parties and supersedes all prior or contemporaneous communications and proposals, whether oral or written, between the parties with respect to the subject matter of this Contract.', { fontSize: 12, indent: 0 });
+    doc.moveDown(1);
+
+    // 8. Severability
+    addParagraph('8. Severability:', { fontSize: 14, font: 'Helvetica-Bold', underline: true });
+    addParagraph('If any provision of this Contract is held to be invalid, illegal, or unenforceable, the remaining provisions of this Contract shall remain in full force and effect.', { fontSize: 12, indent: 0 });
+
+    // Finalize the PDF
+    doc.end();
+    stream.on('finish', () => {
+        console.log('PDF generated successfully!');
+    });
+    stream.on('error', (err) => {
+        console.error('Error generating PDF:', err);
+    });
+}
+
+router.post('/create', upload.fields([
+    { name: 'farmerSignature', maxCount: 1 },
+    { name: 'customerSignature', maxCount: 1 }
+]), (req, res) => {
+    try {
+        const contractData = req.body;
+        contractData.farmerSignaturePath = req.files?.farmerSignature?.[0]?.path;
+        contractData.customerSignaturePath = req.files?.customerSignature?.[0]?.path;
+
+        //  Combine additional conditions.
+        const additionalConditions = contractData.additionalConditions || '';
+        const additionalCondition6 = contractData.additionalCondition6 || '';
+
+        contractData.additionalConditions = additionalConditions;
+        contractData.additionalCondition6 = additionalCondition6;
+
+        // Basic Validation: Check for required data
+        if (!contractData.farmerName || !contractData.customerName || !contractData.cropName || !contractData.quantity || !contractData.pricePerUnit || !contractData.totalAmount || !contractData.deliveryDate || !contractData.deliveryLocation || !contractData.agreementDate) {
+            return res.status(400).json({ success: false, message: 'Missing required contract data.' });
+        }
+        if (!contractData.farmerSignaturePath || !contractData.customerSignaturePath) {
+            return res.status(400).json({ success: false, message: 'Missing signature images' });
         }
 
-        // Ensure contracts directory exists
         const contractsDir = path.join(__dirname, '..', 'contracts');
         if (!fs.existsSync(contractsDir)) {
             fs.mkdirSync(contractsDir, { recursive: true });
         }
+        const pdfPath = path.join(contractsDir, `${contractData.orderId || 'contract'}-${Date.now()}.pdf`);
+        generateContractPDF(contractData, pdfPath);
 
-        const contractId = orderId.replace('ORD', 'CON');
-        const pdfPath = path.join(contractsDir, `${contractId}.pdf`);
-
-        // Create PDF document
-        const doc = new PDFDocument({
-            size: 'A4',
-            margins: {
-                top: 50,
-                bottom: 50,
-                left: 50,
-                right: 50
-            }
-        });
-
-        const writeStream = fs.createWriteStream(pdfPath);
-        doc.pipe(writeStream);
-
-        // Title
-        doc.fontSize(18)
-           .font('Helvetica-Bold')
-           .fillColor('#333333')
-           .text('AGRICULTURAL SALES CONTRACT', { align: 'center' });
-        doc.moveDown(1);
-
-        // Parties Section
-        doc.fontSize(14)
-           .font('Helvetica-Bold')
-           .fillColor('#333333')
-           .text('PARTIES', { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(10)
-           .font('Helvetica')
-           .fillColor('#000000')
-           .text('This Agricultural Sales Contract (hereinafter referred to as the "Agreement") is entered into on ' + 
-                 new Date(orderDate).toLocaleDateString() + ', by and between:');
-        doc.moveDown(1);
-
-        // Farmer Details
-        doc.fontSize(12)
-           .font('Helvetica-Bold')
-           .fillColor('#555555')
-           .text('1. Farmer Details');
-        doc.fontSize(10)
-           .font('Helvetica')
-           .fillColor('#000000')
-           .text('Name: ' + farmerName)
-           .text('Contact Number: ' + (farmerContact || '_______________'))
-           .text('Address: ' + (farmerAddress || '_______________'));
-        doc.moveDown(1);
-
-        // Customer Details
-        doc.fontSize(12)
-           .font('Helvetica-Bold')
-           .fillColor('#555555')
-           .text('2. Customer Details');
-        doc.fontSize(10)
-           .font('Helvetica')
-           .fillColor('#000000')
-           .text('Name: ' + customerName)
-           .text('Contact Number: ' + (customerContact || '_______________'))
-           .text('Address: ' + (customerAddress || '_______________'));
-        doc.moveDown(0.5);
-        doc.text('(All parties collectively referred to as "Parties")');
-        doc.moveDown(1);
-
-        // WHEREAS Section
-        doc.fontSize(14)
-           .font('Helvetica-Bold')
-           .fillColor('#333333')
-           .text('WHEREAS', { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(10)
-           .font('Helvetica')
-           .fillColor('#000000')
-           .text('The Farmer agrees to sell and deliver the specified crop to the Customer under the terms set forth herein.')
-           .moveDown(0.5)
-           .text('The Customer agrees to purchase and accept the crop as per the agreed-upon terms.');
-        doc.moveDown(1);
-
-        // Order Details
-        doc.fontSize(14)
-           .font('Helvetica-Bold')
-           .fillColor('#333333')
-           .text('ORDER DETAILS', { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(10)
-           .font('Helvetica')
-           .fillColor('#000000')
-           .text('Order ID: ' + orderId)
-           .text('Order Date: ' + new Date(orderDate).toLocaleDateString())
-           .text('Crop Name: ' + (productDetails.cropName || '_______________'))
-           .text('Quantity: ' + (productDetails.quantity || '_______________') + ' kg')
-           .text('Price per kg: ₹' + (productDetails.price || '_______________'))
-           .text('Total Amount: ₹' + (productDetails.totalAmount || '_______________'))
-           .text('Delivery Date: ' + new Date(deliveryDate).toLocaleDateString())
-           .text('Delivery Location: ' + (deliveryLocation || '_______________'));
-        doc.moveDown(1);
-
-        // Terms and Conditions
-        doc.fontSize(14)
-           .font('Helvetica-Bold')
-           .fillColor('#333333')
-           .text('TERMS AND CONDITIONS', { underline: true });
-        doc.moveDown(0.5);
-
-        const terms = [
-            {
-                title: 'Payment Terms',
-                content: 'Full payment shall be made upon delivery of the crop.'
-            },
-            {
-                title: 'Quality Compliance',
-                content: 'The crop must meet the agreed-upon quality standards. The Customer reserves the right to inspect the crop upon delivery.'
-            },
-            {
-                title: 'Delivery Terms',
-                content: 'The Farmer shall ensure timely delivery on the specified date and location. Any delays must be communicated in writing.'
-            },
-            {
-                title: 'Force Majeure',
-                content: 'If an unforeseen event prevents either party from fulfilling their obligations, the contract terms may be adjusted accordingly.'
-            },
-            {
-                title: 'Dispute Resolution',
-                content: 'Any disputes arising under this contract shall be resolved through mutual discussion. If unresolved, the matter shall be referred to arbitration in accordance with the Indian Arbitration and Conciliation Act, 1996.'
-            },
-            {
-                title: 'Legal Compliance',
-                content: 'Both parties shall comply with all applicable laws and regulations regarding the sale and transportation of agricultural goods.'
-            },
-            {
-                title: 'Indemnification',
-                content: 'Each party agrees to indemnify and hold harmless the other against any losses, damages, or liabilities resulting from non-compliance with the contract.'
-            }
-        ];
-
-        terms.forEach(term => {
-            doc.fontSize(12)
-               .font('Helvetica-Bold')
-               .fillColor('#000000')
-               .text(term.title + ' – ' + term.content, {
-                   align: 'justify',
-                   lineGap: 5
-               });
-            doc.moveDown(0.5);
-        });
-
-        // Signatures
-        doc.fontSize(14)
-           .font('Helvetica-Bold')
-           .fillColor('#333333')
-           .text('SIGNATURES', { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(10)
-           .font('Helvetica')
-           .fillColor('#000000')
-           .text('The Parties hereby agree to the terms and conditions set forth in this Agreement as demonstrated by their signatures below:');
-        doc.moveDown(1);
-
-        // Farmer's signature
-        doc.text('Farmer\'s Signature: _______________')
-           .text('Name: ' + signatures.farmer)
-           .text('Date: ' + new Date(signatures.date).toLocaleDateString());
-        doc.moveDown(1);
-
-        // Customer's signature
-        doc.text('Customer\'s Signature: _______________')
-           .text('Name: ' + signatures.customer)
-           .text('Date: ' + new Date(signatures.date).toLocaleDateString());
-        doc.moveDown(1);
-
-        // Footer
-        doc.fontSize(10)
-           .font('Helvetica')
-           .fillColor('#777777')
-           .text('"This agreement is legally binding upon signing by both parties."', { align: 'center' });
-        
-        // Add page number at the bottom right
-        doc.fontSize(10)
-           .font('Helvetica')
-           .fillColor('#777777')
-           .text(
-               'Page 1 of 1',
-               50,
-               doc.page.height - 50,
-               { align: 'right' }
-           );
-
-        // Finalize PDF
-        doc.end();
-
-        // Wait for the PDF to be written
-        writeStream.on('finish', () => {
-            res.status(201).json({
-                success: true,
-                contractId,
-                message: 'Contract created successfully'
-            });
-        });
-
+        res.status(201).json({ success: true, pdfPath: `/contracts/${path.basename(pdfPath)}` });
     } catch (error) {
-        console.error('Error creating contract:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error creating contract: ' + error.message
-        });
+        console.error("Error in /create route:", error);
+        res.status(500).json({ success: false, message: 'Failed to generate contract PDF: ' + error.message });
     }
 });
 
-// Get contract by ID
-router.get('/:id', (req, res) => {
-    try {
-        const { id } = req.params;
-        const { format } = req.query;
-        const pdfPath = path.join(__dirname, '..', 'contracts', `${id}.pdf`);
+module.exports = router;
 
-        if (!fs.existsSync(pdfPath)) {
-            return res.status(404).json({
-                success: false,
-                message: 'Contract not found'
-            });
-        }
-
-        // Set response headers for PDF
-        res.setHeader('Content-Type', 'application/pdf');
-        
-        // Always set to inline for preview, unless explicitly requested as download
-        if (format === 'download') {
-            res.setHeader('Content-Disposition', `attachment; filename="Contract-${id}.pdf"`);
-        } else {
-            res.setHeader('Content-Disposition', 'inline');
-            res.setHeader('Cache-Control', 'no-cache');
-        }
-        
-        // Stream the PDF file
-        const fileStream = fs.createReadStream(pdfPath);
-        fileStream.pipe(res);
-
-        // Handle stream errors
-        fileStream.on('error', (error) => {
-            console.error('Error streaming PDF:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Error streaming contract PDF'
-            });
-        });
-    } catch (error) {
-        console.error('Error retrieving contract:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error retrieving contract: ' + error.message
-        });
-    }
-});
-
-// Get all contracts
-router.get('/', (req, res) => {
-    try {
-        const contractsDir = path.join(__dirname, '..', 'contracts');
-        const contracts = [];
-
-        if (fs.existsSync(contractsDir)) {
-            fs.readdirSync(contractsDir)
-                .filter(file => file.endsWith('.pdf'))
-                .forEach(file => {
-                    const stats = fs.statSync(path.join(contractsDir, file));
-                    contracts.push({
-                        id: file.replace('.pdf', ''),
-                        createdAt: stats.birthtime
-                    });
-                });
-
-            // Sort contracts by creation date (newest first)
-            contracts.sort((a, b) => b.createdAt - a.createdAt);
-        }
-
-        res.json(contracts);
-    } catch (error) {
-        console.error('Error retrieving contracts:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error retrieving contracts list'
-        });
-    }
-});
-
-module.exports = router; 
