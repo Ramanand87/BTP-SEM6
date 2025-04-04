@@ -27,8 +27,12 @@ class Contract(models.Model):
 
         
         channel_layer = get_channel_layer()
+        if not channel_layer:
+            print("Channel Layer is None")  # Debug
+            return
         farmer_contracts_count = Contract.objects.filter(farmer=self.farmer).count()
         buyer_contracts_count = Contract.objects.filter(buyer=self.buyer).count()
+        print(f"✅ Sending WebSocket message to contract_{self.farmer.username}")
         async_to_sync(channel_layer.group_send)(
             f"contract_{self.farmer.username}",
             {

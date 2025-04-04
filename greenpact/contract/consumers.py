@@ -81,4 +81,4 @@ class ContractConsumer(AsyncWebsocketConsumer):
     
     async def contract_notification(self, event):
         contracts = await self.get_contracts()
-        await self.send(text_data=json.dumps({"contracts": contracts}))
+        await self.send(text_data=json.dumps({"contracts": len(contracts)}))
