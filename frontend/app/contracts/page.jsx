@@ -42,7 +42,6 @@ export default function ContractsListPage() {
 
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("all")
-  const { data: contractsData, isError, isLoading, refetch } = useGetAllContractsQuery()
   const [updateContract, { isLoading: isUpdating }] = useUpdateContractMutation()
   const [deleteContract, { isLoading: isDeleting }] = useDeleteContractMutation()
 
@@ -78,9 +77,8 @@ export default function ContractsListPage() {
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data)
       console.log("WebSocket data received:", data)
-      if (data.action === "contracts_update") {
-        setContract(transformContracts(data.data))
-      }
+        setContract(data)
+      
     }
 
     ws.current.onerror = (error) => {
@@ -185,7 +183,6 @@ export default function ContractsListPage() {
         updatedData: updatedData
       }).unwrap()
       
-      refetch()
       setEditOpen(false)
     } catch (error) {
       console.error("Failed to update contract:", error)
@@ -204,7 +201,9 @@ export default function ContractsListPage() {
     }
   }
 
-  const contracts = transformContracts(contractsData)
+  const contracts = transformContracts(contract)
+  console.log('contracts:',contracts)
+
 
   const filteredContracts = contracts.filter((contract) => {
     const matchesSearch =
@@ -216,25 +215,27 @@ export default function ContractsListPage() {
     return matchesSearch && contract.status === activeTab
   })
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-        </div>
-      </div>
-    )
-  }
+  console.log('filtered', filteredContracts)
 
-  if (isError) {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          <p>Error loading contracts. Please try again later.</p>
-        </div>
-      </div>
-    )
-  }
+  // if (isLoading) {
+  //   return (
+  //     <div className="container mx-auto py-8 px-4">
+  //       <div className="flex justify-center items-center h-64">
+  //         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+  //       </div>
+  //     </div>
+  //   )
+  // }
+
+  // if (isError) {
+  //   return (
+  //     <div className="container mx-auto py-8 px-4">
+  //       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+  //         <p>Error loading contracts. Please try again later.</p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -587,7 +588,7 @@ export default function ContractsListPage() {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
+      </div> 
     </div>
   )
 }

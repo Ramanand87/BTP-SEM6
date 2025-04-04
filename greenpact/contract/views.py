@@ -24,8 +24,6 @@ class ContractView(APIView):
                 contract=get_object_or_404(models.Contract,contract_id=pk)
                 serial=serializers.ContractSerializer(contract)
                 return Response({'data':serial.data},status.HTTP_200_OK)
-        except Http404:
-            return Response({'Error': 'No Contract found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
                 return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     def post(self, request):
@@ -47,6 +45,7 @@ class ContractView(APIView):
             serial=serializers.ContractSerializer(contract,data=request.data,partial=True)
             if serial.is_valid():
                 serial.save()
+                contract.save()
                 return Response({"Sucess":"Contract Updated"},status=status.HTTP_200_OK)
             return Response({'Error':serial.errors},status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:

@@ -17,6 +17,7 @@ class Contract(models.Model):
     delivery_address=models.TextField()
     delivery_date=models.DateField()
     terms = ArrayField(models.TextField(), blank=True, default=list)
+    status=models.BooleanField(default=False)
     def __str__(self):
         return f"Contract {self.farmer} & {self.buyer}"
 
@@ -32,7 +33,7 @@ class Contract(models.Model):
             return
         farmer_contracts_count = Contract.objects.filter(farmer=self.farmer).count()
         buyer_contracts_count = Contract.objects.filter(buyer=self.buyer).count()
-        print(f"✅ Sending WebSocket message to contract_{self.farmer.username}")
+        # print(f"✅ Sending WebSocket message to contract_{self.farmer.username}")
         async_to_sync(channel_layer.group_send)(
             f"contract_{self.farmer.username}",
             {
@@ -46,6 +47,32 @@ class Contract(models.Model):
             {
                 "type": "contract_notification",
                 "contract": buyer_contracts_count,
+            },
+        )
+
+    def delete(self, *args, **kwargs):
+        channel_layer = get_channel_layer()
+
+        # Fetch updated contract count before deletion
+        farmer_contracts_count = Contract.objects.filter(farmer=self.farmer).count() - 1
+        buyer_contracts_count = Contract.objects.filter(buyer=self.buyer).count() - 1
+
+        super().delete(*args, **kwargs)
+
+        # Send WebSocket notification on contract deletion
+        async_to_sync(channel_layer.group_send)(
+            f"contract_{self.farmer.username}",
+            {
+                "type": "contract_notification",
+                "contract": max(0, farmer_contracts_count),  # Ensure non-negative count
+            },
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            f"contract_{self.buyer.username}",
+            {
+                "type": "contract_notification",
+                "contract": max(0, buyer_contracts_count),  # Ensure non-negative count
             },
         )
 

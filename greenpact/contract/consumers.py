@@ -26,12 +26,12 @@ class ContractConsumer(AsyncWebsocketConsumer):
                 )
                 if action=="fetch_contracts":
                     contracts = await self.get_contracts()
-                    await self.send(text_data=json.dumps({"contracts": len(contracts)}))
+                    await self.send(text_data=json.dumps({"data": contracts}))
                 elif action=="approve_contracts":
                     if self.user.type=="farmer":
                         await self.approve_contract(data)
                         contracts = await self.get_contracts()
-                        await self.send(text_data=json.dumps({"contracts": contracts}))
+                        await self.send(text_data=json.dumps({"data": contracts}))
                     else:
                         self.send(text_data=json.dumps({"error":"You cant approve this contract wait for seller to approve"}))
         except Exception as e:
@@ -81,4 +81,4 @@ class ContractConsumer(AsyncWebsocketConsumer):
     
     async def contract_notification(self, event):
         contracts = await self.get_contracts()
-        await self.send(text_data=json.dumps({"contracts": len(contracts)}))
+        await self.send(text_data=json.dumps({"data": contracts}))
