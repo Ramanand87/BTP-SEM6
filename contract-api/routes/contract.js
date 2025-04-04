@@ -19,7 +19,7 @@ router.post('/create', async (req, res) => {
             productDetails,
             deliveryDate,
             deliveryLocation,
-            signatures
+            signatures,
         } = req.body;
 
         // Validate required fields

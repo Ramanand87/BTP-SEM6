@@ -23,17 +23,13 @@ class Contract(models.Model):
 
     def save(self, *args, **kwargs):
         """Override save method to send WebSocket notifications on contract creation"""
-
         super().save(*args, **kwargs)
-
-        
         channel_layer = get_channel_layer()
         if not channel_layer:
-            print("Channel Layer is None")  # Debug
+            print("Channel Layer is None") 
             return
         farmer_contracts_count = Contract.objects.filter(farmer=self.farmer).count()
         buyer_contracts_count = Contract.objects.filter(buyer=self.buyer).count()
-        # print(f"✅ Sending WebSocket message to contract_{self.farmer.username}")
         async_to_sync(channel_layer.group_send)(
             f"contract_{self.farmer.username}",
             {

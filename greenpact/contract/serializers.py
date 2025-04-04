@@ -2,24 +2,49 @@ from rest_framework import serializers
 from . import models
 from user.models import CustomUser
 from crops.models import Crops
-from user.serializers import userSerializers
-from crops.serializers import CropsSerializer
+# from user.serializers import userSerializers
+# from crops.serializers import CropsSerializer
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status
 
 class ContractSerializer(serializers.ModelSerializer):
-    farmer=userSerializers(read_only=True)
-    buyer=userSerializers(read_only=True)
-    crop=CropsSerializer(read_only=True)
+    farmer_name = serializers.SerializerMethodField()
+    buyer_name = serializers.SerializerMethodField()
+    crop_name = serializers.SerializerMethodField()
     terms = serializers.ListField(
         child=serializers.CharField(),
         required=False
     )
     class Meta:
         model = models.Contract
-        fields = '__all__'
+        fields = [
+            'contract_id',
+            'farmer_name',
+            'buyer_name',
+            'crop_name',
+            'nego_price',
+            'quantity',
+            'created_at',
+            'delivery_address',
+            'delivery_date',
+            'terms',
+            'status',
+        ]
+    def get_farmer_name(self, obj):
+        try:
+            return obj.farmer.farmer_profile.name
+        except AttributeError:
+            return obj.farmer.username 
+
+    def get_buyer_name(self, obj):
+        try:
+            return obj.buyer.contractor_profile.name
+        except AttributeError:
+            return obj.buyer.username
+    def get_crop_name(self, obj):
+        return obj.crop.crop_name 
     def create(self,validated_data):
         try:
             request = self.context.get('request')
