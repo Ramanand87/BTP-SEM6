@@ -10,7 +10,7 @@ const PORT = 3000;
 app.use(bodyParser.json());
 app.use(cors());
 
-const routes = require("./routes");
+const routes = require("./routes/index");
 app.use(routes);
 
 app.use(express.static(path.join(__dirname, "..", "frontend")));
