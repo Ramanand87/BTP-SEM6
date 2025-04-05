@@ -3,32 +3,31 @@
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Plus, Filter, ArrowUpDown, Trash2, Edit, FileText } from "lucide-react"
-import Link from "next/link"
-import { motion } from "framer-motion"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Search, Filter, ArrowUpDown, Trash2, Edit, FileText, Check, Bell } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  useGetAllContractsQuery, 
-  useUpdateContractMutation,
-  useDeleteContractMutation 
-} from "@/redux/Service/contract"
+import { useUpdateContractMutation, useDeleteContractMutation } from "@/redux/Service/contract"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { useSelector } from "react-redux"
+import { toast } from "sonner" 
 
 const statusColors = {
   active: "bg-green-100 text-green-800 border-green-200",
@@ -37,9 +36,8 @@ const statusColors = {
 }
 
 export default function ContractsListPage() {
-    const ws = useRef(null)
-    const [contract, setContract] = useState([])
-
+  const ws = useRef(null)
+  const [contracts, setContracts] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("all")
   const [updateContract, { isLoading: isUpdating }] = useUpdateContractMutation()
@@ -57,11 +55,22 @@ export default function ContractsListPage() {
     terms: [],
     newTerm: ""
   })
+  
+  // Notification states
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
+  
+  // Approval confirmation dialog
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
+  const [contractToApprove, setContractToApprove] = useState(null)
 
   const userInfo = useSelector((state) => state.auth.userInfo);
   const token = userInfo?.access;
+  const userRole = userInfo?.role
+
+  // Initialize WebSocket connection
   useEffect(() => {
-    
+    if (!token) return;
     
     ws.current = new WebSocket("ws://localhost:5000/ws/contract/")
 
@@ -77,8 +86,14 @@ export default function ContractsListPage() {
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data)
       console.log("WebSocket data received:", data)
-        setContract(data)
-      
+      if (data.data) {
+        const transformedContracts = transformContracts(data.data)
+        setContracts(transformedContracts)
+        
+        // Count pending contracts
+        const pendingContracts = transformedContracts.filter(c => c.status === 'pending')
+        setPendingCount(pendingContracts.length)
+      }
     }
 
     ws.current.onerror = (error) => {
@@ -94,27 +109,24 @@ export default function ContractsListPage() {
         ws.current.close()
       }
     }
-  }, [])
-
+  }, [token])
 
   // Transform the API data to match our UI needs
   const transformContracts = (data) => {
-    if (!data?.data) return []
+    if (!data) return []
     
-    return data.data.map(contract => ({
+    return data.map(contract => ({
       id: contract.contract_id,
-      crop: contract.crop.crop_name,
-      farmer: contract.farmer.username,
-      buyer: contract.buyer.username,
+      crop: contract.crop_name,
+      farmer: contract.farmer_name,
+      buyer: contract.buyer_name,
       quantity: contract.quantity,
       price: contract.nego_price,
       deliveryDate: contract.delivery_date,
-      status: "pending", // Setting all contracts as pending
+      status: contract.status ? "active" : "pending", // Convert boolean to status string
       createdAt: contract.created_at,
-      terms: contract.terms,
+      terms: contract.terms || [],
       delivery_address: contract.delivery_address,
-      crop_image: contract.crop.crop_image,
-      farmer_profile: contract.crop.publisher_profile,
       rawData: contract // Keep original data for editing
     }))
   }
@@ -167,6 +179,37 @@ export default function ContractsListPage() {
     }))
   }
 
+  // Open approval confirmation dialog
+  const openApprovalDialog = (contractId) => {
+    setContractToApprove(contractId)
+    setApprovalDialogOpen(true)
+  }
+
+  // Handle contract approval
+  const handleApprove = () => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN && contractToApprove) {
+      ws.current.send(JSON.stringify({
+        token: token,
+        contract_id: contractToApprove,
+        action: "approve_contracts"
+      }))
+      
+      // Close dialogs and show toast
+      setApprovalDialogOpen(false)
+      setViewOpen(false)
+      toast.success("Contract Approved", {
+        description: "The contract has been successfully approved.",
+        
+      })
+
+      // toast({
+      //   title: "Contract Approved",
+      //   description: "The contract has been successfully approved.",
+      //   variant: "success",
+      // })
+    }
+  }
+
   // Handle contract update
   const handleUpdate = async () => {
     try {
@@ -175,17 +218,39 @@ export default function ContractsListPage() {
         delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
         quantity: Number(formData.quantity),
         nego_price: Number(formData.nego_price),
-        terms: formData.terms
+        terms: formData.terms,
+        status: currentContract.status === "active" // Convert back to boolean
       }
       
+      // Send update via WebSocket
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(JSON.stringify({
+          token: token,
+          action: "update_contract",
+          contract_id: currentContract.id,
+          data: updatedData
+        }))
+      }
+
+      // Also update via REST API
       await updateContract({
         contract_id: currentContract.id,
         updatedData: updatedData
       }).unwrap()
       
       setEditOpen(false)
+      toast.success("Contract Updated", {
+        description: "The contract has been successfully updated.",
+        
+      })
+      // 
     } catch (error) {
       console.error("Failed to update contract:", error)
+
+      toast.error("Update Failed", {
+        description: "There was an error updating the contract.",
+        
+      })     
     }
   }
 
@@ -193,17 +258,34 @@ export default function ContractsListPage() {
   const handleDelete = async (contractId) => {
     if (confirm("Are you sure you want to delete this contract?")) {
       try {
+        // Send delete via WebSocket
+        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+          ws.current.send(JSON.stringify({
+            token: token,
+            action: "delete_contract",
+            contract_id: contractId
+          }))
+        }
+
+        // Also delete via REST API
         await deleteContract(contractId).unwrap()
-        refetch()
+
+        toast.success("Contract Deleted", {
+          description: "The contract has been successfully deleted.",
+          
+        })
+       
       } catch (error) {
         console.error("Failed to delete contract:", error)
+
+        toast.error("Delete Failed", {
+          description: "There was an error deleting the contract.",
+          
+        })
+        
       }
     }
   }
-
-  const contracts = transformContracts(contract)
-  console.log('contracts:',contracts)
-
 
   const filteredContracts = contracts.filter((contract) => {
     const matchesSearch =
@@ -214,31 +296,30 @@ export default function ContractsListPage() {
     if (activeTab === "all") return matchesSearch
     return matchesSearch && contract.status === activeTab
   })
-
-  console.log('filtered', filteredContracts)
-
-  // if (isLoading) {
-  //   return (
-  //     <div className="container mx-auto py-8 px-4">
-  //       <div className="flex justify-center items-center h-64">
-  //         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-  //       </div>
-  //     </div>
-  //   )
-  // }
-
-  // if (isError) {
-  //   return (
-  //     <div className="container mx-auto py-8 px-4">
-  //       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-  //         <p>Error loading contracts. Please try again later.</p>
-  //       </div>
-  //     </div>
-  //   )
-  // }
+  
+  // Get pending contracts for notifications
+  const pendingContracts = contracts.filter(contract => contract.status === 'pending')
 
   return (
     <div className="container mx-auto py-8 px-4">
+      {/* Approval Confirmation Dialog */}
+      <AlertDialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Contract Approval</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to approve this contract? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
+              Yes, Approve Contract
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* View Contract Dialog */}
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -247,81 +328,91 @@ export default function ContractsListPage() {
           </DialogHeader>
           
           {currentContract && (
-            <div className="flex px-4 justify-between">
-                <div className="space-y-4">
-             
+            <div className="flex flex-col px-4">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-semibold">{currentContract.crop} Contract</h2>
+                <Badge className={statusColors[currentContract.status]}>
+                  {currentContract.status.charAt(0).toUpperCase() + currentContract.status.slice(1)}
+                </Badge>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-medium text-gray-500">Crop</h3>
+                    <p className="font-semibold">{currentContract.crop}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-500">Quantity</h3>
+                    <p className="font-semibold">{currentContract.quantity} kg</p>
+                  </div>
+                </div>
 
-             <div className="grid grid-cols-2 gap-4">
-               <div>
-                 <h3 className="font-medium text-gray-500">Crop</h3>
-                 <p>{currentContract.crop}</p>
-               </div>
-               <div>
-                 <h3 className="font-medium text-gray-500">Quantity</h3>
-                 <p>{currentContract.quantity} kg</p>
-               </div>
-               
-             </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-medium text-gray-500">Negotiated Price</h3>
+                    <p className="font-semibold">₹{currentContract.price.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-500">Delivery Date</h3>
+                    <p className="font-semibold">{new Date(currentContract.deliveryDate).toLocaleDateString()}</p>
+                  </div>
+                </div>
 
-             <div className="grid grid-cols-2 gap-4">
-               <div>
-                 <h3 className="font-medium text-gray-500">Negotiated Price</h3>
-                 <p>₹{currentContract.price.toLocaleString()}</p>
-               </div>
-               <div>
-                 <h3 className="font-medium text-gray-500">Delivery Date</h3>
-                 <p>{new Date(currentContract.deliveryDate).toLocaleDateString()}</p>
-               </div>
-             </div>
+                <div>
+                  <h3 className="font-medium text-gray-500">Delivery Address</h3>
+                  <p className="font-semibold">{currentContract.delivery_address}</p>
+                </div>
 
-             <div>
-               <h3 className="font-medium text-gray-500">Delivery Address</h3>
-               <p>{currentContract.delivery_address}</p>
-             </div>
+                <div>
+                  <h3 className="font-medium text-gray-500">Parties</h3>
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <h4 className="text-sm text-gray-500">Farmer</h4>
+                      <p className="font-semibold">{currentContract.farmer}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm text-gray-500">Buyer</h4>
+                      <p className="font-semibold">{currentContract.buyer}</p>
+                    </div>
+                  </div>
+                </div>
 
-             <div>
-               <h3 className="font-medium text-gray-500">Parties</h3>
-               <div className="grid grid-cols-2 gap-4 mt-2">
-                 <div>
-                   <h4 className="text-sm text-gray-500">Farmer</h4>
-                   <p>{currentContract.farmer}</p>
-                 </div>
-                 <div>
-                   <h4 className="text-sm text-gray-500">Buyer</h4>
-                   <p>{currentContract.buyer}</p>
-                 </div>
-               </div>
-             </div>
+                <div>
+                  <h3 className="font-medium text-gray-500">Terms & Conditions</h3>
+                  <div className="mt-2 space-y-2 bg-gray-50 p-4 rounded-lg">
+                    {currentContract.terms.length > 0 ? (
+                      currentContract.terms.map((term, index) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <span className="text-sm">•</span>
+                          <span className="text-sm">{term}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No terms specified</p>
+                    )}
+                  </div>
+                </div>
 
-             <div>
-               <h3 className="font-medium text-gray-500">Terms & Conditions</h3>
-               <div className="mt-2 space-y-2">
-                 {currentContract.terms.length > 0 ? (
-                   currentContract.terms.map((term, index) => (
-                     <div key={index} className="flex items-start gap-2">
-                       <span className="text-sm">•</span>
-                       <span className="text-sm">{term}</span>
-                     </div>
-                   ))
-                 ) : (
-                   <p className="text-sm text-gray-500">No terms specified</p>
-                 )}
-               </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-4">
-               <div>
-                 <h3 className="font-medium text-gray-500">Created On</h3>
-                 <p>{new Date(currentContract.createdAt).toLocaleDateString()}</p>
-               </div>
-             </div>
-           </div>
-            <div className="">
-            <h3 className="font-medium text-gray-500">Status</h3>
-            <Badge className={statusColors[currentContract.status]}>
-              {currentContract.status.charAt(0).toUpperCase() + currentContract.status.slice(1)}
-            </Badge>
-          </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-medium text-gray-500">Created On</h3>
+                    <p className="font-semibold">{new Date(currentContract.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                
+                {/* Approval button inside contract details */}
+                {userRole === 'farmer' && currentContract.status === 'pending' && (
+                  <div className="mt-4">
+                    <Button 
+                      onClick={() => openApprovalDialog(currentContract.id)}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      <Check className="h-4 w-4 mr-2" /> Approve Contract
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
@@ -450,6 +541,77 @@ export default function ContractsListPage() {
           <p className="text-gray-600 mt-1">Manage your farming contracts</p>
         </div>
         
+        {/* Notifications Bell */}
+        {userRole === 'farmer' && (
+          <div className="relative">
+            <Button 
+              variant="outline" 
+              className="rounded-full h-10 w-10 p-0"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="h-5 w-5" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {pendingCount}
+                </span>
+              )}
+            </Button>
+            
+            {/* Pending Contracts Dropdown */}
+            <AnimatePresence>
+              {showNotifications && pendingContracts.length > 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50 overflow-hidden"
+                >
+                  <div className="p-3 bg-green-50 border-b border-green-100">
+                    <h3 className="font-medium text-green-800">Pending Contracts</h3>
+                    <p className="text-xs text-green-600">Contracts waiting for your approval</p>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {pendingContracts.map((contract) => (
+                      <div 
+                        key={contract.id} 
+                        className="p-3 border-b hover:bg-gray-50 cursor-pointer"
+                        onClick={() => {
+                          handleViewClick(contract);
+                          setShowNotifications(false);
+                        }}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{contract.crop}</p>
+                            <p className="text-sm text-gray-500">From: {contract.buyer}</p>
+                          </div>
+                          <Badge className={statusColors.pending}>Pending</Badge>
+                        </div>
+                        <div className="mt-1 flex justify-between text-xs text-gray-500">
+                          <span>₹{contract.price.toLocaleString()}</span>
+                          <span>{new Date(contract.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-2 bg-gray-50 text-center">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-green-600 text-xs w-full"
+                      onClick={() => {
+                        setActiveTab("pending");
+                        setShowNotifications(false);
+                      }}
+                    >
+                      View All Pending Contracts
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-8">
@@ -493,11 +655,18 @@ export default function ContractsListPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="all" onValueChange={setActiveTab}>
+        <Tabs defaultValue="all" onValueChange={setActiveTab} value={activeTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="all">All Contracts</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="pending">
+              Pending
+              {pendingCount > 0 && (
+                <span className="ml-1.5 bg-yellow-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {pendingCount}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
 
@@ -509,9 +678,11 @@ export default function ContractsListPage() {
                     key={contract.id} 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
                   >
-                    <Card className="h-full hover:shadow-lg transition-shadow duration-300 border-l-4 border-l-green-500">
+                    <Card className={`h-full hover:shadow-lg transition-shadow duration-300 border-l-4 ${
+                      contract.status === 'pending' ? 'border-l-yellow-500' : 'border-l-green-500'
+                    }`}>
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <div>
@@ -553,28 +724,50 @@ export default function ContractsListPage() {
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleViewClick(contract)}
+                            className="hover:bg-gray-100"
                           >
                             <FileText className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleEditClick(contract)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleDelete(contract.id)}
-                            disabled={isDeleting}
-                          >
-                            {isDeleting ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            )}
-                          </Button>
+                          
+                          {/* Show edit/delete only for buyers */}
+                          {userRole === 'contractor' && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleEditClick(contract)}
+                                className="hover:bg-gray-100"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleDelete(contract.id)}
+                                disabled={isDeleting}
+                                className="hover:bg-gray-100"
+                              >
+                                {isDeleting ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                )}
+                              </Button>
+                            </>
+                          )}
+                          
+                          {/* Show approve button only for farmers on pending contracts */}
+                          {userRole === 'farmer' && contract.status === 'pending' && (
+                            
+                  
+                            <Button 
+                              
+                              onClick={() => openApprovalDialog(contract.id)}
+                              className=" bg-green-600 text-xs hover:bg-green-700"
+                              >
+                               Approve
+                              </Button>
+                          )}
                         </div>
                       </CardFooter>
                     </Card>
@@ -592,3 +785,4 @@ export default function ContractsListPage() {
     </div>
   )
 }
+
