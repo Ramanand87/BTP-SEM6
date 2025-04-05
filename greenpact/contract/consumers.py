@@ -30,10 +30,8 @@ class ContractConsumer(AsyncWebsocketConsumer):
                 elif action=="approve_contracts":
                     if self.user.type=="farmer":
                         await self.approve_contract(data)
-                        contracts = await self.get_contracts()
-                        await self.send(text_data=json.dumps({"data": contracts}))
                     else:
-                        self.send(text_data=json.dumps({"error":"You cant approve this contract wait for seller to approve"}))
+                        await self.send(text_data=json.dumps({"error":"You cant approve this contract wait for seller to approve"}))
         except Exception as e:
             await self.send(text_data=json.dumps({"error": str(e)}))
 
@@ -71,10 +69,10 @@ class ContractConsumer(AsyncWebsocketConsumer):
             return None
 
     @sync_to_async
-    def approve_contracts(self, data):
+    def approve_contract(self, data):
         try:
             contract=models.Contract.objects.get(contract_id=data["contract_id"])
-            contract.approved=True
+            contract.status=True
             contract.save()
         except Exception:
             return None
