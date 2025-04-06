@@ -180,6 +180,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Form submission handler
+    const additionalConditionsInput = document.getElementById('additionalConditions');
+    const termsContent = document.querySelector('.terms-content');
+
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -191,26 +194,48 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Collect form data
         const formData = new FormData(form);
-        
+
+        // Collect only additional conditions entered through the input box
+        const additionalConditions = Array.from(document.querySelectorAll('.terms-content p.additional-condition'))
+            .map(p => p.textContent.trim())
+            .join('\n');
+
+        formData.set('additionalConditions', additionalConditions); // Add additional conditions to form data
+
         try {
             const response = await fetch('/api/contracts/create', {
                 method: 'POST',
                 body: formData
             });
-            
-            const result = await response.json();
-            
+
             if (response.ok) {
-                alert('Contract created successfully!');
+                // If the response is a PDF, display it in the modal
+                const blob = await response.blob();
+                const pdfUrl = URL.createObjectURL(blob);
 
-                // Update preview and download link
-                const previewUrl = result.pdfPath;
-                contractPreview.data = previewUrl;
-                previewLink.href = previewUrl;
+                // Set the PDF in the preview modal
+                contractPreview.setAttribute('data', pdfUrl);
+                previewLink.href = pdfUrl;
 
-                // Show modal
+                // Show the modal
                 modal.style.display = "block";
+
+                // Update the download button to download the PDF
+                downloadBtn.onclick = function() {
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
+                    link.download = `Contract-${orderIdInput.value}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+
+                // Update the print button to open the PDF in a new tab
+                printBtn.onclick = function() {
+                    window.open(pdfUrl, '_blank');
+                };
             } else {
+                const result = await response.json();
                 throw new Error(result.message || 'Failed to create contract');
             }
         } catch (error) {
@@ -230,15 +255,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add additional conditions to terms and conditions
-    const additionalConditionsInput = document.getElementById('additionalConditions');
     const addConditionButton = document.getElementById('addConditionButton');
-    const termsContent = document.querySelector('.terms-content');
 
     addConditionButton.addEventListener('click', function() {
         const condition = additionalConditionsInput.value.trim();
         if (condition) {
             const conditionParagraph = document.createElement('p');
             conditionParagraph.textContent = condition;
+            conditionParagraph.classList.add('additional-condition'); // Mark as additional condition
             termsContent.appendChild(conditionParagraph);
             additionalConditionsInput.value = ''; // Clear the input box
         } else {

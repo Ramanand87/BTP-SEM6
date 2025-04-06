@@ -49,18 +49,16 @@ class Contract(models.Model):
     def delete(self, *args, **kwargs):
         channel_layer = get_channel_layer()
 
-        # Fetch updated contract count before deletion
         farmer_contracts_count = Contract.objects.filter(farmer=self.farmer).count() - 1
         buyer_contracts_count = Contract.objects.filter(buyer=self.buyer).count() - 1
 
         super().delete(*args, **kwargs)
 
-        # Send WebSocket notification on contract deletion
         async_to_sync(channel_layer.group_send)(
             f"contract_{self.farmer.username}",
             {
                 "type": "contract_notification",
-                "contract": max(0, farmer_contracts_count),  # Ensure non-negative count
+                "contract": max(0, farmer_contracts_count), 
             },
         )
 
@@ -68,13 +66,13 @@ class Contract(models.Model):
             f"contract_{self.buyer.username}",
             {
                 "type": "contract_notification",
-                "contract": max(0, buyer_contracts_count),  # Ensure non-negative count
+                "contract": max(0, buyer_contracts_count), 
             },
         )
 
 class ContractDoc(models.Model):
-    contract = models.ForeignKey(Contract, related_name="documents", on_delete=models.CASCADE)
-    document = models.FileField(upload_to='contracts/')
+    contract = models.ForeignKey(Contract, related_name="pdf_doc", on_delete=models.CASCADE)
+    document = models.FileField(upload_to='contracts_pdfs/')
 
     def __str__(self):
-        return f"Document for {self.contract.contract_id}"
+        return f"PDF for Contract {self.contract.contract_id}"

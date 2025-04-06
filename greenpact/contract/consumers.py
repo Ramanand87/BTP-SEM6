@@ -4,6 +4,9 @@ from rest_framework_simplejwt.tokens import AccessToken
 from . import models,serializers
 import json
 from asgiref.sync import sync_to_async
+import requests
+from django.core.files.base import ContentFile
+from django.conf import settings
 
 class ContractConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -71,10 +74,53 @@ class ContractConsumer(AsyncWebsocketConsumer):
     @sync_to_async
     def approve_contract(self, data):
         try:
-            contract=models.Contract.objects.get(contract_id=data["contract_id"])
-            contract.status=True
+            contract = models.Contract.objects.get(contract_id=data["contract_id"])
+            contract.status = True
             contract.save()
+            farmer_profile = contract.farmer.farmer_profile
+            contractor_profile = contract.buyer.contractor_profile
+            payload = {
+                "orderId": "ORD12345",
+                "orderDate": "2025-04-02",
+                "farmerName": farmer_profile.name,
+                "farmerAddress": farmer_profile.address,
+                "farmerContact": farmer_profile.phoneno,
+                "customerName": contractor_profile.name,
+                "customerAddress": contractor_profile.address,
+                "customerContact": contractor_profile.phoneno,
+                "cropName": contract.crop.name,
+                "quantity": contract.quantity,
+                "pricePerUnit": contract.nego_price,
+                "totalAmount": contract.quantity * contract.nego_price,
+                "orderId": str(contract.contract_id)[:8],
+                "contractId": str(contract.contract_id),
+                "deliveryDate": contract.delivery_date.strftime("%Y-%m-%d"),
+                "deliveryLocation": contract.delivery_address,
+                "additionalConditions": "\n".join(contract.terms if contract.terms else []),
+            }
+
+            files = {
+                # If you're storing signature paths or bytes somewhere
+                # 'farmerSignature': open(signature_path1, 'rb'),
+                # 'customerSignature': open(signature_path2, 'rb'),
+            }
+
+            response = requests.post("http://localhost:6000/api/contracts/create", data=payload, files=files)
+
+            if response.status_code != 200:
+                print("PDF generation failed:", response.text)
+                return None
+
+            pdf_name = f"contract_{contract.contract_id}.pdf"
+            contract_doc = models.ContractDoc(contract=contract)
+            contract_doc.document.save(pdf_name, ContentFile(response.content))
+            contract_doc.save()
+
+            print("PDF saved successfully!")
+
+            return True
         except Exception:
+            print("Error approving contract:", e)
             return None
     
     async def contract_notification(self, event):
