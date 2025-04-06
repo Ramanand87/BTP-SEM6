@@ -67,7 +67,7 @@ class TransactionView(APIView):
         try:
             contract=get_object_or_404(models.Contract,contract_id=pk)
             transaction=get_list_or_404(models.Transaction,contract=contract)
-            serial=serializers.TransactionSerializer(transaction,many=True)
+            serial=serializers.TransactionSerializer(transaction,many=True, context={'request': request})
             return Response({'data':serial.data},status=status.HTTP_200_OK)
         except Http404:
             return Response({'Error': 'No Contract found'}, status=status.HTTP_404_NOT_FOUND)

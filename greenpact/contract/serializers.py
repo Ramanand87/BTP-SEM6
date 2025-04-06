@@ -74,14 +74,20 @@ class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model=models.Transaction
         fields='__all__'
+        extra_kwargs = {
+            'contract': {'required': False},
+        }
 
     def create(self,validated_data):
         contract=get_object_or_404(models.Contract,contract_id=self.initial_data.get('contract_id'))
-        validated_data["contract"]=contract
+        validated_data['contract']=contract
         return models.Transaction.objects.create(**validated_data)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        if instance.receipt:
+        request = self.context.get('request')
+        if instance.receipt and request:
+            data['receipt'] = request.build_absolute_uri(instance.receipt.url)
+        elif instance.receipt:
             data['receipt'] = instance.receipt.url
         return data
