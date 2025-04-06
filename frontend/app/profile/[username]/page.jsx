@@ -9,6 +9,7 @@ import {
   useDeleteRatingMutation,
   useUpdateRatingMutation,
 } from "@/redux/Service/ratingApi"
+import { useGetAllContractsQuery } from "@/redux/Service/contract" 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
@@ -39,24 +40,19 @@ import { useState, useEffect, useRef } from "react"
 import { useSelector } from "react-redux"
 import { useCreateRoomMutation, useGetRoomsQuery } from "@/redux/Service/chatApi"
 import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Webcam from "react-webcam"
+import Link from "next/link"
 
 export default function ProfilePage() {
   const router = useRouter()
   const { username } = useParams()
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const { data: profile, error, isLoading, refetch } = useGetProfileQuery(username)
   const { data: ratings, refetch: refetchRatings } = useGetRatingQuery(username)
+  const { data: contracts } = useGetAllContractsQuery()
   const [updateProfile] = useUpdateProfileMutation()
   const [createRating] = useCreateRatingMutation()
   const [deleteRating] = useDeleteRatingMutation()
@@ -94,40 +90,40 @@ export default function ProfilePage() {
   }
 
   const handleProfileSubmit = async () => {
-    setIsUpdatingProfile(true); // Start loading
+    setIsUpdatingProfile(true) // Start loading
     try {
-      const data = new FormData();
-      data.append("phoneno", phone);
-      data.append("address", address);
-  
+      const data = new FormData()
+      data.append("phoneno", phone)
+      data.append("address", address)
+
       // Convert base64 to File object if it's a data URI
-      if (profilePic && profilePic.startsWith('data:image')) {
-        const blob = dataURItoBlob(profilePic);
-        const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
-        data.append("image", file);
+      if (profilePic && profilePic.startsWith("data:image")) {
+        const blob = dataURItoBlob(profilePic)
+        const file = new File([blob], "profile.jpg", { type: "image/jpeg" })
+        data.append("image", file)
       }
-  
-      await updateProfile(data).unwrap();
-      refetch();
-      setEditOpen(false);
+
+      await updateProfile(data).unwrap()
+      refetch()
+      setEditOpen(false)
     } catch (error) {
-      console.error("Failed to update profile:", error);
+      console.error("Failed to update profile:", error)
     } finally {
-      setIsUpdatingProfile(false); // Stop loading regardless of success/error
+      setIsUpdatingProfile(false) // Stop loading regardless of success/error
     }
-  };
+  }
   // Helper function to convert data URI to Blob
   function dataURItoBlob(dataURI) {
-    const byteString = atob(dataURI.split(',')[1]);
-    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    
+    const byteString = atob(dataURI.split(",")[1])
+    const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0]
+    const ab = new ArrayBuffer(byteString.length)
+    const ia = new Uint8Array(ab)
+
     for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
+      ia[i] = byteString.charCodeAt(i)
     }
-    
-    return new Blob([ab], { type: mimeString });
+
+    return new Blob([ab], { type: mimeString })
   }
   const handleChatClick = async () => {
     if (rooms?.data?.some((room) => room.chat_user === username)) {
@@ -262,8 +258,6 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white pb-16">
       {/* Back Navigation */}
-  
-    
 
       {/* Profile Header */}
       <div className="bg-white shadow-md mb-8">
@@ -397,17 +391,13 @@ export default function ProfilePage() {
             </div>
             <div className="flex flex-col items-center">
               <label className="block text-sm font-medium mb-2">Profile Picture</label>
-              <Webcam
-                ref={webcamRef}
-                screenshotFormat="image/jpeg"
-                className="w-40 h-40 rounded-lg mb-2"
-              />
+              <Webcam ref={webcamRef} screenshotFormat="image/jpeg" className="w-40 h-40 rounded-lg mb-2" />
               <Button onClick={handleCapture} className="bg-blue-600 hover:bg-blue-700 mb-2">
                 Capture Photo
               </Button>
               {profilePic && (
                 <img
-                  src={profilePic}
+                  src={profilePic || "/placeholder.svg"}
                   alt="Captured"
                   className="w-24 h-24 rounded-lg object-cover"
                 />
@@ -415,24 +405,40 @@ export default function ProfilePage() {
             </div>
           </div>
           <DialogFooter>
-  <Button 
-    onClick={handleProfileSubmit} 
-    className="bg-green-600 hover:bg-green-700"
-    disabled={isUpdatingProfile}
-  >
-    {isUpdatingProfile ? (
-      <>
-        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        Saving...
-      </>
-    ) : (
-      "Save Changes"
-    )}
-  </Button>
-</DialogFooter>
+            <Button
+              onClick={handleProfileSubmit}
+              className="bg-green-600 hover:bg-green-700"
+              disabled={isUpdatingProfile}
+            >
+              {isUpdatingProfile ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -914,67 +920,91 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  {[1, 2, 3].map((_, index) => (
-                    <Card
-                      key={index}
-                      className="border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
-                    >
-                      <CardHeader className="p-4 bg-gray-50 border-b border-gray-200">
-                        <div className="flex justify-between items-center">
-                          <CardTitle className="text-lg">Contract #{12345 + index}</CardTitle>
-                          <Badge
-                            className={
-                              index === 0
-                                ? "bg-green-100 text-green-800 hover:bg-green-200"
-                                : "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                            }
-                          >
-                            {index === 0 ? "Active" : "Completed"}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <h3 className="font-medium text-gray-700">Contract Details</h3>
-                            <div className="mt-2 space-y-2">
-                              <div className="flex items-center text-gray-600">
-                                <User className="w-4 h-4 mr-2 text-gray-500" />
-                                <span>Buyer: Green Farms Co.</span>
+                  {contracts?.data && contracts.data.length > 0 ? (
+                    contracts.data.map((contract) => (
+                      <Card
+                        key={contract.contract_id}
+                        className="border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
+                      >
+                        <CardHeader className="p-4 bg-gray-50 border-b border-gray-200">
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-lg">Contract #{contract.contract_id.substring(0, 8)}</CardTitle>
+                            <Badge
+                              className={
+                                contract.status
+                                  ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                  : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                              }
+                            >
+                              {contract.status ? "Active" : "Completed"}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <h3 className="font-medium text-gray-700">Contract Details</h3>
+                              <div className="mt-2 space-y-2">
+                                <div className="flex items-center text-gray-600">
+                                  <User className="w-4 h-4 mr-2 text-gray-500" />
+                                  <span>Farmer: {contract.farmer_name}</span>
+                                </div>
+                                <div className="flex items-center text-gray-600">
+                                  <User className="w-4 h-4 mr-2 text-gray-500" />
+                                  <span>Buyer: {contract.buyer_name}</span>
+                                </div>
+                                <div className="flex items-center text-gray-600">
+                                  <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+                                  <span>Delivery Date: {new Date(contract.delivery_date).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center text-gray-600">
+                                  <Clock className="w-4 h-4 mr-2 text-gray-500" />
+                                  <span>Created: {new Date(contract.created_at).toLocaleDateString()}</span>
+                                </div>
                               </div>
-                              <div className="flex items-center text-gray-600">
-                                <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-                                <span>Duration: 6 Months</span>
-                              </div>
-                              <div className="flex items-center text-gray-600">
-                                <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                                <span>Start Date: {new Date().toLocaleDateString()}</span>
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-gray-700">Financial Details</h3>
+                              <div className="mt-2 space-y-2">
+                                <div className="flex items-center text-gray-600">
+                                  <CreditCard className="w-4 h-4 mr-2 text-gray-500" />
+                                  <span>Price: ₹{contract.nego_price.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center text-gray-600">
+                                  <Crop className="w-4 h-4 mr-2 text-gray-500" />
+                                  <span>Crop: {contract.crop_name}</span>
+                                </div>
+                                <div className="flex items-center text-gray-600">
+                                  <MapPin className="w-4 h-4 mr-2 text-gray-500" />
+                                  <span>Delivery Address: {contract.delivery_address}</span>
+                                </div>
+                                <div className="flex items-center text-gray-600">
+                                  <FileText className="w-4 h-4 mr-2 text-gray-500" />
+                                  <span>Quantity: {contract.quantity} units</span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                          <div>
-                            <h3 className="font-medium text-gray-700">Financial Details</h3>
-                            <div className="mt-2 space-y-2">
-                              <div className="flex items-center text-gray-600">
-                                <CreditCard className="w-4 h-4 mr-2 text-gray-500" />
-                                <span>Value: ₹{(50000 + index * 10000).toLocaleString()}</span>
-                              </div>
-                              <div className="flex items-center text-gray-600">
-                                <Crop className="w-4 h-4 mr-2 text-gray-500" />
-                                <span>Crop: {["Rice", "Wheat", "Cotton"][index]}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="bg-gray-50 border-t border-gray-200 p-4">
-                        <Button variant="outline" className="ml-auto">
-                          <FileText className="w-4 h-4 mr-2" />
-                          View Details
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
+                          
+                        </CardContent>
+                        <CardFooter className="bg-gray-50 border-t border-gray-200 p-4">
+                          <Link href='/contracts'>
+                          <Button variant="outline" className="ml-auto">
+                            <FileText className="w-4 h-4 mr-2" />
+                            View Details
+                          </Button></Link>
+                        </CardFooter>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <FileText className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                      <h3 className="text-xl font-medium text-gray-700 mb-2">No Contracts Found</h3>
+                      <p className="text-gray-500 max-w-md mx-auto">
+                        There are no contracts associated with this account yet.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

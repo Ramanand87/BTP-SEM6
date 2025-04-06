@@ -14,8 +14,12 @@ export const contractApi = createApi({
   }),
   tagTypes: ["Contracts"], // Define tag types
   endpoints: (builder) => ({
-    getContracts: builder.query({
-      query: (id) => `/${id}`,
+    getContract: builder.query({
+      query: (id) => `/${id}/`,
+      providesTags: (result, error, id) => [{ type: "Contracts", id }],
+    }),
+    getAllPayments: builder.query({
+      query: (id) => `/transaction/${id}/`,
       providesTags: (result, error, id) => [{ type: "Contracts", id }],
     }),
     getAllContracts: builder.query({
@@ -27,6 +31,14 @@ export const contractApi = createApi({
         url: "/",
         method: "POST",
         body: newContract,
+      }),
+      invalidatesTags: ["Contracts"], // Invalidates cache to trigger refetch
+    }),
+    createPayment: builder.mutation({
+      query: (newPayment) => ({
+        url: "/transaction/",
+        method: "POST",
+        body: newPayment,
       }),
       invalidatesTags: ["Contracts"], // Invalidates cache to trigger refetch
     }),
@@ -50,9 +62,11 @@ export const contractApi = createApi({
 });
 
 export const {
-  useGetContractsQuery,
+  useGetContractQuery,
   useGetAllContractsQuery,
+  useGetAllPaymentsQuery,
   useCreateContractMutation,
+  useCreatePaymentMutation,
   useUpdateContractMutation,
   useDeleteContractMutation,
 } = contractApi;

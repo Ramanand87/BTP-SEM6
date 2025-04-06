@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { useGetMarketPriceQuery } from "@/redux/Service/cropApi";
 import { useGetSingleCropQuery } from "@/redux/Service/marketApi";
 import { ArrowLeft, ShoppingCart, MessageCircle } from "lucide-react";
 import Link from "next/link";
@@ -13,9 +14,13 @@ export default function CropDetailsPage() {
   const router = useRouter();
   const  {crop_id}  = useParams(); // Extract id from useParams()
 
+  const { data: crop, error, isLoading } = useGetSingleCropQuery(crop_id); // Pass the correct id
+
+  const { data: marketCrops } = useGetMarketPriceQuery(crop?.data.crop_name);
+  
+  const marketPrice = marketCrops?.results[0].modal_price
 
 
-const { data: crop, error, isLoading } = useGetSingleCropQuery(crop_id); // Pass the correct id
 
 
   if (isLoading) return <p>Loading...</p>;
@@ -51,7 +56,7 @@ const { data: crop, error, isLoading } = useGetSingleCropQuery(crop_id); // Pass
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             <div className="bg-green-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600">Market Price</p>
-              <p className="font-semibold">{crop?.market_price}</p>
+              <p className="font-semibold">{marketPrice}/Quintal </p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600">Location</p>

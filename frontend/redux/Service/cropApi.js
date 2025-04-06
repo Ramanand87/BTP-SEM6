@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const cropApi = createApi({
   reducerPath: "cropApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://127.0.0.1:8000/crops/detail/",
+    baseUrl: "http://127.0.0.1:8000/crops/",
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth.userInfo?.access;
       if (token) {
@@ -15,16 +15,20 @@ export const cropApi = createApi({
   tagTypes: ["Crop"],
   endpoints: (builder) => ({
     getCrops: builder.query({
-      query: () => "/curr/",
+      query: () => "detail/curr/",
       providesTags: ["Crop"],
     }),
     getAllCrops: builder.query({
-      query: () => "/",
+      query: () => "detail/",
+      providesTags: ["Crop"],
+    }),
+    getMarketPrice: builder.query({
+      query: (crop_name) => `prices/commodity/${crop_name}`,
       providesTags: ["Crop"],
     }),
     addCrop: builder.mutation({
       query: (newCrop) => ({
-        url: "/",
+        url: "detail/",
         method: "POST",
         body: newCrop,
       }),
@@ -32,7 +36,7 @@ export const cropApi = createApi({
     }),
     updateCrop: builder.mutation({
       query: ({ id, body }) => ({
-        url: `/${id}`,
+        url: `detail/${id}`,
         method: "PUT",
         body: body,
         // Do not set Content-Type header manually
@@ -41,7 +45,7 @@ export const cropApi = createApi({
     }),
     deleteCrop: builder.mutation({
       query: (id) => ({
-        url: `/${id}`,
+        url: `detail/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Crop"],
@@ -51,6 +55,7 @@ export const cropApi = createApi({
 
 export const {
   useGetCropsQuery,
+  useGetMarketPriceQuery,
   useAddCropMutation,
   useUpdateCropMutation,
   useDeleteCropMutation,

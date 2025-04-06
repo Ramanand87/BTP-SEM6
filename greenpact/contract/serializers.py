@@ -60,6 +60,28 @@ class ContractSerializer(serializers.ModelSerializer):
         
 
 class ContractDocSerializer(serializers.ModelSerializer):
+    document = serializers.SerializerMethodField()
     class Meta:
         model = models.ContractDoc
-        fields = ["id", "contract", "document"]
+        fields = ["contract", "document"]
+    def get_document(self, obj):
+        request = self.context.get('request')
+        if request is not None:
+            return request.build_absolute_uri(obj.document.url)
+        return obj.document.url
+
+class TransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=models.Transaction
+        fields='__all__'
+
+    def create(self,validated_data):
+        contract=get_object_or_404(models.Contract,contract_id=self.initial_data.get('contract_id'))
+        validated_data["contract"]=contract
+        return models.Transaction.objects.create(**validated_data)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.receipt:
+            data['receipt'] = instance.receipt.url
+        return data

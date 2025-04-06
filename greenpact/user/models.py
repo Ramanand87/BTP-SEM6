@@ -24,7 +24,8 @@ class FarmerProfile(models.Model):
     image = CloudinaryField('image')
     screenshot = CloudinaryField('image', null=True, blank=True)
     aadhar_image = models.FileField(upload_to='aadhar/', null=True, blank=True)
-
+    signature = models.FileField(upload_to='signature/', null=True, blank=True)
+    
     def __str__(self):
         return self.user.username
 
@@ -36,13 +37,14 @@ class ContractorProfile(models.Model):
     image = CloudinaryField('image')
     gstin = models.CharField(max_length=15, unique=True)
     aadhar_image = models.FileField(upload_to='aadhar/', null=True, blank=True)
-
+    signature = models.FileField(upload_to='signature/', null=True, blank=True)
+    
     def __str__(self):
         return self.user.username
     
 class Documents(models.Model):
     doc_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE) 
     doc = models.FileField(upload_to='documents/')
-
+    
     def __str__(self):
         return self.doc_user.username

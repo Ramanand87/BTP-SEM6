@@ -27,8 +27,8 @@ export default function MarketPage() {
           <div>Error fetching crops.</div>
         ) : (
           crops?.map((crop) => (
-            <Link href={`/crop/${crop.crop_id}`} key={crop.crop_id} >
-            <Card className="hover:shadow-lg transition-shadow">
+            <Link href={`/crop/${crop.crop_id}`}>
+            <Card key={crop.crop_id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <img src={crop.crop_image} alt={crop.crop_name} className="w-full h-48 object-cover rounded-lg" />
               </CardHeader>

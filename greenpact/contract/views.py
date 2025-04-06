@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from . import models
+from django.db.models import Sum
 from . import serializers
 from django.http import Http404
 class ContractView(APIView):
@@ -61,4 +62,76 @@ class ContractView(APIView):
         except Exception as e:
                 return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+class TransactionView(APIView):
+    def get(self,request,pk):
+        try:
+            contract=get_object_or_404(models.Contract,contract_id=pk)
+            transaction=get_list_or_404(models.Transaction,contract=contract)
+            serial=serializers.TransactionSerializer(transaction,many=True)
+            return Response({'data':serial.data},status=status.HTTP_200_OK)
+        except Http404:
+            return Response({'Error': 'No Contract found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+                return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    def post(self,request):
+        try:
+            serial=serializers.TransactionSerializer(data=request.data)
+            if serial.is_valid():
+                serial.save()
+                return Response({'Sucess':'Transaction added'},status=status.HTTP_200_OK)
+            return Response({'Error':serial.errors},status=status.HTTP_400_BAD_REQUEST)
+        except Http404:
+            return Response({'Error': 'No Contract found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+                return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def put(self,request,pk):
+        try:
+            transaction=get_object_or_404(models.Transaction,id=pk)
+            serial=serializers.TransactionSerializer(transaction,data=request.data,partial=True)
+            if serial.is_valid():
+                serial.save()
+                return Response({'Sucess':'Transaction Updated'},status=status.HTTP_200_OK)
+            return Response({'Error':serial.errors},status=status.HTTP_400_BAD_REQUEST)
+        except Http404:
+            return Response({'Error': 'No Contract found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+                return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def delete(self,request,pk):
+        try:
+            transaction=get_object_or_404(models.Transaction,id=pk)
+            transaction.delete()
+            return Response({'Sucess':'Transaction deleted'},status=status.HTTP_200_OK)
+        except Http404:
+            return Response({'Error': 'No Contract found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+                return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ContractDocView(APIView):
+    def get(self,request,pk=None):
+        try:
+            contractDoc=get_object_or_404(models.ContractDoc,contract__contract_id=pk)
+            serial=serializers.ContractDocSerializer(contractDoc,context={'request':request})
+            return Response({'data':serial.data},status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class GetProgressView(APIView):
+     def get(sel,request,pk):
+        try:
+            contract=get_object_or_404(models.Contract,contract_id=pk)
+            total_paid = models.Transaction.objects.filter(contract=contract).aggregate(total=Sum('amount'))['total'] or 0
+            total_price=contract.nego_price*contract.quantity 
+            remaining_amount = total_price - total_paid
+            return Response({
+                "contract_id": str(contract.contract_id),
+                "total_price": total_price,
+                "total_paid": total_paid,
+                "remaining_amount": remaining_amount,
+                "payment_complete": remaining_amount <= 0
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
