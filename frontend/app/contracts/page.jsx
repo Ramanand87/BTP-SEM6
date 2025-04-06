@@ -27,7 +27,7 @@ import { CalendarIcon, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { useSelector } from "react-redux"
-import { toast } from "sonner" 
+import { toast } from "sonner"
 
 const statusColors = {
   active: "bg-green-100 text-green-800 border-green-200",
@@ -53,46 +53,59 @@ export default function ContractsListPage() {
     quantity: 0,
     nego_price: 0,
     terms: [],
-    newTerm: ""
+    newTerm: "",
   })
-  
+
   // Notification states
   const [showNotifications, setShowNotifications] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
-  
+
   // Approval confirmation dialog
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
   const [contractToApprove, setContractToApprove] = useState(null)
 
-  const userInfo = useSelector((state) => state.auth.userInfo);
-  const token = userInfo?.access;
+  // Add a loading state for WebSocket fetch
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Change the delete loading state to track individual buttons
+  const [deletingIds, setDeletingIds] = useState([])
+
+  // Add a state to track approving IDs
+  const [approvingIds, setApprovingIds] = useState([])
+
+  const userInfo = useSelector((state) => state.auth.userInfo)
+  const token = userInfo?.access
   const userRole = userInfo?.role
 
   // Initialize WebSocket connection
   useEffect(() => {
-    if (!token) return;
-    
+    if (!token) return
+
     ws.current = new WebSocket("ws://localhost:5000/ws/contract/")
 
     ws.current.onopen = () => {
       console.log("WebSocket connected")
       // Send initial request to fetch contracts
-      ws.current.send(JSON.stringify({
-        token: token,
-        action: "fetch_contracts"
-      }))
+      ws.current.send(
+        JSON.stringify({
+          token: token,
+          action: "fetch_contracts",
+        }),
+      )
     }
 
+    // In the WebSocket onmessage handler, add this line after setting contracts:
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data)
       console.log("WebSocket data received:", data)
       if (data.data) {
         const transformedContracts = transformContracts(data.data)
         setContracts(transformedContracts)
-        
+
         // Count pending contracts
-        const pendingContracts = transformedContracts.filter(c => c.status === 'pending')
+        const pendingContracts = transformedContracts.filter((c) => c.status === "pending")
         setPendingCount(pendingContracts.length)
+        setIsLoading(false) // Set loading to false after data is received
       }
     }
 
@@ -114,8 +127,8 @@ export default function ContractsListPage() {
   // Transform the API data to match our UI needs
   const transformContracts = (data) => {
     if (!data) return []
-    
-    return data.map(contract => ({
+
+    return data.map((contract) => ({
       id: contract.contract_id,
       crop: contract.crop_name,
       farmer: contract.farmer_name,
@@ -127,7 +140,7 @@ export default function ContractsListPage() {
       createdAt: contract.created_at,
       terms: contract.terms || [],
       delivery_address: contract.delivery_address,
-      rawData: contract // Keep original data for editing
+      rawData: contract, // Keep original data for editing
     }))
   }
 
@@ -145,7 +158,7 @@ export default function ContractsListPage() {
       quantity: contract.quantity,
       nego_price: contract.price,
       terms: [...contract.terms],
-      newTerm: ""
+      newTerm: "",
     })
     setDeliveryDate(new Date(contract.deliveryDate))
     setEditOpen(true)
@@ -154,28 +167,28 @@ export default function ContractsListPage() {
   // Handle form changes
   const handleFormChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
   }
 
   // Add new term
   const addTerm = () => {
     if (formData.newTerm.trim()) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         terms: [...prev.terms, prev.newTerm.trim()],
-        newTerm: ""
+        newTerm: "",
       }))
     }
   }
 
   // Remove term
   const removeTerm = (index) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      terms: prev.terms.filter((_, i) => i !== index)
+      terms: prev.terms.filter((_, i) => i !== index),
     }))
   }
 
@@ -185,28 +198,30 @@ export default function ContractsListPage() {
     setApprovalDialogOpen(true)
   }
 
-  // Handle contract approval
+  // Then update the handleApprove function
   const handleApprove = () => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN && contractToApprove) {
-      ws.current.send(JSON.stringify({
-        token: token,
-        contract_id: contractToApprove,
-        action: "approve_contracts"
-      }))
-      
+      setApprovingIds((prev) => [...prev, contractToApprove])
+
+      ws.current.send(
+        JSON.stringify({
+          token: token,
+          contract_id: contractToApprove,
+          action: "approve_contracts",
+        }),
+      )
+
       // Close dialogs and show toast
       setApprovalDialogOpen(false)
       setViewOpen(false)
       toast.success("Contract Approved", {
         description: "The contract has been successfully approved.",
-        
       })
 
-      // toast({
-      //   title: "Contract Approved",
-      //   description: "The contract has been successfully approved.",
-      //   variant: "success",
-      // })
+      // Remove from approving IDs after a short delay to allow WebSocket to update
+      setTimeout(() => {
+        setApprovingIds((prev) => prev.filter((id) => id !== contractToApprove))
+      }, 1000)
     }
   }
 
@@ -215,56 +230,61 @@ export default function ContractsListPage() {
     try {
       const updatedData = {
         delivery_address: formData.delivery_address,
-        delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
+        delivery_date: format(deliveryDate, "yyyy-MM-dd"),
         quantity: Number(formData.quantity),
         nego_price: Number(formData.nego_price),
         terms: formData.terms,
-        status: currentContract.status === "active" // Convert back to boolean
+        status: currentContract.status === "active", // Convert back to boolean
       }
-      
+
       // Send update via WebSocket
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        ws.current.send(JSON.stringify({
-          token: token,
-          action: "update_contract",
-          contract_id: currentContract.id,
-          data: updatedData
-        }))
+        ws.current.send(
+          JSON.stringify({
+            token: token,
+            action: "update_contract",
+            contract_id: currentContract.id,
+            data: updatedData,
+          }),
+        )
       }
 
       // Also update via REST API
       await updateContract({
         contract_id: currentContract.id,
-        updatedData: updatedData
+        updatedData: updatedData,
       }).unwrap()
-      
+
       setEditOpen(false)
       toast.success("Contract Updated", {
         description: "The contract has been successfully updated.",
-        
       })
-      // 
+      //
     } catch (error) {
       console.error("Failed to update contract:", error)
 
       toast.error("Update Failed", {
         description: "There was an error updating the contract.",
-        
-      })     
+      })
     }
   }
 
-  // Handle contract deletion
+  // Update the handleDelete function to track individual button loading states
   const handleDelete = async (contractId) => {
     if (confirm("Are you sure you want to delete this contract?")) {
       try {
+        // Add the contract ID to the deleting IDs
+        setDeletingIds((prev) => [...prev, contractId])
+
         // Send delete via WebSocket
         if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-          ws.current.send(JSON.stringify({
-            token: token,
-            action: "delete_contract",
-            contract_id: contractId
-          }))
+          ws.current.send(
+            JSON.stringify({
+              token: token,
+              action: "delete_contract",
+              contract_id: contractId,
+            }),
+          )
         }
 
         // Also delete via REST API
@@ -272,17 +292,16 @@ export default function ContractsListPage() {
 
         toast.success("Contract Deleted", {
           description: "The contract has been successfully deleted.",
-          
         })
-       
       } catch (error) {
         console.error("Failed to delete contract:", error)
 
         toast.error("Delete Failed", {
           description: "There was an error deleting the contract.",
-          
         })
-        
+      } finally {
+        // Remove the contract ID from the deleting IDs
+        setDeletingIds((prev) => prev.filter((id) => id !== contractId))
       }
     }
   }
@@ -296,9 +315,9 @@ export default function ContractsListPage() {
     if (activeTab === "all") return matchesSearch
     return matchesSearch && contract.status === activeTab
   })
-  
+
   // Get pending contracts for notifications
-  const pendingContracts = contracts.filter(contract => contract.status === 'pending')
+  const pendingContracts = contracts.filter((contract) => contract.status === "pending")
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -326,7 +345,7 @@ export default function ContractsListPage() {
           <DialogHeader>
             <DialogTitle>Contract Details</DialogTitle>
           </DialogHeader>
-          
+
           {currentContract && (
             <div className="flex flex-col px-4">
               <div className="flex justify-between items-start mb-6">
@@ -335,7 +354,7 @@ export default function ContractsListPage() {
                   {currentContract.status.charAt(0).toUpperCase() + currentContract.status.slice(1)}
                 </Badge>
               </div>
-              
+
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -400,15 +419,24 @@ export default function ContractsListPage() {
                     <p className="font-semibold">{new Date(currentContract.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
-                
+
                 {/* Approval button inside contract details */}
-                {userRole === 'farmer' && currentContract.status === 'pending' && (
+                {userRole === "farmer" && currentContract.status === "pending" && (
                   <div className="mt-4">
-                    <Button 
+                    <Button
                       onClick={() => openApprovalDialog(currentContract.id)}
                       className="w-full bg-green-600 hover:bg-green-700"
+                      disabled={approvingIds.includes(currentContract?.id)}
                     >
-                      <Check className="h-4 w-4 mr-2" /> Approve Contract
+                      {approvingIds.includes(currentContract?.id) ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-2" /> Approve Contract
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
@@ -424,7 +452,7 @@ export default function ContractsListPage() {
           <DialogHeader>
             <DialogTitle>Edit Contract</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Delivery Address</label>
@@ -444,7 +472,7 @@ export default function ContractsListPage() {
                     variant={"outline"}
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !deliveryDate && "text-muted-foreground"
+                      !deliveryDate && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -491,7 +519,7 @@ export default function ContractsListPage() {
               <div className="flex gap-2 mb-2">
                 <Input
                   value={formData.newTerm}
-                  onChange={(e) => setFormData(prev => ({...prev, newTerm: e.target.value}))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, newTerm: e.target.value }))}
                   placeholder="Add new term"
                 />
                 <Button onClick={addTerm} variant="outline">
@@ -502,11 +530,7 @@ export default function ContractsListPage() {
                 {formData.terms.map((term, index) => (
                   <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                     <span className="text-sm">{term}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeTerm(index)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => removeTerm(index)}>
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
@@ -516,11 +540,7 @@ export default function ContractsListPage() {
           </div>
 
           <DialogFooter>
-            <Button 
-              onClick={handleUpdate} 
-              className="bg-green-600 hover:bg-green-700"
-              disabled={isUpdating}
-            >
+            <Button onClick={handleUpdate} className="bg-green-600 hover:bg-green-700" disabled={isUpdating}>
               {isUpdating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -540,12 +560,12 @@ export default function ContractsListPage() {
           <h1 className="text-3xl font-bold text-green-800">Contracts</h1>
           <p className="text-gray-600 mt-1">Manage your farming contracts</p>
         </div>
-        
+
         {/* Notifications Bell */}
-        {userRole === 'farmer' && (
+        {userRole === "farmer" && (
           <div className="relative">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="rounded-full h-10 w-10 p-0"
               onClick={() => setShowNotifications(!showNotifications)}
             >
@@ -556,11 +576,11 @@ export default function ContractsListPage() {
                 </span>
               )}
             </Button>
-            
+
             {/* Pending Contracts Dropdown */}
             <AnimatePresence>
               {showNotifications && pendingContracts.length > 0 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
@@ -572,12 +592,12 @@ export default function ContractsListPage() {
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     {pendingContracts.map((contract) => (
-                      <div 
-                        key={contract.id} 
+                      <div
+                        key={contract.id}
                         className="p-3 border-b hover:bg-gray-50 cursor-pointer"
                         onClick={() => {
-                          handleViewClick(contract);
-                          setShowNotifications(false);
+                          handleViewClick(contract)
+                          setShowNotifications(false)
                         }}
                       >
                         <div className="flex justify-between items-start">
@@ -595,13 +615,13 @@ export default function ContractsListPage() {
                     ))}
                   </div>
                   <div className="p-2 bg-gray-50 text-center">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-green-600 text-xs w-full"
                       onClick={() => {
-                        setActiveTab("pending");
-                        setShowNotifications(false);
+                        setActiveTab("pending")
+                        setShowNotifications(false)
                       }}
                     >
                       View All Pending Contracts
@@ -670,19 +690,28 @@ export default function ContractsListPage() {
             <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
 
+          {isLoading && (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+              <span className="ml-2 text-green-600">Loading contracts...</span>
+            </div>
+          )}
+
           <TabsContent value={activeTab} className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredContracts.length > 0 ? (
                 filteredContracts.map((contract, index) => (
-                  <motion.div 
-                    key={contract.id} 
+                  <motion.div
+                    key={contract.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.05 }}
                   >
-                    <Card className={`h-full hover:shadow-lg transition-shadow duration-300 border-l-4 ${
-                      contract.status === 'pending' ? 'border-l-yellow-500' : 'border-l-green-500'
-                    }`}>
+                    <Card
+                      className={`h-full hover:shadow-lg transition-shadow duration-300 border-l-4 ${
+                        contract.status === "pending" ? "border-l-yellow-500" : "border-l-green-500"
+                      }`}
+                    >
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <div>
@@ -720,34 +749,34 @@ export default function ContractsListPage() {
                           Created on {new Date(contract.createdAt).toLocaleDateString()}
                         </span>
                         <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleViewClick(contract)}
                             className="hover:bg-gray-100"
                           >
                             <FileText className="h-4 w-4" />
                           </Button>
-                          
+
                           {/* Show edit/delete only for buyers */}
-                          {userRole === 'contractor' && (
+                          {userRole === "contractor" && (
                             <>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleEditClick(contract)}
                                 className="hover:bg-gray-100"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleDelete(contract.id)}
-                                disabled={isDeleting}
+                                disabled={deletingIds.includes(contract.id)}
                                 className="hover:bg-gray-100"
                               >
-                                {isDeleting ? (
+                                {deletingIds.includes(contract.id) ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <Trash2 className="h-4 w-4 text-red-500" />
@@ -755,18 +784,20 @@ export default function ContractsListPage() {
                               </Button>
                             </>
                           )}
-                          
+
                           {/* Show approve button only for farmers on pending contracts */}
-                          {userRole === 'farmer' && contract.status === 'pending' && (
-                            
-                  
-                            <Button 
-                              
+                          {userRole === "farmer" && contract.status === "pending" && (
+                            <Button
                               onClick={() => openApprovalDialog(contract.id)}
-                              className=" bg-green-600 text-xs hover:bg-green-700"
-                              >
-                               Approve
-                              </Button>
+                              className="bg-green-600 text-xs hover:bg-green-700"
+                              disabled={approvingIds.includes(contract.id)}
+                            >
+                              {approvingIds.includes(contract.id) ? (
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                "Approve"
+                              )}
+                            </Button>
                           )}
                         </div>
                       </CardFooter>
@@ -774,14 +805,14 @@ export default function ContractsListPage() {
                   </motion.div>
                 ))
               ) : (
-                <div className="col-span-full text-center py-12">
+                !isLoading && <div className="col-span-full text-center py-12">
                   <p className="text-gray-500">No contracts found matching your criteria.</p>
                 </div>
               )}
             </div>
           </TabsContent>
         </Tabs>
-      </div> 
+      </div>
     </div>
   )
 }

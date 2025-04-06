@@ -1,198 +1,194 @@
-"use client";
-import React, { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Eye,
-  EyeOff,
-  Upload,
-  Sun,
-  Wheat,
-  CheckCircle2,
-  Loader2,
-  Trash,
-  Droplets,
-  Cloud,
-  Camera,
-} from "lucide-react";
-import Image from "next/image";
-import { motion } from "framer-motion";
-import FarmerLogo from "@/components/assets/FramerLogo";
-import { useRegisterMutation, useLoginMutation } from "@/redux/Service/auth";
-import Webcam from "react-webcam";
-import { useDispatch, useSelector } from "react-redux";
-import { setCredentials } from "@/redux/features/authFeature";
+"use client"
+import { useState, useRef, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Eye, EyeOff, Upload, Sun, Wheat, CheckCircle2, Loader2, Trash, Droplets, Cloud, Camera } from "lucide-react"
+import Image from "next/image"
+import { motion } from "framer-motion"
+import FarmerLogo from "@/components/assets/FramerLogo"
+import { useRegisterMutation, useLoginMutation } from "@/redux/Service/auth"
+import Webcam from "react-webcam"
+import { useDispatch, useSelector } from "react-redux"
+import { setCredentials } from "@/redux/features/authFeature"
 
 const AuthPage = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [signupStep, setSignupStep] = useState(1);
-  const [document, setDocument] = useState(null); // Single document
-  const [isLoading, setIsLoading] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [aadharDocument, setAadharDocument] = useState(null);
-  const [verificationScreenshot, setVerificationScreenshot] = useState(null);
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const webcamRef = useRef(null);
-  const router = useRouter();
-  const dispatch = useDispatch();
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [signupStep, setSignupStep] = useState(1)
+  const [document, setDocument] = useState(null) // Single document
+  const [isLoading, setIsLoading] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [aadharDocument, setAadharDocument] = useState(null)
+  const [verificationScreenshot, setVerificationScreenshot] = useState(null)
+  const [isCameraActive, setIsCameraActive] = useState(false)
+  const webcamRef = useRef(null)
+  const router = useRouter()
+  const dispatch = useDispatch()
 
   // Retrieve user info from Redux state
-  const userInfo = useSelector((state) => state.auth.userInfo);
+  const userInfo = useSelector((state) => state.auth.userInfo)
 
   // Redirect authenticated users
   useEffect(() => {
     if (userInfo) {
-      router.push('/'); // Redirect to home page or dashboard
+      router.push("/") // Redirect to home page or dashboard
     }
-  }, [userInfo, router]);
+  }, [userInfo, router])
 
   const [formData, setFormData] = useState({
-    role: "", // Add role field
+    role: "farmer", // Set farmer as default role
     name: "",
     username: "",
     address: "",
     phone: "",
+    gstin: "", // Added GSTIN field
     password: "",
     confirmPassword: "",
     document: null, // Single document
     profileImage: null,
     aadharDocument: null,
     verificationScreenshot: null,
-  });
+  })
 
-  const [register] = useRegisterMutation();
-  const [login] = useLoginMutation();
+  const [register] = useRegisterMutation()
+  const [login] = useLoginMutation()
 
   const captureImage = () => {
-    const imageSrc = webcamRef.current.getScreenshot();
-    setPreviewImage(imageSrc);
-    setFormData({ ...formData, profileImage: imageSrc });
-    setIsCameraActive(false); // Close the camera after capturing
-  };
+    const imageSrc = webcamRef.current.getScreenshot()
+    setPreviewImage(imageSrc)
+    setFormData({ ...formData, profileImage: imageSrc })
+    setIsCameraActive(false) // Close the camera after capturing
+  }
 
   // Handle document upload
   const handleDocumentUpload = (e) => {
-    const file = e.target.files[0]; // Only take the first file
+    const file = e.target.files[0] // Only take the first file
     if (file) {
-      setFormData({ ...formData, document: file });
-      setDocument(file);
+      setFormData({ ...formData, document: file })
+      setDocument(file)
     }
-  };
+  }
 
   // Remove document
   const removeDocument = () => {
-    setFormData({ ...formData, document: null });
-    setDocument(null);
-  };
+    setFormData({ ...formData, document: null })
+    setDocument(null)
+  }
 
   const handleAadharDocumentUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]
     if (file) {
-      setFormData({ ...formData, aadharDocument: file });
-      setAadharDocument(file);
+      setFormData({ ...formData, aadharDocument: file })
+      setAadharDocument(file)
     }
-  };
+  }
 
   const handleVerificationScreenshotUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]
     if (file) {
-      setFormData({ ...formData, verificationScreenshot: file });
-      setVerificationScreenshot(file);
+      setFormData({ ...formData, verificationScreenshot: file })
+      setVerificationScreenshot(file)
     }
-  };
+  }
 
   const removeAadharDocument = () => {
-    setFormData({ ...formData, aadharDocument: null });
-    setAadharDocument(null);
-  };
+    setFormData({ ...formData, aadharDocument: null })
+    setAadharDocument(null)
+  }
 
   const removeVerificationScreenshot = () => {
-    setFormData({ ...formData, verificationScreenshot: null });
-    setVerificationScreenshot(null);
-  };
+    setFormData({ ...formData, verificationScreenshot: null })
+    setVerificationScreenshot(null)
+  }
 
   const handleSignupSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
-      return;
+      alert("Passwords do not match")
+      return
     }
 
     if (!formData.role) {
-      alert("Please select a role (Farmer or Buyer).");
-      return;
+      alert("Please select a role (Farmer or Buyer).")
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
-      const data = new FormData();
-      data.append("role", formData.role); // Append role to FormData
-      data.append("name", formData.name);
-      data.append("username", formData.username);
-      data.append("address", formData.address);
-      data.append("phoneno", formData.phone);
-      data.append("password", formData.password);
+      const data = new FormData()
+      data.append("role", formData.role) // Append role to FormData
+      data.append("name", formData.name)
+      data.append("username", formData.username)
+      data.append("address", formData.address)
+      data.append("phoneno", formData.phone)
+      data.append("password", formData.password)
+
+      // Add GSTIN for buyers/contractors
+      if (formData.role === "buyer" && formData.gstin) {
+        data.append("gstin", formData.gstin)
+      }
+
       if (formData.profileImage) {
-        data.append("image", formData.profileImage);
+        data.append("image", formData.profileImage)
       }
       if (formData.aadharDocument) {
-        data.append("aadhaar_image", formData.aadharDocument);
+        data.append("aadhaar_image", formData.aadharDocument)
       }
       if (formData.document) {
-        data.append("documents", formData.document); // Append single document
+        data.append("documents", formData.document) // Append single document
       }
-      if (formData.verificationScreenshot) {
-        data.append("ss", formData.verificationScreenshot);
+      // Only append verification screenshot for farmers
+      if (formData.role === "farmer" && formData.verificationScreenshot) {
+        data.append("ss", formData.verificationScreenshot)
       }
 
-      const response = await register(data).unwrap();
-      console.log("Registration successful:", response);
-      setShowSuccess(true);
+      const response = await register(data).unwrap()
+      console.log("Registration successful:", response)
+      setShowSuccess(true)
     } catch (error) {
-      console.error("Registration failed:", error);
+      console.error("Registration failed:", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    const username = e.target.loginId.value;
-    const password = e.target.loginPassword.value;
+    e.preventDefault()
+    const username = e.target.loginId.value
+    const password = e.target.loginPassword.value
 
     if (!username || !password) {
-      alert("Please enter both username and password.");
-      return;
+      alert("Please enter both username and password.")
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
-      const response = await login({ username, password }).unwrap();
-      console.log("Login successful:", response);
+      const response = await login({ username, password }).unwrap()
+      console.log("Login successful:", response)
 
       // Dispatch setCredentials to store user info in Redux and local storage
-      dispatch(setCredentials(response));
+      dispatch(setCredentials(response))
 
       // Redirect to the home page or dashboard
-      router.push('/');
+      router.push("/")
     } catch (error) {
-      console.error("Login failed:", error);
-      alert("Login failed. Please check your credentials.");
+      console.error("Login failed:", error)
+      alert("Login failed. Please check your credentials.")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const AnimatedBackgroundElements = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -253,11 +249,11 @@ const AuthPage = () => {
         <Droplets className="text-blue-400 h-10 w-10" />
       </motion.div>
     </div>
-  );
+  )
 
   // If the user is logged in, don't render the login/signup page
   if (userInfo) {
-    return null; // Or a loading spinner
+    return null // Or a loading spinner
   }
 
   return (
@@ -385,9 +381,7 @@ const AuthPage = () => {
                         className="border-green-200 focus:ring-green-500"
                         placeholder="Full Name"
                         value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         required
                       />
                     </div>
@@ -398,9 +392,7 @@ const AuthPage = () => {
                         className="border-green-200 focus:ring-green-500"
                         placeholder="Username"
                         value={formData.username}
-                        onChange={(e) =>
-                          setFormData({ ...formData, username: e.target.value })
-                        }
+                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                         required
                       />
                     </div>
@@ -411,12 +403,25 @@ const AuthPage = () => {
                         className="border-green-200 focus:ring-green-500"
                         placeholder="Address"
                         value={formData.address}
-                        onChange={(e) =>
-                          setFormData({ ...formData, address: e.target.value })
-                        }
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                         required
                       />
                     </div>
+
+                    {/* GSTIN field for buyers/contractors */}
+                    {formData.role === "buyer" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="gstin">GSTIN Number</Label>
+                        <Input
+                          id="gstin"
+                          className="border-green-200 focus:ring-green-500"
+                          placeholder="e.g. 561651651112345"
+                          value={formData.gstin}
+                          onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
+                          required
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
                 {signupStep === 2 && (
@@ -432,10 +437,7 @@ const AuthPage = () => {
                               screenshotFormat="image/jpeg"
                               className="w-full h-auto"
                             />
-                            <Button
-                              onClick={captureImage}
-                              className="mt-2 bg-green-600 hover:bg-green-700 text-white"
-                            >
+                            <Button onClick={captureImage} className="mt-2 bg-green-600 hover:bg-green-700 text-white">
                               Capture Photo
                             </Button>
                           </div>
@@ -444,7 +446,7 @@ const AuthPage = () => {
                             {previewImage ? (
                               <div className="flex flex-col items-center">
                                 <Image
-                                  src={previewImage}
+                                  src={previewImage || "/placeholder.svg"}
                                   alt="Profile preview"
                                   width={400}
                                   height={400}
@@ -481,23 +483,16 @@ const AuthPage = () => {
                           id="aadharDocument"
                           onChange={handleAadharDocumentUpload}
                         />
-                        <Label
-                          htmlFor="aadharDocument"
-                          className="cursor-pointer block text-center"
-                        >
+                        <Label htmlFor="aadharDocument" className="cursor-pointer block text-center">
                           <Upload />
-                          <span className="mt-2 text-sm text-gray-600 block">
-                            Upload Aadhar card (PDF or Image)
-                          </span>
+                          <span className="mt-2 text-sm text-gray-600 block">Upload Aadhar card (PDF or Image)</span>
                         </Label>
 
                         {aadharDocument && (
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between bg-green-50 p-2 rounded">
                               <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium">
-                                  {aadharDocument.name}
-                                </span>
+                                <span className="text-sm font-medium">{aadharDocument.name}</span>
                                 <span className="text-xs text-gray-500">
                                   ({(aadharDocument.size / 1024).toFixed(1)} KB)
                                 </span>
@@ -507,9 +502,7 @@ const AuthPage = () => {
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  onClick={() =>
-                                    window.open(URL.createObjectURL(aadharDocument))
-                                  }
+                                  onClick={() => window.open(URL.createObjectURL(aadharDocument))}
                                   className="text-green-600 border-green-200"
                                 >
                                   View
@@ -532,12 +525,12 @@ const AuthPage = () => {
                   </div>
                 )}
 
-{signupStep === 3 && (
+                {signupStep === 3 && (
                   <div className="space-y-4 animate-fadeIn">
-                    
-
                     <div className="space-y-2">
-                      <Label>Kisan Card Document</Label>
+                      <Label>
+                        {formData.role === "farmer" ? "Kisan Card Document" : "Additional Documents (Optional)"}
+                      </Label>
                       <div className="border-2 border-dashed border-green-200 rounded-lg p-4">
                         <input
                           type="file"
@@ -546,13 +539,11 @@ const AuthPage = () => {
                           id="document"
                           onChange={handleDocumentUpload}
                         />
-                        <Label
-                          htmlFor="document"
-                          className="cursor-pointer block text-center"
-                        >
+                        <Label htmlFor="document" className="cursor-pointer block text-center">
                           <Upload />
                           <span className="mt-2 text-sm text-gray-600 block">
                             Upload document (PDF or Image)
+                            {formData.role === "buyer" && " (Optional)"}
                           </span>
                         </Label>
 
@@ -561,21 +552,15 @@ const AuthPage = () => {
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between bg-green-50 p-2 rounded">
                               <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium">
-                                  {document.name}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  ({(document.size / 1024).toFixed(1)} KB)
-                                </span>
+                                <span className="text-sm font-medium">{document.name}</span>
+                                <span className="text-xs text-gray-500">({(document.size / 1024).toFixed(1)} KB)</span>
                               </div>
                               <div className="flex space-x-2">
                                 <Button
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  onClick={() =>
-                                    window.open(URL.createObjectURL(document))
-                                  }
+                                  onClick={() => window.open(URL.createObjectURL(document))}
                                   className="text-green-600 border-green-200"
                                 >
                                   View
@@ -597,7 +582,8 @@ const AuthPage = () => {
                     </div>
                   </div>
                 )}
-                {signupStep === 4 && (
+
+                {signupStep === 4 && formData.role === "farmer" && (
                   <div className="space-y-4 animate-fadeIn">
                     <div className="space-y-2">
                       <Label>Aadhar Card Verification</Label>
@@ -606,7 +592,18 @@ const AuthPage = () => {
                           Please verify your Aadhar card using the official UIDAI website. Follow these steps:
                         </p>
                         <ol className="list-decimal list-inside text-sm text-gray-600 mt-2">
-                          <li>Visit the official UIDAI website: <a href="https://uidai.gov.in/" target="_blank" rel="noopener noreferrer" className="text-green-600 underline">https://uidai.gov.in/</a>.</li>
+                          <li>
+                            Visit the official UIDAI website:{" "}
+                            <a
+                              href="https://uidai.gov.in/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-green-600 underline"
+                            >
+                              https://uidai.gov.in/
+                            </a>
+                            .
+                          </li>
                           <li>Use the "Verify Aadhar" feature to verify your Aadhar card.</li>
                           <li>Once verified, take a screenshot of the verification page.</li>
                           <li>Upload the screenshot below as proof of verification.</li>
@@ -624,10 +621,7 @@ const AuthPage = () => {
                           id="verificationScreenshot"
                           onChange={handleVerificationScreenshotUpload}
                         />
-                        <Label
-                          htmlFor="verificationScreenshot"
-                          className="cursor-pointer block text-center"
-                        >
+                        <Label htmlFor="verificationScreenshot" className="cursor-pointer block text-center">
                           <Upload />
                           <span className="mt-2 text-sm text-gray-600 block">
                             Upload verification screenshot (Image)
@@ -638,9 +632,7 @@ const AuthPage = () => {
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between bg-green-50 p-2 rounded">
                               <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium">
-                                  {verificationScreenshot.name}
-                                </span>
+                                <span className="text-sm font-medium">{verificationScreenshot.name}</span>
                                 <span className="text-xs text-gray-500">
                                   ({(verificationScreenshot.size / 1024).toFixed(1)} KB)
                                 </span>
@@ -650,9 +642,7 @@ const AuthPage = () => {
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  onClick={() =>
-                                    window.open(URL.createObjectURL(verificationScreenshot))
-                                  }
+                                  onClick={() => window.open(URL.createObjectURL(verificationScreenshot))}
                                   className="text-green-600 border-green-200"
                                 >
                                   View
@@ -674,7 +664,9 @@ const AuthPage = () => {
                     </div>
                   </div>
                 )}
-                {signupStep ===5 && (
+
+                {/* Skip step 4 for buyers and go directly to step 5 */}
+                {signupStep === 4 && formData.role === "buyer" && (
                   <div className="space-y-4 animate-fadeIn">
                     <motion.div
                       className="space-y-4"
@@ -691,9 +683,7 @@ const AuthPage = () => {
                             className="border-green-200 focus:ring-green-500"
                             placeholder="Phone Number"
                             value={formData.phone}
-                            onChange={(e) =>
-                              setFormData({ ...formData, phone: e.target.value })
-                            }
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             required
                           />
                         </div>
@@ -744,9 +734,7 @@ const AuthPage = () => {
                           />
                           <button
                             type="button"
-                            onClick={() =>
-                              setShowConfirmPassword(!showConfirmPassword)
-                            }
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2"
                           >
                             {showConfirmPassword ? (
@@ -762,10 +750,97 @@ const AuthPage = () => {
                     {showSuccess && (
                       <Alert className="bg-green-50 border-green-200">
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        <AlertDescription>
-                          Registration successful! Welcome to our farming
-                          community.
-                        </AlertDescription>
+                        <AlertDescription>Registration successful! Welcome to our farming community.</AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                )}
+
+                {signupStep === 5 && formData.role === "farmer" && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <motion.div
+                      className="space-y-4"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <div className="space-y-2">
+                        <div className="mb-4 space-y-2">
+                          <Label htmlFor="phone">Phone Number</Label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            className="border-green-200 focus:ring-green-500"
+                            placeholder="Phone Number"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <Label htmlFor="password">Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            className="border-green-200 focus:ring-green-500 pr-10"
+                            value={formData.password}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                password: e.target.value,
+                              })
+                            }
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2"
+                          >
+                            {showPassword ? (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            className="border-green-200 focus:ring-green-500 pr-10"
+                            value={formData.confirmPassword}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                confirmPassword: e.target.value,
+                              })
+                            }
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2"
+                          >
+                            {showConfirmPassword ? (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {showSuccess && (
+                      <Alert className="bg-green-50 border-green-200">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <AlertDescription>Registration successful! Welcome to our farming community.</AlertDescription>
                       </Alert>
                     )}
                   </div>
@@ -783,7 +858,7 @@ const AuthPage = () => {
                     </Button>
                   )}
 
-                  {signupStep < 5 ? (
+                  {(signupStep < 5 && formData.role === "farmer") || (signupStep < 4 && formData.role === "buyer") ? (
                     <Button
                       type="button"
                       onClick={() => setSignupStep((step) => step + 1)}
@@ -814,7 +889,8 @@ const AuthPage = () => {
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default AuthPage;
+export default AuthPage
+
