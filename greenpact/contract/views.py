@@ -8,6 +8,8 @@ from . import models
 from django.db.models import Sum
 from . import serializers
 from django.http import Http404
+import re
+
 class ContractView(APIView):
     authentication_classes=[JWTAuthentication]
     permission_classes=[IsAuthenticated]
@@ -63,6 +65,8 @@ class ContractView(APIView):
                 return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class TransactionView(APIView):
+    authentication_classes=[JWTAuthentication]
+    permission_classes=[IsAuthenticated]
     def get(self,request,pk):
         try:
             contract=get_object_or_404(models.Contract,contract_id=pk)
@@ -111,6 +115,8 @@ class TransactionView(APIView):
 
 
 class ContractDocView(APIView):
+    authentication_classes=[JWTAuthentication]
+    permission_classes=[IsAuthenticated]
     def get(self,request,pk=None):
         try:
             contractDoc=get_object_or_404(models.ContractDoc,contract__contract_id=pk)
@@ -120,7 +126,9 @@ class ContractDocView(APIView):
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class GetProgressView(APIView):
-     def get(sel,request,pk):
+    authentication_classes=[JWTAuthentication]
+    permission_classes=[IsAuthenticated]
+    def get(sel,request,pk):
         try:
             contract=get_object_or_404(models.Contract,contract_id=pk)
             total_paid = models.Transaction.objects.filter(contract=contract).aggregate(total=Sum('amount'))['total'] or 0
@@ -133,5 +141,35 @@ class GetProgressView(APIView):
                 "remaining_amount": remaining_amount,
                 "payment_complete": remaining_amount <= 0
             }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class FarmerProgressView(APIView):
+    authentication_classes=[JWTAuthentication]
+    permission_classes=[IsAuthenticated]
+    def get(self,request,pk):
+        try:
+            contract=get_object_or_404(models.Contract,contract_id=pk)
+            progress=get_list_or_404(models.FarmerProgress,contract=contract)
+            serial=serializers.FarmerProgressSerializer(progress,many=True)
+            return Response({'data':serial.data},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self,request):
+        try:
+            serial=serializers.FarmerProgressSerializer(data=request.data,context={'request':request})
+            if serial.is_valid():
+                serial.save()
+                return Response({'Sucess':'Progress Saved'},status=status.HTTP_201_CREATED)
+            return Response(serial.errors,status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def delete(self,request,pk):
+        try:
+            progress=get_object_or_404(models.FarmerProgress,id=pk)
+            progress.delete()
+            return Response({'Sucess':'Progress Deleted'},status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)

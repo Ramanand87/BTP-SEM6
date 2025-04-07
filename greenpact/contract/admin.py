@@ -3,3 +3,4 @@ from . import models
 admin.site.register(models.Contract)
 admin.site.register(models.ContractDoc)
 admin.site.register(models.Transaction)
+admin.site.register(models.FarmerProgress)

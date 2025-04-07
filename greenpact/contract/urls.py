@@ -6,5 +6,7 @@ urlpatterns = [
     path('pdf/<uuid:pk>/',views.ContractDocView.as_view()),
     path('transaction/<uuid:pk>/',views.TransactionView.as_view()),
     path('transaction/',views.TransactionView.as_view()),
-    path('progress/<uuid:pk>/',views.GetProgressView.as_view()),
+    path('progress/detail/<uuid:pk>/',views.GetProgressView.as_view()),
+    path('progress/<uuid:pk>/',views.FarmerProgressView.as_view()),
+    path('progress/',views.FarmerProgressView.as_view()),
 ]

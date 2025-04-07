@@ -91,3 +91,29 @@ class TransactionSerializer(serializers.ModelSerializer):
         elif instance.receipt:
             data['receipt'] = instance.receipt.url
         return data
+    
+
+class FarmerProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=models.FarmerProgress
+        fields="__all__"
+        extra_kwargs = {
+            'farmer': {'required': False},
+            'contract': {'required': False},
+        }
+
+    def create(self, validated_data):
+        request=self.context.get('request')
+        if request.user.type == "contractor":
+            return Response({'Error':'Contractor doesnot have permission'},status=status.HTTP_400_BAD_REQUEST)
+        validated_data['farmer']=request.user
+        contract=get_object_or_404(models.Contract,contract_id=self.initial_data.get('contract_id'))
+        validated_data['contract']=contract
+        return models.FarmerProgress.objects.create(**validated_data)
+    
+    def to_representation(self, instance):
+        """ Ensure the full URL of crop_image is included in the GET response. """
+        data = super().to_representation(instance)
+        if instance.image:
+            data['image'] = instance.image.url
+        return data
