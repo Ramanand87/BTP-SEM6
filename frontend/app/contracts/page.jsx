@@ -823,15 +823,19 @@ export default function ContractsListPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: index * 0.05 }}
                     >
-                      <Card className={`h-full hover:shadow-lg transition-shadow duration-300 border-l-4 ${
+                      <Card
+                        className={`h-full hover:shadow-lg transition-shadow duration-300 border-l-4 ${
                           contract.status === "pending"
                             ? "border-l-yellow-500"
                             : "border-l-green-500"
-                        }`}>
-                      <Link href={`/contract/${contract.id}`}
-                        
+                        }`}
                       >
-                        <CardHeader className="pb-2">
+                        {contract.status === "active" ? (
+                          <Link
+                            href={`/contract/${contract.id}`}
+                            className="block"
+                          >
+                            <CardHeader className="pb-2">
                           <div className="flex justify-between items-start">
                             <div>
                               <CardTitle className="text-lg">
@@ -874,6 +878,55 @@ export default function ContractsListPage() {
                             </div>
                           </div>
                         </CardContent>
+                          </Link>
+                        ) : (
+                          <>
+                            <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle className="text-lg">
+                                {contract.crop}
+                              </CardTitle>
+                            </div>
+                            <div className="flex gap-2">
+                              <Badge className={statusColors[contract.status]}>
+                                {contract.status.charAt(0).toUpperCase() +
+                                  contract.status.slice(1)}
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <div>
+                              <p className="text-gray-500">Farmer</p>
+                              <p className="font-medium">{contract.farmer}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Quantity</p>
+                              <p className="font-medium">
+                                {contract.quantity} kg
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Price</p>
+                              <p className="font-medium">
+                                ₹{contract.price.toLocaleString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Delivery</p>
+                              <p className="font-medium">
+                                {new Date(
+                                  contract.deliveryDate
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                          </>
+                        )}
+
                         <CardFooter className="flex justify-between pt-2">
                           <span className="text-xs text-gray-500">
                             Created on{" "}
@@ -936,7 +989,6 @@ export default function ContractsListPage() {
                               )}
                           </div>
                         </CardFooter>
-                      </Link>
                       </Card>
                     </motion.div>
                   ))
