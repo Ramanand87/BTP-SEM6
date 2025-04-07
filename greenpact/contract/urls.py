@@ -9,4 +9,6 @@ urlpatterns = [
     path('progress/detail/<uuid:pk>/',views.GetProgressView.as_view()),
     path('progress/<uuid:pk>/',views.FarmerProgressView.as_view()),
     path('progress/',views.FarmerProgressView.as_view()),
+    path('allprogress/',views.AllFarmerProgressView.as_view()),
+    path('alltransaction/',views.AllTransactionView.as_view()),
 ]

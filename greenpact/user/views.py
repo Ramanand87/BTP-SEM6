@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404,get_list_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -57,7 +57,10 @@ class Login(APIView):
             serialprof=None
             if role == "farmer":
                 farmer_profile = get_object_or_404(models.FarmerProfile, user=user)
-                serialprof = serializers.FarmerProfileSerializer(farmer_profile)
+                if farmer_profile.is_verfied:
+                    serialprof = serializers.FarmerProfileSerializer(farmer_profile)
+                else:
+                    return Response({'Error':'Wait for the admin to verify your profile'},status=status.HTTP_401_UNAUTHORIZED)
             elif role == "contractor":
                 contractor_profile = get_object_or_404(models.ContractorProfile, user=user)
                 serialprof = serializers.ContractorProfileSerializer(contractor_profile)
@@ -108,3 +111,44 @@ class ProfileView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+class RegisteredFarmers(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        try:
+            farmers=get_list_or_404(models.FarmerProfile,is_verfied=False)
+            serial=serializers.FarmerProfileSerializer(farmers,many=True)
+            return Response({'data':serial.data},status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def put(self,request,pk):
+        try:
+            farmer=get_object_or_404(models.FarmerProfile,id=pk)
+            serial=serializers.FarmerProfileSerializer(farmer,data=request.data,partial=True)
+            if serial.is_valid():
+                serial.save()
+                return Response({'Sucess':'Farmer Verified'},status=status.HTTP_202_ACCEPTED)
+            return Response(serial.errors,status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+
+class AdminLoginView(APIView):
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        user = authen(username=username, password=password)
+        if user is not None:
+            if user.is_superuser:
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                })
+            else:
+                return Response({"error": "Only superusers are allowed to log in."}, status=status.HTTP_403_FORBIDDEN)
+        return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)

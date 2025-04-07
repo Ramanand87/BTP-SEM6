@@ -117,3 +117,24 @@ class FarmerProgressSerializer(serializers.ModelSerializer):
         if instance.image:
             data['image'] = instance.image.url
         return data
+    
+
+class TransactionListSerializer(serializers.ModelSerializer):
+    contract_id = serializers.UUIDField(source='contract.contract_id', read_only=True)
+    buyer_name = serializers.CharField(source='contract.buyer.username', read_only=True)
+    receipt = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.Transaction
+        fields = [
+            "contract_id",
+            "buyer_name",
+            "receipt",
+            "date",
+            "amount",
+            "reference_number",
+            "description"
+        ]
+
+    def get_receipt(self, obj):
+        return obj.receipt.url if obj.receipt else None

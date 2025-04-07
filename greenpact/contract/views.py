@@ -173,3 +173,42 @@ class FarmerProgressView(APIView):
             return Response({'Sucess':'Progress Deleted'},status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class AllFarmerProgressView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            progress_qs = models.FarmerProgress.objects.select_related('farmer', 'contract__crop')
+            data = []
+
+            for progress in progress_qs:
+                crop_name = progress.contract.crop.crop_name if progress.contract and progress.contract.crop else None
+
+                data.append({
+                    "contract_id": progress.contract.contract_id if progress.contract else None,
+                    "farmer_name": progress.farmer.username,
+                    "crop_name": crop_name,
+                    "current_status": progress.current_status,
+                    "date": progress.date,
+                    "image": progress.image.url if progress.image else None
+                })
+
+            return Response({"data": data}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class AllTransactionView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            transactions = models.Transaction.objects.select_related("contract__buyer")
+            serializer = serializers.TransactionListSerializer(transactions, many=True)
+            return Response({"data": serializer.data}, status=200)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
