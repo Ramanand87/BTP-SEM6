@@ -11,4 +11,5 @@ urlpatterns = [
     path('progress/',views.FarmerProgressView.as_view()),
     path('allprogress/',views.AllFarmerProgressView.as_view()),
     path('alltransaction/',views.AllTransactionView.as_view()),
+    path('facematch/',views.FaceMatchView.as_view()),
 ]

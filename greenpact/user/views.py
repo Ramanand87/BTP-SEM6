@@ -146,6 +146,7 @@ class AdminLoginView(APIView):
             if user.is_superuser:
                 refresh = RefreshToken.for_user(user)
                 return Response({
+                    "role":"admin",
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
                 })

@@ -9,7 +9,11 @@ from django.db.models import Sum
 from . import serializers
 from django.http import Http404
 import re
-
+from user.models import FarmerProfile
+import tempfile
+import requests
+from deepface import DeepFace
+from .tests import verify_faces
 class ContractView(APIView):
     authentication_classes=[JWTAuthentication]
     permission_classes=[IsAuthenticated]
@@ -212,3 +216,40 @@ class AllTransactionView(APIView):
             return Response({"data": serializer.data}, status=200)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+class FaceMatchView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            image = request.FILES.get('image')
+            if not image:
+                return Response({"error": "No image provided"}, status=400)
+
+            # Get farmer profile
+            try:
+                farmer_profile = request.user.farmer_profile
+            except FarmerProfile.DoesNotExist:
+                return Response({"error": "Farmer profile not found"}, status=404)
+
+            print(f"Farmer Profile: {farmer_profile}")
+            try:
+                stored_image_path = farmer_profile.image.url
+                print(f"Stored Image Path: {stored_image_path}")
+            except Exception as e:
+                return Response({"error": f"Could not download stored image: {str(e)}"}, status=500)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_uploaded:
+                for chunk in image.chunks():
+                    temp_uploaded.write(chunk)
+                uploaded_image_path = temp_uploaded.name
+                print(f"Uploaded Image Path: {uploaded_image_path}")
+            try:
+                result = verify_faces(uploaded_image_path, stored_image_path)
+                return Response({"Verification": result}, status=200)
+            except Exception as e:
+                return Response({"error": f"Face verification failed: {str(e)}"}, status=500)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+

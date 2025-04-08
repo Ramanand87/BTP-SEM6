@@ -77,7 +77,7 @@ export const contractApi = createApi({
    
     verifyUser: builder.mutation({
       query: (image) => ({
-        url: "/verify/",
+        url: "/facematch/",
         method: "POST",
         body: image,
       }),

@@ -22,10 +22,11 @@ class FarmerProfile(models.Model):
     address = models.TextField()
     phoneno = models.CharField(max_length=15, unique=True)
     image = CloudinaryField('image')
-    screenshot = CloudinaryField('image', null=True, blank=True)
+    screenshot = CloudinaryField('screenshot', null=True, blank=True)
     aadhar_image = models.FileField(upload_to='aadhar/', null=True, blank=True)
     signature = models.FileField(upload_to='signature/', null=True, blank=True)
     is_verfied=models.BooleanField(default=False)
+    qr_code_image = models.ImageField(upload_to='qr_codes/', null=True, blank=True)
     
     def __str__(self):
         return self.user.username
