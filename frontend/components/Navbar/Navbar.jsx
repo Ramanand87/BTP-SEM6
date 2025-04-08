@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
+import { useRouter, usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -15,44 +15,39 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
   const router = useRouter();
-  const pathname = usePathname(); // Get current route
+  const pathname = usePathname();
   const dispatch = useDispatch();
 
-  // Retrieve user info from Redux state
   const userInfo = useSelector((state) => state.auth.userInfo);
   const token = userInfo?.access;
 
   useEffect(() => {
     if (!token) return;
 
-    // Connect WebSocket
-    const ws = new WebSocket('ws://localhost:5000/ws/notifications/');
+    let ws;
 
-    ws.onopen = () => {
-      console.log("WebSocket connected");
-      ws.send(JSON.stringify({ token })); // Send token for authentication
-    };
+    try {
+      ws = new WebSocket('ws://localhost:5000/ws/notifications/');
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("Received notification:", data);
+      ws.onopen = () => {
+        console.log("WebSocket connected");
+        ws.send(JSON.stringify({ token }));
+      };
 
-      if (data?.total_unread !== undefined) {
-        setTotalUnread(data.total_unread); // Update unread count
-      }
-    };
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data?.total_unread !== undefined) {
+          setTotalUnread(data.total_unread);
+        }
+      };
 
-    ws.onclose = () => {
-      console.log("WebSocket disconnected");
-    };
+      ws.onclose = () => console.log("WebSocket disconnected");
+      ws.onerror = (error) => console.error("WebSocket error:", error);
+    } catch (err) {
+      console.error("WebSocket setup error:", err);
+    }
 
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    return () => {
-      if (ws) ws.close();
-    };
+    return () => ws?.close();
   }, [token]);
 
   const navItems = [
@@ -60,25 +55,23 @@ export function Navbar() {
     { name: 'Market', href: '/market' },
     { name: 'Demands', href: '/demands' },
     { name: 'Contracts', href: '/contracts' },
-    { name: 'Chat', href: `/chat/${userInfo?.data.username}` },
+    ...(userInfo?.data?.username ? [{ name: 'Chat', href: `/chat/${userInfo.data.username}` }] : []),
     { name: 'Help & Support', href: '/help&support' },
   ];
 
-  // Handle logout
   const handleLogout = () => {
     dispatch(logout());
     router.push('/login');
   };
 
-  // Redirect to chat when clicking on the notification icon
   const handleNotificationClick = () => {
-    if (userInfo?.data.username) {
+    if (userInfo?.data?.username) {
       router.push(`/chat/${userInfo.data.username}`);
     }
   };
 
   return (
-    userInfo?.role? <motion.header
+    <motion.header
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -100,7 +93,7 @@ export function Navbar() {
           <SheetContent side="left" className="w-[300px] sm:w-[400px]">
             <div className="flex flex-col gap-8">
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold text-green-700">FarmFresh</span>
+                <span className="text-xl font-bold text-green-700">GreenPact</span>
                 <X className="h-6 w-6" onClick={() => setIsOpen(false)} />
               </div>
               <div className="flex flex-col gap-4">
@@ -136,7 +129,6 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {userInfo ? (
             <div className="flex items-center gap-4">
-              {/* Notification Bell */}
               <div className="relative cursor-pointer" onClick={handleNotificationClick}>
                 <Bell className="h-6 w-6 text-gray-700 hover:text-green-700" />
                 {totalUnread > 0 && (
@@ -146,21 +138,21 @@ export function Navbar() {
                 )}
               </div>
 
-              {/* User Profile */}
-              <Link href={`/profile/${userInfo.data.username}`} className="flex items-center gap-2">
-                {userInfo.profile.image && (
-                  <img
-                    src={userInfo.profile.image}
-                    alt="Profile"
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                )}
-                <span className="text-sm font-medium text-green-700">
-                  Hi, {userInfo.profile.name}
-                </span>
-              </Link>
+              {userInfo?.data?.username && (
+                <Link href={`/profile/${userInfo.data.username}`} className="flex items-center gap-2">
+                  {userInfo?.profile?.image && (
+                    <img
+                      src={userInfo.profile.image}
+                      alt="Profile"
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  )}
+                  <span className="text-sm font-medium text-green-700">
+                    Hi, {userInfo.profile?.name || 'User'}
+                  </span>
+                </Link>
+              )}
 
-              {/* Logout Button */}
               <Button
                 variant="outline"
                 onClick={handleLogout}
@@ -173,13 +165,13 @@ export function Navbar() {
           ) : (
             <>
               <Button variant="outline" className="hidden md:flex">
-                <Link href={'/login'}>Login</Link>
+                <Link href="/login">Login</Link>
               </Button>
               <Button className="bg-green-700 hover:bg-green-800">Shop Now</Button>
             </>
           )}
         </div>
       </nav>
-    </motion.header> : <></>
+    </motion.header>
   );
 }

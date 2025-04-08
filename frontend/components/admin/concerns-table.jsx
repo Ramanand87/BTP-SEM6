@@ -67,7 +67,7 @@ const concerns = [
 
 
 export function ConcernsTable({ status }) {
-  const [selectedConcern, setSelectedConcern] = useState<any>(null)
+  const [selectedConcern, setSelectedConcern] = useState(null)
   const [open, setOpen] = useState(false)
 
   // Filter concerns based on status

@@ -67,7 +67,7 @@ const registrations = [
 
 
 export function RecentRegistrations({ verified = false, rejected = false }) {
-  const [selectedRegistration, setSelectedRegistration] = useState<any>(null)
+  const [selectedRegistration, setSelectedRegistration] = useState(null)
   const [open, setOpen] = useState(false)
 
   // Filter registrations based on props

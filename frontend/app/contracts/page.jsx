@@ -105,8 +105,8 @@ export default function ContractsListPage() {
 
       // Call the verifyUser mutation
       const result = await verifyUser(formData).unwrap()
-
-      if (result.verification) {
+      console.log(result)
+      if (result.Verification) {
         setVerificationStatus(true)
         toast.success("Verification successful!")
       } else {
