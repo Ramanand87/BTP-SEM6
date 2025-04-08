@@ -1,18 +1,44 @@
-"use client"
+"use client";
 
-import { useParams } from "next/navigation"
-import { useState, useRef, useEffect } from "react"
-import { useGetContractQuery, useGetAllPaymentsQuery, useCreatePaymentMutation } from "@/redux/Service/contract"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { format } from "date-fns"
+import { useParams } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import {
+  useGetContractQuery,
+  useGetAllPaymentsQuery,
+  useCreatePaymentMutation,
+  useGetFramerProgressQuery,
+  useCreateFarmerProgressMutation,
+  useGetContractPdfQuery,
+} from "@/redux/Service/contract";
+
+// Add this import
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
 import {
   AlertCircle,
   CalendarIcon,
@@ -26,22 +52,45 @@ import {
   TreesIcon as Plant,
   Truck,
   PackageCheck,
-} from "lucide-react"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { toast } from "sonner"
-import { useSelector } from "react-redux"
-import Image from "next/image"
+  ChevronLeft,
+  ChevronRight,
+  FileTextIcon,
+} from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import Image from "next/image";
 
 // Harvest status options
 const harvestStatusOptions = [
-  { value: "planted", label: "Planted", icon: <Sprout className="h-4 w-4 mr-2" /> },
-  { value: "growing", label: "Growing", icon: <Plant className="h-4 w-4 mr-2" /> },
-  { value: "harvested", label: "Harvested", icon: <Leaf className="h-4 w-4 mr-2" /> },
-  { value: "ready_for_delivery", label: "Ready for Delivery", icon: <PackageCheck className="h-4 w-4 mr-2" /> },
-  { value: "delivered", label: "Delivered", icon: <Truck className="h-4 w-4 mr-2" /> },
-]
+  {
+    value: "planted",
+    label: "Planted",
+    icon: <Sprout className="h-4 w-4 mr-2" />,
+  },
+  {
+    value: "growing",
+    label: "Growing",
+    icon: <Plant className="h-4 w-4 mr-2" />,
+  },
+  {
+    value: "harvested",
+    label: "Harvested",
+    icon: <Leaf className="h-4 w-4 mr-2" />,
+  },
+  {
+    value: "ready_for_delivery",
+    label: "Ready for Delivery",
+    icon: <PackageCheck className="h-4 w-4 mr-2" />,
+  },
+  {
+    value: "delivered",
+    label: "Delivered",
+    icon: <Truck className="h-4 w-4 mr-2" />,
+  },
+];
 
 // Function to get progress percentage based on harvest status
 const getProgressPercentage = (status) => {
@@ -51,145 +100,159 @@ const getProgressPercentage = (status) => {
     harvested: 60,
     ready_for_delivery: 80,
     delivered: 100,
-  }
-  return statusMap[status] || 0
-}
+  };
+  return statusMap[status] || 0;
+};
 
 export default function ContractPage() {
-  const { contract_id } = useParams()
-  const fileInputRef = useRef(null)
-  const cropImageRef = useRef(null)
-  const userInfo = useSelector((state) => state.auth.userInfo)
-  const userRole = userInfo?.role
-
+  const { contract_id } = useParams();
+  const fileInputRef = useRef(null);
+  const cropImageRef = useRef(null);
+  const userInfo = useSelector((state) => state.auth.userInfo);
+  const userRole = userInfo?.role;
+  const [contractPdfUrl, setContractPdfUrl] = useState(null);
   // Fetch contract details
-  const { data: contractData, isLoading: isLoadingContract, error: contractError } = useGetContractQuery(contract_id)
+  const {
+    data: contractData,
+    isLoading: isLoadingContract,
+    error: contractError,
+  } = useGetContractQuery(contract_id);
 
   // Fetch all payments for this contract
-  const { data: paymentsData, isLoading: isLoadingPayments } = useGetAllPaymentsQuery(contract_id)
+  const { data: paymentsData, isLoading: isLoadingPayments } =
+    useGetAllPaymentsQuery(contract_id);
+  const { data: farmerProgress, isLoading: isLoadingFarmProgress } =
+    useGetFramerProgressQuery(contract_id);
 
   // Create payment mutation
-  const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation()
+  const [createPayment, { isLoading: isCreatingPayment }] =
+    useCreatePaymentMutation();
 
+  const [createFarmerProgress, { isLoading: isCreatingProgress }] =
+    useCreateFarmerProgressMutation();
   // Hardcoded farmer progress data
-  const progressData = {
-    data: {
-      status: "growing",
-      notes: "The crop is growing well. Expecting harvest in 2 weeks.",
-      image: "/placeholder.svg?height=400&width=600",
-      harvest_date: new Date().toISOString(),
-    },
-  }
-  const isLoadingProgress = false
-  const isUpdatingProgress = false
 
+  const { data: farmerProgressData, isLoading: isLoadingProgress } =
+    useGetFramerProgressQuery(contract_id);
+
+    const { data: contractPdf, isLoading: isLoadingPdf } = useGetContractPdfQuery(contract_id);
+
+    useEffect(() => {
+      if (contractPdf?.data?.document) {
+        setContractPdfUrl(contractPdf.data.document);
+      }
+    }, [contractPdf]); // Only runs when contractPdf changes
+    
+    console.log(contractPdf);
+    
   // Mock function for updating farmer progress
-  const updateFarmerProgress = async (formData) => {
-    console.log("Progress update form data:", formData)
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    toast.success("Crop progress updated successfully (Mock)")
-    return { data: { success: true } }
-  }
 
-  const [paymentDate, setPaymentDate] = useState(new Date())
-  const [harvestDate, setHarvestDate] = useState(new Date())
+  const [paymentDate, setPaymentDate] = useState(new Date());
+  const [harvestDate, setHarvestDate] = useState(new Date());
   const [paymentForm, setPaymentForm] = useState({
     description: "",
     amount: "",
     receipt: null,
     receiptName: "",
     reference_number: "",
-  })
+  });
 
   const [progressForm, setProgressForm] = useState({
     status: "planted",
     notes: "",
     cropImage: null,
     cropImageName: "",
-  })
+  });
 
   // Set active tab based on user role
-  const [activeTab, setActiveTab] = useState("payment")
+  const [activeTab, setActiveTab] = useState("payment");
+
+  // 2. Add state for tracking current card index in both history sections
+  const [currentProgressIndex, setCurrentProgressIndex] = useState(0);
+  const [currentPaymentIndex, setCurrentPaymentIndex] = useState(0);
 
   useEffect(() => {
     // Set default tab based on user role
     if (userRole === "farmer") {
-      setActiveTab("farmer")
+      setActiveTab("farmer");
     } else {
-      setActiveTab("payment")
+      setActiveTab("payment");
     }
 
     // Pre-fill progress form if data exists
-    if (progressData?.data) {
-      setProgressForm({
-        status: progressData.data.status || "planted",
-        notes: progressData.data.notes || "",
-        cropImage: null,
-        cropImageName: progressData.data.image ? "Current image" : "",
-      })
 
-      if (progressData.data.harvest_date) {
-        setHarvestDate(new Date(progressData.data.harvest_date))
+    if (farmerProgressData?.data && farmerProgressData.data.length > 0) {
+      // Get the latest progress entry (assuming data is sorted by date)
+      const latestProgress = farmerProgressData.data[0];
+
+      setProgressForm({
+        status: latestProgress.current_status.toLowerCase() || "planted",
+        notes: latestProgress.notes || "",
+        cropImage: null,
+        cropImageName: latestProgress.image ? "Current image" : "",
+      });
+
+      if (latestProgress.date) {
+        setHarvestDate(new Date(latestProgress.date));
       }
     }
-  }, [userRole])
+  }, [userRole]);
 
   const handlePaymentChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setPaymentForm({
       ...paymentForm,
       [name]: value,
-    })
-  }
+    });
+  };
 
   const handleProgressChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setProgressForm({
       ...progressForm,
       [name]: value,
-    })
-  }
+    });
+  };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     if (file) {
       setPaymentForm({
         ...paymentForm,
         receipt: file,
         receiptName: file.name,
-      })
+      });
     }
-  }
+  };
 
   const handleCropImageChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     if (file) {
       setProgressForm({
         ...progressForm,
         cropImage: file,
         cropImageName: file.name,
-      })
+      });
     }
-  }
+  };
 
   const handlePaymentSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
       // Create FormData for file upload
-      const formData = new FormData()
-      formData.append("contract_id", contract_id)
-      formData.append("description", paymentForm.description)
-      formData.append("date", format(paymentDate, "yyyy-MM-dd"))
-      formData.append("amount", paymentForm.amount)
-      formData.append("reference_number", paymentForm.reference_number)
+      const formData = new FormData();
+      formData.append("contract_id", contract_id);
+      formData.append("description", paymentForm.description);
+      formData.append("date", format(paymentDate, "yyyy-MM-dd"));
+      formData.append("amount", paymentForm.amount);
+      formData.append("reference_number", paymentForm.reference_number);
 
       if (paymentForm.receipt) {
-        formData.append("receipt", paymentForm.receipt)
+        formData.append("receipt", paymentForm.receipt);
       }
 
-      await createPayment(formData).unwrap()
+      await createPayment(formData).unwrap();
 
       // Reset form
       setPaymentForm({
@@ -198,53 +261,55 @@ export default function ContractPage() {
         receipt: null,
         receiptName: "",
         reference_number: "",
-      })
+      });
 
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""
+        fileInputRef.current.value = "";
       }
 
-      toast.success("Payment added successfully")
+      toast.success("Payment added successfully");
     } catch (error) {
-      console.log(error)
-      toast.error("Failed to add payment. Please try again.")
+      console.log(error);
+      toast.error("Failed to add payment. Please try again.");
     }
-  }
+  };
 
   const handleProgressSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
-      // Create FormData for file upload (just for UI demonstration)
-      const formData = new FormData()
-      formData.append("contract_id", contract_id)
-      formData.append("status", progressForm.status)
-      formData.append("notes", progressForm.notes)
-      formData.append("harvest_date", format(harvestDate, "yyyy-MM-dd"))
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append("contract_id", contract_id);
+      formData.append("current_status", progressForm.status);
+      formData.append("date", format(harvestDate, "yyyy-MM-dd"));
+      formData.append("notes", progressForm.notes);
 
       if (progressForm.cropImage) {
-        formData.append("image", progressForm.cropImage)
+        formData.append("image", progressForm.cropImage);
       }
 
-      // Call the mock function instead of the real API
-      await updateFarmerProgress(formData)
+      await createFarmerProgress(formData).unwrap();
 
-      // Update the local state to simulate the API response
-      progressData.data = {
-        ...progressData.data,
-        status: progressForm.status,
-        notes: progressForm.notes,
-        harvest_date: format(harvestDate, "yyyy-MM-dd"),
-      }
+      // Reset form fields completely after successful submission
+      setProgressForm({
+        status: "planted",
+        notes: "",
+        cropImage: null,
+        cropImageName: "",
+      });
+      setHarvestDate(new Date());
 
       if (cropImageRef.current) {
-        cropImageRef.current.value = ""
+        cropImageRef.current.value = "";
       }
+
+      toast.success("Crop progress updated successfully");
     } catch (error) {
-      console.log(error)
-      toast.error("Failed to update progress. Please try again.")
+      console.log(error);
+      toast.error("Failed to update progress. Please try again.");
     }
-  }
+  };
 
   if (isLoadingContract || isLoadingPayments || isLoadingProgress) {
     return (
@@ -252,47 +317,108 @@ export default function ContractPage() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2">Loading contract details...</span>
       </div>
-    )
+    );
   }
 
   if (contractError) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600">Error Loading Contract</h2>
-          <p className="mt-2">Failed to load contract details. Please try again later.</p>
+          <h2 className="text-2xl font-bold text-red-600">
+            Error Loading Contract
+          </h2>
+          <p className="mt-2">
+            Failed to load contract details. Please try again later.
+          </p>
           <Button className="mt-4" onClick={() => window.location.reload()}>
             Retry
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
-  const contract = contractData?.data
-  if (!contract) return null
+  const contract = contractData?.data;
+  if (!contract) return null;
 
   // Get payments array or empty array if no payments
-  const payments = paymentsData?.data || []
-  const hasPayments = payments.length > 0
+  const payments = paymentsData?.data || [];
+  const hasPayments = payments.length > 0;
 
   // Get farmer progress data
-  const progress = progressData?.data || null
 
   // Calculate total contract value
-  const totalContractValue = contract.nego_price * contract.quantity
+  const totalContractValue = contract.nego_price * contract.quantity;
 
   // Calculate total paid amount
-  const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+  const totalPaid = payments.reduce(
+    (sum, payment) => sum + Number(payment.amount),
+    0
+  );
 
   // Calculate payment progress percentage
-  const paymentProgressPercentage = Math.min(100, (totalPaid / totalContractValue) * 100)
+  const paymentProgressPercentage = Math.min(
+    100,
+    (totalPaid / totalContractValue) * 100
+  );
 
   // Calculate crop progress percentage
-  const cropProgressPercentage = progress ? getProgressPercentage(progress.status) : 0
+  // Get all farmer progress data
+  const progressEntries = farmerProgressData?.data || [];
+
+  // Find the highest status in the progress entries
+  const getHighestProgressStatus = () => {
+    if (!progressEntries.length) return null;
+
+    const statusValues = {
+      planted: 20,
+      growing: 40,
+      harvested: 60,
+      ready_for_delivery: 80,
+      delivered: 100,
+    };
+
+    let highestStatus = "planted";
+    let highestValue = 0;
+
+    progressEntries.forEach((entry) => {
+      const status = entry.current_status.toLowerCase();
+      const value = statusValues[status] || 0;
+
+      if (value > highestValue) {
+        highestValue = value;
+        highestStatus = status;
+      }
+    });
+
+    return {
+      status: highestStatus,
+      percentage: highestValue,
+    };
+  };
+
+  // Get the highest progress status and percentage
+  const highestProgress = getHighestProgressStatus();
+
+  // Calculate crop progress percentage based on highest status
+  const cropProgressPercentage = highestProgress
+    ? highestProgress.percentage
+    : 0;
+
+  // Get the current progress for display (first/most recent entry)
+  const progress =
+    progressEntries.length > 0
+      ? {
+          status: progressEntries[0].current_status.toLowerCase(),
+          notes: progressEntries[0].notes,
+          image: progressEntries[0].image,
+          harvest_date: progressEntries[0].date,
+        }
+      : null;
 
   // Calculate overall progress percentage
-  const progressPercentage = (paymentProgressPercentage + cropProgressPercentage) / 2
+  const progressPercentage =
+    (paymentProgressPercentage + cropProgressPercentage) / 2;
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -302,49 +428,88 @@ export default function ContractPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
-                <CardTitle className="text-2xl font-bold">Contract Details</CardTitle>
-                <CardDescription>Contract ID: {contract.contract_id}</CardDescription>
+                <CardTitle className="text-2xl font-bold">
+                  Contract Details
+                </CardTitle>
+                <CardDescription>
+                  Contract ID: {contract.contract_id}
+                </CardDescription>
               </div>
-              <Badge variant={hasPayments ? "secondary" : "outline"}>{hasPayments ? "In Progress" : "Active"}</Badge>
+              <Badge variant={hasPayments ? "secondary" : "outline"}>
+                {hasPayments ? "In Progress" : "Active"}
+              </Badge>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Farmer</h3>
-                  <p className="text-lg font-semibold">{contract.farmer_name}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Farmer
+                  </h3>
+                  <p className="text-lg font-semibold">
+                    {contract.farmer_name}
+                  </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Buyer</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Buyer
+                  </h3>
                   <p className="text-lg font-semibold">{contract.buyer_name}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Crop</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Crop
+                  </h3>
                   <p className="text-lg font-semibold">{contract.crop_name}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Quantity</h3>
-                  <p className="text-lg font-semibold">{contract.quantity} kg</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Quantity
+                  </h3>
+                  <p className="text-lg font-semibold">
+                    {contract.quantity} kg
+                  </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Price per kg</h3>
-                  <p className="text-lg font-semibold">₹{contract.nego_price}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Price per kg
+                  </h3>
+                  <p className="text-lg font-semibold">
+                    ₹{contract.nego_price}
+                  </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Total Value</h3>
-                  <p className="text-lg font-semibold">₹{totalContractValue.toLocaleString()}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Total Value
+                  </h3>
+                  <p className="text-lg font-semibold">
+                    ₹{totalContractValue.toLocaleString()}
+                  </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Delivery Address</h3>
-                  <p className="text-lg font-semibold">{contract.delivery_address}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Delivery Address
+                  </h3>
+                  <p className="text-lg font-semibold">
+                    {contract.delivery_address}
+                  </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Delivery Date</h3>
-                  <p className="text-lg font-semibold">{new Date(contract.delivery_date).toLocaleDateString()}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Delivery Date
+                  </h3>
+                  <p className="text-lg font-semibold">
+                    {new Date(contract.delivery_date).toLocaleDateString()}
+                  </p>
                 </div>
+
+                
               </div>
 
+            
               <div className="mt-8">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Contract Terms</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  Contract Terms
+                </h3>
                 <ul className="list-disc pl-5 space-y-1">
                   {contract.terms.map((term, index) => (
                     <li key={index} className="text-sm">
@@ -354,8 +519,24 @@ export default function ContractPage() {
                 </ul>
               </div>
 
+              {contractPdfUrl && (
+                <div className="mt-6">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(contractPdfUrl, "_blank")}
+                  >
+                    <FileTextIcon className="h-4 w-4 mr-2" />
+                    View Contract PDF
+                  </Button>
+                </div>
+              )}
+
+
               <div className="mt-8">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Payment Progress</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  Payment Progress
+                </h3>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>₹{totalPaid.toLocaleString()} paid</span>
@@ -363,24 +544,46 @@ export default function ContractPage() {
                   </div>
                   <Progress value={paymentProgressPercentage} className="h-2" />
                   <p className="text-sm text-muted-foreground">
-                    {paymentProgressPercentage.toFixed(0)}% of contract value paid
+                    {paymentProgressPercentage.toFixed(0)}% of contract value
+                    paid
                   </p>
                 </div>
               </div>
 
-              {progress && (
+              {progressEntries.length > 0 && (
                 <div className="mt-8">
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Crop Progress</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    Crop Progress
+                  </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>
-                        {harvestStatusOptions.find((option) => option.value === progress.status)?.label ||
-                          "Not started"}
-                      </span>
-                      <span>Delivery</span>
+                      <span>Planted</span>
+                      <span>Delivered</span>
                     </div>
                     <Progress value={cropProgressPercentage} className="h-2" />
-                    <p className="text-sm text-muted-foreground">{cropProgressPercentage}% complete</p>
+                    <div className="flex justify-between text-sm">
+                      <span>
+                        Current:{" "}
+                        {harvestStatusOptions.find(
+                          (option) => option.value === highestProgress.status
+                        )?.label || "Not started"}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {cropProgressPercentage}% complete
+                      </span>
+                    </div>
+                    {highestProgress &&
+                      highestProgress.status !== progress.status && (
+                        <p className="text-xs text-muted-foreground">
+                          Highest status achieved:{" "}
+                          {
+                            harvestStatusOptions.find(
+                              (option) =>
+                                option.value === highestProgress.status
+                            )?.label
+                          }
+                        </p>
+                      )}
                   </div>
                 </div>
               )}
@@ -390,9 +593,15 @@ export default function ContractPage() {
 
         {/* Right Side Section - Tabs for Payment/Progress */}
         <div className="lg:col-span-1">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="payment">{userRole === "farmer" ? "Payment History" : "Payments"}</TabsTrigger>
+              <TabsTrigger value="payment">
+                {userRole === "farmer" ? "Payment History" : "Payments"}
+              </TabsTrigger>
               <TabsTrigger value="farmer">Crop Progress</TabsTrigger>
             </TabsList>
 
@@ -403,21 +612,31 @@ export default function ContractPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Payment History</CardTitle>
-                    <CardDescription>View all payments made for this contract</CardDescription>
+                    <CardDescription>
+                      View all payments made for this contract
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {payments.length > 0 ? (
                       <div className="space-y-4">
                         {payments.map((payment) => (
-                          <div key={payment.id} className="border rounded-lg p-4">
+                          <div
+                            key={payment.id}
+                            className="border rounded-lg p-4"
+                          >
                             <div className="flex justify-between items-start">
                               <div>
-                                <p className="font-medium">₹{Number(payment.amount).toLocaleString()}</p>
+                                <p className="font-medium">
+                                  ₹{Number(payment.amount).toLocaleString()}
+                                </p>
                                 <p className="text-sm text-muted-foreground">
                                   {new Date(payment.date).toLocaleDateString()}
                                 </p>
                               </div>
-                              <Badge variant="outline" className="flex items-center gap-1">
+                              <Badge
+                                variant="outline"
+                                className="flex items-center gap-1"
+                              >
                                 <CheckCircle className="h-3 w-3" />
                                 Confirmed
                               </Badge>
@@ -437,13 +656,17 @@ export default function ContractPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-6 text-muted-foreground">No payments have been made yet.</div>
+                      <div className="text-center py-6 text-muted-foreground">
+                        No payments have been made yet.
+                      </div>
                     )}
                   </CardContent>
                   <CardFooter>
                     <div className="w-full flex justify-between text-sm">
                       <span className="text-muted-foreground">Total Paid:</span>
-                      <span className="font-medium">₹{totalPaid.toLocaleString()}</span>
+                      <span className="font-medium">
+                        ₹{totalPaid.toLocaleString()}
+                      </span>
                     </div>
                   </CardFooter>
                 </Card>
@@ -454,18 +677,28 @@ export default function ContractPage() {
                     <Card>
                       <CardHeader>
                         <CardTitle>Advance Payment Required</CardTitle>
-                        <CardDescription>An advance payment is required to start this contract</CardDescription>
+                        <CardDescription>
+                          An advance payment is required to start this contract
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <Alert className="mb-6">
                           <AlertCircle className="h-4 w-4" />
                           <AlertTitle>Attention</AlertTitle>
-                          <AlertDescription>Please make an advance payment to activate this contract.</AlertDescription>
+                          <AlertDescription>
+                            Please make an advance payment to activate this
+                            contract.
+                          </AlertDescription>
                         </Alert>
 
-                        <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                        <form
+                          onSubmit={handlePaymentSubmit}
+                          className="space-y-4"
+                        >
                           <div className="space-y-2">
-                            <Label htmlFor="amount">Advance Payment Amount (₹)</Label>
+                            <Label htmlFor="amount">
+                              Advance Payment Amount (₹)
+                            </Label>
                             <Input
                               id="amount"
                               name="amount"
@@ -476,12 +709,18 @@ export default function ContractPage() {
                               required
                             />
                             <p className="text-xs text-muted-foreground">
-                              Recommended: ₹{Math.round(totalContractValue * 0.25).toLocaleString()} (25% of total)
+                              Recommended: ₹
+                              {Math.round(
+                                totalContractValue * 0.25
+                              ).toLocaleString()}{" "}
+                              (25% of total)
                             </p>
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="description">Payment Description</Label>
+                            <Label htmlFor="description">
+                              Payment Description
+                            </Label>
                             <Textarea
                               id="description"
                               name="description"
@@ -496,16 +735,23 @@ export default function ContractPage() {
                             <Label>Payment Date</Label>
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-start text-left font-normal"
+                                >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {paymentDate ? format(paymentDate, "PPP") : "Select date"}
+                                  {paymentDate
+                                    ? format(paymentDate, "PPP")
+                                    : "Select date"}
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-0">
                                 <Calendar
                                   mode="single"
                                   selected={paymentDate}
-                                  onSelect={(date) => date && setPaymentDate(date)}
+                                  onSelect={(date) =>
+                                    date && setPaymentDate(date)
+                                  }
                                   initialFocus
                                 />
                               </PopoverContent>
@@ -535,7 +781,9 @@ export default function ContractPage() {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="reference_number">Reference Number</Label>
+                            <Label htmlFor="reference_number">
+                              Reference Number
+                            </Label>
                             <Input
                               id="reference_number"
                               name="reference_number"
@@ -546,8 +794,14 @@ export default function ContractPage() {
                             />
                           </div>
 
-                          <Button type="submit" className="w-full" disabled={isCreatingPayment}>
-                            {isCreatingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={isCreatingPayment}
+                          >
+                            {isCreatingPayment && (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            )}
                             Submit Advance Payment
                           </Button>
                         </form>
@@ -556,51 +810,134 @@ export default function ContractPage() {
                   ) : (
                     <Tabs defaultValue="history" className="w-full">
                       <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="history">Payment History</TabsTrigger>
+                        <TabsTrigger value="history">
+                          Payment History
+                        </TabsTrigger>
                         <TabsTrigger value="add">Add Payment</TabsTrigger>
                       </TabsList>
 
                       <TabsContent value="history" className="mt-4">
                         <Card>
-                          <CardHeader>
-                            <CardTitle>Payment History</CardTitle>
-                            <CardDescription>View all payments made for this contract</CardDescription>
+                          <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                              <CardTitle>Payment History</CardTitle>
+                              <CardDescription>
+                                {payments.length > 0
+                                  ? `${currentPaymentIndex + 1} of ${
+                                      payments.length
+                                    }`
+                                  : "No payments yet"}
+                              </CardDescription>
+                            </div>
+                            {payments.length > 1 && (
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() =>
+                                    setCurrentPaymentIndex(
+                                      Math.max(0, currentPaymentIndex - 1)
+                                    )
+                                  }
+                                  disabled={currentPaymentIndex === 0}
+                                >
+                                  <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() =>
+                                    setCurrentPaymentIndex(
+                                      Math.min(
+                                        payments.length - 1,
+                                        currentPaymentIndex + 1
+                                      )
+                                    )
+                                  }
+                                  disabled={
+                                    currentPaymentIndex === payments.length - 1
+                                  }
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
                           </CardHeader>
                           <CardContent>
-                            <div className="space-y-4">
-                              {payments.map((payment) => (
-                                <div key={payment.id} className="border rounded-lg p-4">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <p className="font-medium">₹{Number(payment.amount).toLocaleString()}</p>
-                                      <p className="text-sm text-muted-foreground">
-                                        {new Date(payment.date).toLocaleDateString()}
-                                      </p>
-                                    </div>
-                                    <Badge variant="outline" className="flex items-center gap-1">
-                                      <CheckCircle className="h-3 w-3" />
-                                      Confirmed
-                                    </Badge>
+                            {payments.length > 0 ? (
+                              <div className="border rounded-lg p-4">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="font-medium">
+                                      ₹
+                                      {Number(
+                                        payments[currentPaymentIndex].amount
+                                      ).toLocaleString()}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {new Date(
+                                        payments[currentPaymentIndex].date
+                                      ).toLocaleDateString()}
+                                    </p>
                                   </div>
-                                  <div className="mt-2 text-sm">
-                                    <p>{payment.description}</p>
-                                    {payment.receipt && (
-                                      <p className="flex items-center gap-1 text-muted-foreground mt-1">
+                                  <Badge
+                                    variant="outline"
+                                    className="flex items-center gap-1"
+                                  >
+                                    <CheckCircle className="h-3 w-3" />
+                                    Confirmed
+                                  </Badge>
+                                </div>
+                                <div className="mt-2 text-sm">
+                                  <p>
+                                    {payments[currentPaymentIndex].description}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    Reference:{" "}
+                                    {
+                                      payments[currentPaymentIndex]
+                                        .reference_number
+                                    }
+                                  </p>
+                                  {payments[currentPaymentIndex].receipt && (
+                                    <div className="mt-3">
+                                      <p className="flex items-center gap-1 text-muted-foreground mb-2">
                                         <FileText className="h-3 w-3" />
-                                        {typeof payment.receipt === "string"
-                                          ? payment.receipt.split("/").pop()
+                                        {typeof payments[currentPaymentIndex]
+                                          .receipt === "string"
+                                          ? payments[
+                                              currentPaymentIndex
+                                            ].receipt
+                                              .split("/")
+                                              .pop()
                                           : "Receipt attached"}
                                       </p>
-                                    )}
-                                  </div>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full"
+                                      >
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        View Receipt
+                                      </Button>
+                                    </div>
+                                  )}
                                 </div>
-                              ))}
-                            </div>
+                              </div>
+                            ) : (
+                              <div className="text-center py-6 text-muted-foreground">
+                                No payments have been made yet.
+                              </div>
+                            )}
                           </CardContent>
                           <CardFooter>
                             <div className="w-full flex justify-between text-sm">
-                              <span className="text-muted-foreground">Total Paid:</span>
-                              <span className="font-medium">₹{totalPaid.toLocaleString()}</span>
+                              <span className="text-muted-foreground">
+                                Total Paid:
+                              </span>
+                              <span className="font-medium">
+                                ₹{totalPaid.toLocaleString()}
+                              </span>
                             </div>
                           </CardFooter>
                         </Card>
@@ -610,12 +947,19 @@ export default function ContractPage() {
                         <Card>
                           <CardHeader>
                             <CardTitle>Add New Payment</CardTitle>
-                            <CardDescription>Record a new payment for this contract</CardDescription>
+                            <CardDescription>
+                              Record a new payment for this contract
+                            </CardDescription>
                           </CardHeader>
                           <CardContent>
-                            <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                            <form
+                              onSubmit={handlePaymentSubmit}
+                              className="space-y-4"
+                            >
                               <div className="space-y-2">
-                                <Label htmlFor="amount">Payment Amount (₹)</Label>
+                                <Label htmlFor="amount">
+                                  Payment Amount (₹)
+                                </Label>
                                 <Input
                                   id="amount"
                                   name="amount"
@@ -628,7 +972,9 @@ export default function ContractPage() {
                               </div>
 
                               <div className="space-y-2">
-                                <Label htmlFor="description">Payment Description</Label>
+                                <Label htmlFor="description">
+                                  Payment Description
+                                </Label>
                                 <Textarea
                                   id="description"
                                   name="description"
@@ -643,16 +989,23 @@ export default function ContractPage() {
                                 <Label>Payment Date</Label>
                                 <Popover>
                                   <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                    <Button
+                                      variant="outline"
+                                      className="w-full justify-start text-left font-normal"
+                                    >
                                       <CalendarIcon className="mr-2 h-4 w-4" />
-                                      {paymentDate ? format(paymentDate, "PPP") : "Select date"}
+                                      {paymentDate
+                                        ? format(paymentDate, "PPP")
+                                        : "Select date"}
                                     </Button>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-0">
                                     <Calendar
                                       mode="single"
                                       selected={paymentDate}
-                                      onSelect={(date) => date && setPaymentDate(date)}
+                                      onSelect={(date) =>
+                                        date && setPaymentDate(date)
+                                      }
                                       initialFocus
                                     />
                                   </PopoverContent>
@@ -673,17 +1026,22 @@ export default function ContractPage() {
                                   <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() =>
+                                      fileInputRef.current?.click()
+                                    }
                                     className="w-full justify-start"
                                   >
                                     <Upload className="mr-2 h-4 w-4" />
-                                    {paymentForm.receiptName || "Upload receipt"}
+                                    {paymentForm.receiptName ||
+                                      "Upload receipt"}
                                   </Button>
                                 </div>
                               </div>
 
                               <div className="space-y-2">
-                                <Label htmlFor="reference_number">Reference Number</Label>
+                                <Label htmlFor="reference_number">
+                                  Reference Number
+                                </Label>
                                 <Input
                                   id="reference_number"
                                   name="reference_number"
@@ -694,8 +1052,14 @@ export default function ContractPage() {
                                 />
                               </div>
 
-                              <Button type="submit" className="w-full" disabled={isCreatingPayment}>
-                                {isCreatingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={isCreatingPayment}
+                              >
+                                {isCreatingPayment && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
                                 Record Payment
                               </Button>
                             </form>
@@ -711,48 +1075,127 @@ export default function ContractPage() {
             {/* Farmer Progress Tab Content */}
             <TabsContent value="farmer" className="mt-4 space-y-6">
               {/* Current Progress Display */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Crop Progress</CardTitle>
-                  <CardDescription>Current status of crop cultivation</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {progress ? (
+              {farmerProgressData?.data &&
+              farmerProgressData.data.length > 0 ? (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <div>
+                      <CardTitle>Crop Progress History</CardTitle>
+                      <CardDescription>
+                        {currentProgressIndex + 1} of{" "}
+                        {farmerProgressData.data.length}
+                      </CardDescription>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() =>
+                          setCurrentProgressIndex(
+                            Math.max(0, currentProgressIndex - 1)
+                          )
+                        }
+                        disabled={currentProgressIndex === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() =>
+                          setCurrentProgressIndex(
+                            Math.min(
+                              farmerProgressData.data.length - 1,
+                              currentProgressIndex + 1
+                            )
+                          )
+                        }
+                        disabled={
+                          currentProgressIndex ===
+                          farmerProgressData.data.length - 1
+                        }
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span>Planted</span>
                           <span>Delivered</span>
                         </div>
-                        <Progress value={cropProgressPercentage} className="h-2" />
+                        <Progress
+                          value={getProgressPercentage(
+                            farmerProgressData.data[
+                              currentProgressIndex
+                            ].current_status.toLowerCase()
+                          )}
+                          className="h-2"
+                        />
 
                         <div className="flex justify-between items-center mt-4">
                           <div className="flex items-center">
-                            {harvestStatusOptions.find((option) => option.value === progress.status)?.icon}
+                            {
+                              harvestStatusOptions.find(
+                                (option) =>
+                                  option.value ===
+                                  farmerProgressData.data[
+                                    currentProgressIndex
+                                  ].current_status.toLowerCase()
+                              )?.icon
+                            }
                             <span className="font-medium">
-                              {harvestStatusOptions.find((option) => option.value === progress.status)?.label ||
-                                "Not started"}
+                              {harvestStatusOptions.find(
+                                (option) =>
+                                  option.value ===
+                                  farmerProgressData.data[
+                                    currentProgressIndex
+                                  ].current_status.toLowerCase()
+                              )?.label || "Not started"}
                             </span>
                           </div>
                           <Badge variant="outline">
-                            {progress.harvest_date ? format(new Date(progress.harvest_date), "PPP") : "No date set"}
+                            {farmerProgressData.data[currentProgressIndex].date
+                              ? format(
+                                  new Date(
+                                    farmerProgressData.data[
+                                      currentProgressIndex
+                                    ].date
+                                  ),
+                                  "PPP"
+                                )
+                              : "No date set"}
                           </Badge>
                         </div>
                       </div>
 
-                      {progress.notes && (
+                      {farmerProgressData.data[currentProgressIndex].notes && (
                         <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Farmer Notes:</h4>
-                          <p className="text-sm bg-muted p-3 rounded-md">{progress.notes}</p>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                            Farmer Notes:
+                          </h4>
+                          <p className="text-sm bg-muted p-3 rounded-md">
+                            {
+                              farmerProgressData.data[currentProgressIndex]
+                                .notes
+                            }
+                          </p>
                         </div>
                       )}
 
-                      {progress.image && (
+                      {farmerProgressData.data[currentProgressIndex].image && (
                         <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-2">Current Crop Image:</h4>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                            Crop Image:
+                          </h4>
                           <div className="relative h-48 w-full rounded-md overflow-hidden">
                             <Image
-                              src={progress.image || "/placeholder.svg"}
+                              src={
+                                farmerProgressData.data[currentProgressIndex]
+                                  .image || "/placeholder.svg"
+                              }
                               alt="Crop status"
                               fill
                               className="object-cover"
@@ -761,20 +1204,32 @@ export default function ContractPage() {
                         </div>
                       )}
                     </div>
-                  ) : (
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Crop Progress</CardTitle>
+                    <CardDescription>
+                      Current status of crop cultivation
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
                     <div className="text-center py-6 text-muted-foreground">
                       No progress information has been added yet.
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Progress Update Form - Only for Farmers */}
               {userRole === "farmer" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Update Crop Progress</CardTitle>
-                    <CardDescription>Keep the buyer updated on your crop status</CardDescription>
+                    <CardDescription>
+                      Keep the buyer updated on your crop status
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleProgressSubmit} className="space-y-4">
@@ -782,14 +1237,19 @@ export default function ContractPage() {
                         <Label htmlFor="status">Current Status</Label>
                         <Select
                           value={progressForm.status}
-                          onValueChange={(value) => setProgressForm({ ...progressForm, status: value })}
+                          onValueChange={(value) =>
+                            setProgressForm({ ...progressForm, status: value })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent>
                             {harvestStatusOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
                                 <div className="flex items-center">
                                   {option.icon}
                                   {option.label}
@@ -804,9 +1264,14 @@ export default function ContractPage() {
                         <Label>Harvest/Update Date</Label>
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal">
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal"
+                            >
                               <CalendarIcon className="mr-2 h-4 w-4" />
-                              {harvestDate ? format(harvestDate, "PPP") : "Select date"}
+                              {harvestDate
+                                ? format(harvestDate, "PPP")
+                                : "Select date"}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0">
@@ -855,8 +1320,14 @@ export default function ContractPage() {
                         </div>
                       </div>
 
-                      <Button type="submit" className="w-full" disabled={isUpdatingProgress}>
-                        {isUpdatingProgress && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={isCreatingProgress}
+                      >
+                        {isCreatingProgress && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
                         Update Progress
                       </Button>
                     </form>
@@ -898,28 +1369,44 @@ export default function ContractPage() {
                 <div className="flex items-start">
                   <div
                     className={`rounded-full p-1 ${
-                      hasPayments ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"
+                      hasPayments
+                        ? "bg-green-100 text-green-600"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {hasPayments ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                    {hasPayments ? (
+                      <CheckCircle className="h-4 w-4" />
+                    ) : (
+                      <Clock className="h-4 w-4" />
+                    )}
                   </div>
                   <div className="ml-3">
                     <h4 className="text-sm font-medium">Advance Payment</h4>
-                    <p className="text-xs text-muted-foreground">25% of total value</p>
+                    <p className="text-xs text-muted-foreground">
+                      25% of total value
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
                   <div
                     className={`rounded-full p-1 ${
-                      progressPercentage >= 50 ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"
+                      progressPercentage >= 50
+                        ? "bg-green-100 text-green-600"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {progressPercentage >= 50 ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                    {progressPercentage >= 50 ? (
+                      <CheckCircle className="h-4 w-4" />
+                    ) : (
+                      <Clock className="h-4 w-4" />
+                    )}
                   </div>
                   <div className="ml-3">
                     <h4 className="text-sm font-medium">Partial Payment</h4>
-                    <p className="text-xs text-muted-foreground">50% of total value</p>
+                    <p className="text-xs text-muted-foreground">
+                      50% of total value
+                    </p>
                   </div>
                 </div>
 
@@ -939,7 +1426,9 @@ export default function ContractPage() {
                   </div>
                   <div className="ml-3">
                     <h4 className="text-sm font-medium">Full Payment</h4>
-                    <p className="text-xs text-muted-foreground">100% of total value</p>
+                    <p className="text-xs text-muted-foreground">
+                      100% of total value
+                    </p>
                   </div>
                 </div>
               </div>
@@ -948,6 +1437,5 @@ export default function ContractPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

@@ -22,6 +22,14 @@ export const contractApi = createApi({
       query: (id) => `/transaction/${id}/`,
       providesTags: (result, error, id) => [{ type: "Contracts", id }],
     }),
+    getFramerProgress: builder.query({
+      query: (id) => `/progress/${id}/`,
+      providesTags: (result, error, id) => [{ type: "Contracts", id }],
+    }),
+    getContractPdf: builder.query({
+      query: (id) => `/pdf/${id}/`,
+      providesTags: (result, error, id) => [{ type: "Contracts", id }],
+    }),
     getAllContracts: builder.query({
       query: () => "/",
       providesTags: ["Contracts"], // Automatically refetches when invalidated
@@ -42,6 +50,14 @@ export const contractApi = createApi({
       }),
       invalidatesTags: ["Contracts"], // Invalidates cache to trigger refetch
     }),
+    createFarmerProgress: builder.mutation({
+      query: (newProgress) => ({
+        url: "/progress/",
+        method: "POST",
+        body: newProgress,
+      }),
+      invalidatesTags: ["Contracts"], // Invalidates cache to trigger refetch
+    }),
     // In your contractApi definition
     updateContract: builder.mutation({
       query: ({ contract_id, updatedData }) => ({
@@ -58,12 +74,25 @@ export const contractApi = createApi({
       }),
       invalidatesTags: ["Contracts"], // Refetch contracts after deletion
     }),
+   
+    verifyUser: builder.mutation({
+      query: (image) => ({
+        url: "/verify/",
+        method: "POST",
+        body: image,
+      }),
+    }),
+
   }),
 });
 
 export const {
   useGetContractQuery,
   useGetAllContractsQuery,
+  useVerifyUserMutation,
+  useGetContractPdfQuery,
+  useGetFramerProgressQuery,
+  useCreateFarmerProgressMutation,
   useGetAllPaymentsQuery,
   useCreateContractMutation,
   useCreatePaymentMutation,

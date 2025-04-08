@@ -14,6 +14,13 @@ export const authApi = createApi({
         body: data,
       }),
     }),
+    Adminlogin: builder.mutation({
+      query: (data) => ({
+        url: `/login/admin/`,
+        method: 'POST',
+        body: data,
+      }),
+    }),
     register: builder.mutation({
       query: (data) => ({
         url: `/signup/`,
@@ -49,6 +56,7 @@ export const authApi = createApi({
 
 export const {
   useLoginMutation,
+  useAdminloginMutation,
   useRegisterMutation,
   useGetUsersQuery,
   useDeleteUserMutation,

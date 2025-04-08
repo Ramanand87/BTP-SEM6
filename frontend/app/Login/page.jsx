@@ -529,7 +529,7 @@ const AuthPage = () => {
                   <div className="space-y-4 animate-fadeIn">
                     <div className="space-y-2">
                       <Label>
-                        {formData.role === "farmer" ? "Kisan Card Document" : "Additional Documents (Optional)"}
+                        {formData.role === "farmer" ? "Signature Document" : "Signature Document"}
                       </Label>
                       <div className="border-2 border-dashed border-green-200 rounded-lg p-4">
                         <input
