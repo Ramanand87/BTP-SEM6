@@ -117,7 +117,6 @@ class TransactionView(APIView):
         except Exception as e:
                 return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class ContractDocView(APIView):
     authentication_classes=[JWTAuthentication]
     permission_classes=[IsAuthenticated]
@@ -178,7 +177,6 @@ class FarmerProgressView(APIView):
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-
 class AllFarmerProgressView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -227,7 +225,6 @@ class FaceMatchView(APIView):
             if not image:
                 return Response({"error": "No image provided"}, status=400)
 
-            # Get farmer profile
             try:
                 farmer_profile = request.user.farmer_profile
             except FarmerProfile.DoesNotExist:
@@ -246,10 +243,26 @@ class FaceMatchView(APIView):
                 print(f"Uploaded Image Path: {uploaded_image_path}")
             try:
                 result = verify_faces(uploaded_image_path, stored_image_path)
-                return Response({"Verification": result}, status=200)
+                return Response({"Verification": result}, status=status.HTTP_200_OK)
             except Exception as e:
-                return Response({"error": f"Face verification failed: {str(e)}"}, status=500)
+                return Response({"error": f"Face verification failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            return Response({"error": str(e)}, status=500)
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class TransactionUser(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self,request):
+        try:
+            role=request.user.type
+            contract=None
+            if role=="farmer":
+                contract=get_list_or_404(models.Contract,farmer=request.user)
+            else:
+                contract=get_list_or_404(models.Contract,buyer=request.user)
+            transaction=get_list_or_404(models.Transaction,contract__in=contract)
+            serial=serializers.TransactionSerializer(transaction,many=True,context={'request': request})
+            return Response({'data':serial.data},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
