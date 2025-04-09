@@ -6,7 +6,7 @@ import { ProgressTable } from "@/components/admin/progress-table"
 
 export default function ProgressPage() {
   return (
-    <div className="flex flex-col gap-4  px-12 pt-4">
+    <div className="flex flex-col gap-4  px-12 py-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Progress Tracking</h1>
         <div className="flex items-center gap-2">

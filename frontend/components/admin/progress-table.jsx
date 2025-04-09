@@ -1,113 +1,96 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { useGetAllContractorProgressQuery, useGetAllFramerProgressQuery } from "@/redux/Service/contract"
 
-// Sample data - in a real app, this would come from your API
-const farmerProgress = [
-  {
-    id: "F001",
-    name: "Rajesh Kumar",
-    crop: "Wheat",
-    area: "5 acres",
-    plantedOn: "2023-01-15",
-    status: "Harvested",
-    lastUpdate: "2023-04-10",
-  },
-  {
-    id: "F002",
-    name: "Priya Sharma",
-    crop: "Rice",
-    area: "3 acres",
-    plantedOn: "2023-02-20",
-    status: "Growing",
-    lastUpdate: "2023-04-12",
-  },
-  {
-    id: "F003",
-    name: "Vikram Singh",
-    crop: "Cotton",
-    area: "7 acres",
-    plantedOn: "2023-03-05",
-    status: "Planted",
-    lastUpdate: "2023-04-08",
-  },
-  {
-    id: "F004",
-    name: "Ananya Patel",
-    crop: "Sugarcane",
-    area: "4 acres",
-    plantedOn: "2023-01-10",
-    status: "Ready for Delivery",
-    lastUpdate: "2023-04-15",
-  },
-  {
-    id: "F005",
-    name: "Suresh Reddy",
-    crop: "Maize",
-    area: "6 acres",
-    plantedOn: "2023-02-28",
-    status: "Delivered",
-    lastUpdate: "2023-04-11",
-  },
-]
+// Status priority order (higher index = higher priority)
+const statusPriority = {
+  planted: 0,
+  growing: 1,
+  harvested: 2,
+  ready_for_delivery: 3,
+  delivered: 4,
+}
 
-const contractorProgress = [
-  {
-    id: "C001",
-    name: "Aditya Mehta",
-    farmers: 12,
-    totalArea: "45 acres",
-    paymentStatus: "Paid",
-    lastTransaction: "2023-04-05",
-  },
-  {
-    id: "C002",
-    name: "Neha Gupta",
-    farmers: 8,
-    totalArea: "30 acres",
-    paymentStatus: "Partial",
-    lastTransaction: "2023-04-10",
-  },
-  {
-    id: "C003",
-    name: "Rahul Verma",
-    farmers: 15,
-    totalArea: "60 acres",
-    paymentStatus: "Pending",
-    lastTransaction: "2023-03-28",
-  },
-  {
-    id: "C004",
-    name: "Kavita Joshi",
-    farmers: 5,
-    totalArea: "18 acres",
-    paymentStatus: "Paid",
-    lastTransaction: "2023-04-12",
-  },
-  {
-    id: "C005",
-    name: "Sanjay Kapoor",
-    farmers: 10,
-    totalArea: "40 acres",
-    paymentStatus: "Partial",
-    lastTransaction: "2023-04-08",
-  },
-]
-
+// Helper function to format status for display
+const formatStatus = (status) => {
+  return status
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+}
 
 export function ProgressTable({ userType }) {
   const [selectedItem, setSelectedItem] = useState(null)
   const [open, setOpen] = useState(false)
+  const { data: farmerData, isLoading: cropLoading, error: farmerError } = useGetAllFramerProgressQuery()
+  const { data: contractorData, isLoading, error } = useGetAllContractorProgressQuery()
+
+  // Process farmer data to get highest status per contract
+  const processedFarmerData = useMemo(() => {
+    if (!farmerData?.data) return []
+
+    // Group by contract_id
+    const groupedByContract = farmerData.data.reduce((acc, item) => {
+      if (!acc[item.contract_id]) {
+        acc[item.contract_id] = []
+      }
+      acc[item.contract_id].push(item)
+      return acc
+    }, {})
+
+    // For each contract, get the item with highest status priority
+    return Object.values(groupedByContract).map((items) => {
+      return items.reduce((highest, current) => {
+        const highestPriority = statusPriority[highest.current_status] || 0
+        const currentPriority = statusPriority[current.current_status] || 0
+
+        return currentPriority > highestPriority ? current : highest
+      }, items[0])
+    })
+  }, [farmerData])
+
+  // Process contractor data to calculate total payment per contract
+  const processedContractorData = useMemo(() => {
+    if (!contractorData?.data) return []
+
+    // Group by contract_id
+    const groupedByContract = contractorData.data.reduce((acc, item) => {
+      if (!acc[item.contract_id]) {
+        acc[item.contract_id] = {
+          contract_id: item.contract_id,
+          buyer_name: item.buyer_name,
+          date: item.date,
+          totalAmount: 0,
+          transactions: [],
+        }
+      }
+      acc[item.contract_id].totalAmount += item.amount
+      acc[item.contract_id].transactions.push(item)
+      // Use the most recent date
+      if (new Date(item.date) > new Date(acc[item.contract_id].date)) {
+        acc[item.contract_id].date = item.date
+      }
+      return acc
+    }, {})
+
+    return Object.values(groupedByContract)
+  }, [contractorData])
 
   const handleView = (item) => {
     setSelectedItem(item)
     setOpen(true)
   }
+
+  if (userType === "farmer" && cropLoading) return <div>Loading farmer data...</div>
+  if (userType === "contractor" && isLoading) return <div>Loading contractor data...</div>
+  if (userType === "farmer" && farmerError) return <div>Error loading farmer data</div>
+  if (userType === "contractor" && error) return <div>Error loading contractor data</div>
 
   return (
     <>
@@ -115,21 +98,21 @@ export function ProgressTable({ userType }) {
         <TableHeader>
           {userType === "farmer" ? (
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead>Contract ID</TableHead>
+              <TableHead>Farmer Name</TableHead>
               <TableHead>Crop</TableHead>
-              <TableHead>Area</TableHead>
+              {/* Area field removed as it's not in the API data */}
               <TableHead>Status</TableHead>
-              <TableHead>Last Update</TableHead>
+              <TableHead>Date</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           ) : (
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Farmers</TableHead>
-              <TableHead>Total Area</TableHead>
-              <TableHead>Payment Status</TableHead>
+              <TableHead>Contract ID</TableHead>
+              <TableHead>Buyer Name</TableHead>
+              {/* Farmers field removed as it's not in the API data */}
+              {/* Total Area field removed as it's not in the API data */}
+              <TableHead>Total Payment</TableHead>
               <TableHead>Last Transaction</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -137,26 +120,25 @@ export function ProgressTable({ userType }) {
         </TableHeader>
         <TableBody>
           {userType === "farmer"
-            ? farmerProgress.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.id}</TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.crop}</TableCell>
-                  <TableCell>{item.area}</TableCell>
+            ? processedFarmerData.map((item) => (
+                <TableRow key={item.contract_id}>
+                  <TableCell className="font-medium">{item.contract_id.substring(0, 8)}...</TableCell>
+                  <TableCell>{item.farmer_name}</TableCell>
+                  <TableCell>{item.crop_name}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        item.status === "Delivered"
+                        item.current_status === "delivered"
                           ? "success"
-                          : item.status === "Ready for Delivery"
+                          : item.current_status === "ready_for_delivery"
                             ? "outline"
                             : "secondary"
                       }
                     >
-                      {item.status}
+                      {formatStatus(item.current_status)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{item.lastUpdate}</TableCell>
+                  <TableCell>{item.date}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => handleView(item)}>
                       <Eye className="mr-2 h-4 w-4" />
@@ -165,26 +147,12 @@ export function ProgressTable({ userType }) {
                   </TableCell>
                 </TableRow>
               ))
-            : contractorProgress.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.id}</TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.farmers}</TableCell>
-                  <TableCell>{item.totalArea}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        item.paymentStatus === "Paid"
-                          ? "success"
-                          : item.paymentStatus === "Partial"
-                            ? "outline"
-                            : "destructive"
-                      }
-                    >
-                      {item.paymentStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{item.lastTransaction}</TableCell>
+            : processedContractorData.map((item) => (
+                <TableRow key={item.contract_id}>
+                  <TableCell className="font-medium">{item.contract_id.substring(0, 8)}...</TableCell>
+                  <TableCell>{item.buyer_name}</TableCell>
+                  <TableCell>₹{item.totalAmount.toLocaleString()}</TableCell>
+                  <TableCell>{item.date}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => handleView(item)}>
                       <Eye className="mr-2 h-4 w-4" />
@@ -209,84 +177,90 @@ export function ProgressTable({ userType }) {
               {userType === "farmer" ? (
                 <>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">ID:</div>
-                    <div className="col-span-3">{selectedItem.id}</div>
+                    <div className="font-medium">Contract ID:</div>
+                    <div className="col-span-3">{selectedItem.contract_id}</div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">Name:</div>
-                    <div className="col-span-3">{selectedItem.name}</div>
+                    <div className="font-medium">Farmer:</div>
+                    <div className="col-span-3">{selectedItem.farmer_name}</div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <div className="font-medium">Crop:</div>
-                    <div className="col-span-3">{selectedItem.crop}</div>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">Area:</div>
-                    <div className="col-span-3">{selectedItem.area}</div>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">Planted On:</div>
-                    <div className="col-span-3">{selectedItem.plantedOn}</div>
+                    <div className="col-span-3">{selectedItem.crop_name}</div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <div className="font-medium">Status:</div>
                     <div className="col-span-3">
                       <Badge
                         variant={
-                          selectedItem.status === "Delivered"
+                          selectedItem.current_status === "delivered"
                             ? "success"
-                            : selectedItem.status === "Ready for Delivery"
+                            : selectedItem.current_status === "ready_for_delivery"
                               ? "outline"
                               : "secondary"
                         }
                       >
-                        {selectedItem.status}
+                        {formatStatus(selectedItem.current_status)}
                       </Badge>
                     </div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">Last Update:</div>
-                    <div className="col-span-3">{selectedItem.lastUpdate}</div>
+                    <div className="font-medium">Date:</div>
+                    <div className="col-span-3">{selectedItem.date}</div>
                   </div>
+                  {selectedItem.image && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <div className="font-medium">Image:</div>
+                      <div className="col-span-3">
+                        <img
+                          src={selectedItem.image || "/placeholder.svg"}
+                          alt="Crop status"
+                          className="max-w-full h-auto rounded-md"
+                          style={{ maxHeight: "200px" }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">ID:</div>
-                    <div className="col-span-3">{selectedItem.id}</div>
+                    <div className="font-medium">Contract ID:</div>
+                    <div className="col-span-3">{selectedItem.contract_id}</div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">Name:</div>
-                    <div className="col-span-3">{selectedItem.name}</div>
+                    <div className="font-medium">Buyer:</div>
+                    <div className="col-span-3">{selectedItem.buyer_name}</div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">Farmers:</div>
-                    <div className="col-span-3">{selectedItem.farmers}</div>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">Total Area:</div>
-                    <div className="col-span-3">{selectedItem.totalArea}</div>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="font-medium">Payment:</div>
-                    <div className="col-span-3">
-                      <Badge
-                        variant={
-                          selectedItem.paymentStatus === "Paid"
-                            ? "success"
-                            : selectedItem.paymentStatus === "Partial"
-                              ? "outline"
-                              : "destructive"
-                        }
-                      >
-                        {selectedItem.paymentStatus}
-                      </Badge>
-                    </div>
+                    <div className="font-medium">Total Amount:</div>
+                    <div className="col-span-3">₹{selectedItem.totalAmount.toLocaleString()}</div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <div className="font-medium">Last Transaction:</div>
-                    <div className="col-span-3">{selectedItem.lastTransaction}</div>
+                    <div className="col-span-3">{selectedItem.date}</div>
                   </div>
+                  <div className="font-medium mt-2">Transaction History:</div>
+                  {selectedItem.transactions.map((transaction, index) => (
+                    <div key={index} className="border p-3 rounded-md">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="font-medium">Date:</div>
+                        <div className="col-span-2">{transaction.date}</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="font-medium">Amount:</div>
+                        <div className="col-span-2">₹{transaction.amount.toLocaleString()}</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="font-medium">Reference:</div>
+                        <div className="col-span-2">{transaction.reference_number}</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="font-medium">Description:</div>
+                        <div className="col-span-2">{transaction.description}</div>
+                      </div>
+                    </div>
+                  ))}
                 </>
               )}
             </div>
@@ -296,4 +270,3 @@ export function ProgressTable({ userType }) {
     </>
   )
 }
-

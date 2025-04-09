@@ -936,7 +936,7 @@ export default function ProfilePage() {
                                   : "bg-blue-100 text-blue-800 hover:bg-blue-200"
                               }
                             >
-                              {contract.status ? "Active" : "Completed"}
+                              {contract.status ? "Active" : "Pending"}
                             </Badge>
                           </div>
                         </CardHeader>

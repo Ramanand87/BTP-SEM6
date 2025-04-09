@@ -26,6 +26,14 @@ export const contractApi = createApi({
       query: (id) => `/progress/${id}/`,
       providesTags: (result, error, id) => [{ type: "Contracts", id }],
     }),
+    getAllFramerProgress: builder.query({
+      query: (id) => `/allprogress/`,
+      providesTags: (result, error, id) => [{ type: "Contracts", id }],
+    }),
+    getAllContractorProgress: builder.query({
+      query: (id) => `/alltransaction/`,
+      providesTags: (result, error, id) => [{ type: "Contracts", id }],
+    }),
     getContractPdf: builder.query({
       query: (id) => `/pdf/${id}/`,
       providesTags: (result, error, id) => [{ type: "Contracts", id }],
@@ -88,6 +96,8 @@ export const contractApi = createApi({
 
 export const {
   useGetContractQuery,
+  useGetAllFramerProgressQuery,
+  useGetAllContractorProgressQuery,
   useGetAllContractsQuery,
   useVerifyUserMutation,
   useGetContractPdfQuery,

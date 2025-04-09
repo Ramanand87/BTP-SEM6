@@ -6,7 +6,7 @@ import { ConcernsTable } from "@/components/admin/concerns-table"
 
 export default function ConcernsPage() {
   return (
-    <div className="flex flex-col gap-4  px-12 pt-4">
+    <div className="flex flex-col gap-4  px-12 py-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Concerns & Disputes</h1>
         <div className="flex items-center gap-2">
