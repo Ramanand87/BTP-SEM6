@@ -52,7 +52,7 @@ export default function HelpAndSupport() {
   const handleComplaintSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await fetch("http://localhost:5000/complaints", {
+      const response = await fetch("http://localhost:7000/complaints", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
