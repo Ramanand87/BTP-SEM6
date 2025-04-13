@@ -254,6 +254,8 @@ export default function ContractsListPage() {
       return
     }
 
+    console.log("approve req sent")
+
     if (ws.current && ws.current.readyState === WebSocket.OPEN && contractToApprove) {
       setApprovingIds((prev) => [...prev, contractToApprove])
 

@@ -141,7 +141,7 @@ const AuthPage = () => {
         data.append("image", formData.profileImage)
       }
       if (formData.aadharDocument) {
-        data.append("aadhaar_image", formData.aadharDocument)
+        data.append("aadhar_image", formData.aadharDocument)
       }
       if (formData.document) {
         data.append("documents", formData.document) // Append single document

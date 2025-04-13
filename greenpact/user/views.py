@@ -19,19 +19,9 @@ class SignUp(APIView):
             if serializer.is_valid():
                 role = request.data.get("role")
                 if role == "farmer":
-                    aadhaar_image = request.FILES.get("aadhaar_image")
+                    aadhaar_image = request.FILES.get("aadhar_image")
                     if not aadhaar_image:
                         return Response({"error": "Aadhaar image is required"}, status=status.HTTP_400_BAD_REQUEST)
-                    user_data = {
-                        "name": request.data.get("name"),
-                        "dob": request.data.get("dob"),
-                    }
-                    image_path = f"temp_{aadhaar_image.name}"
-                    with open(image_path, "wb") as img_file:
-                        img_file.write(aadhaar_image.read())
-                    if not verify(user_data,image_path):
-                        return Response({"error": "Aadhaar details do not match"}, status=status.HTTP_400_BAD_REQUEST)
-                    os.remove(image_path)
                 elif role == "contractor":
                     gstin = request.data.get("gstin")
                     if not gstin:

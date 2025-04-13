@@ -33,7 +33,7 @@ class userSerializers(ModelSerializer):
             "phoneno": self.initial_data.get("phoneno"),
             "address": self.initial_data.get("address"),
             "image": self.initial_data.get("image"),
-            "aadhaar_image":self.initial_data.get("aadhaar_image"),
+            "aadhar_image":self.initial_data.get("aadhar_image"),
             "user": user
         }
         if user.type == "farmer":

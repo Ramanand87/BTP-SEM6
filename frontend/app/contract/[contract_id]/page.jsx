@@ -135,7 +135,9 @@ export default function ContractPage() {
   const { data: farmerProgressData, isLoading: isLoadingProgress } =
     useGetFramerProgressQuery(contract_id);
 
-    const { data: contractPdf, isLoading: isLoadingPdf } = useGetContractPdfQuery(contract_id);
+    const { data: contractPdf, isLoading: isLoadingPdf, error } = useGetContractPdfQuery(contract_id);
+    console.log(contractPdf)
+    console.log(error)
 
     useEffect(() => {
       if (contractPdf?.data?.document) {

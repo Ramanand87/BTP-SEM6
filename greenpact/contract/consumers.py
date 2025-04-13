@@ -1,5 +1,5 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from user.models import CustomUser
+from user.models import CustomUser, FarmerProfile, ContractorProfile
 from rest_framework_simplejwt.tokens import AccessToken
 from . import models,serializers
 import json
@@ -75,8 +75,8 @@ class ContractConsumer(AsyncWebsocketConsumer):
     def approve_contract(self, data):
         try:
             contract = models.Contract.objects.get(contract_id=data["contract_id"])
-            farmer_profile = contract.farmer.farmer_profile
-            contractor_profile = contract.buyer.contractor_profile
+            farmer_profile = FarmerProfile.objects.get(user=contract.farmer)
+            contractor_profile = ContractorProfile.objects.get(user=contract.buyer)
             payload = {
                 "orderDate": "2025-04-02",
                 "farmerName": farmer_profile.name,
@@ -101,7 +101,7 @@ class ContractConsumer(AsyncWebsocketConsumer):
                 "farmerSignature":farmer_profile.signature,
                 "customerSignature":contractor_profile.signature
             }
-
+            print("files",files)
             response = requests.post("http://localhost:6000/api/contracts/create", data=payload, files=files)
             print(response.status_code)
             if response.status_code != 200:
