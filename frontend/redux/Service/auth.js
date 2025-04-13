@@ -60,5 +60,5 @@ export const {
   useRegisterMutation,
   useGetUsersQuery,
   useDeleteUserMutation,
-  useUpdateUserMutation,
+  useVerifyUserMutation,
 } = authApi;
