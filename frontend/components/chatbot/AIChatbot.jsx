@@ -22,6 +22,7 @@ const AIChatbot = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [minimized, setMinimized] = useState(false)
   const inputRef = useRef(null)
+  const recognitionRef = useRef(null)
 
   // Categories for suggestions
   const suggestionCategories = [
@@ -35,6 +36,55 @@ const AIChatbot = () => {
       ],
     },
   ]
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition()
+        recognition.continuous = false
+        recognition.interimResults = false
+        recognition.lang = 'en-US'
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript
+          setInputValue(prev => prev + transcript)
+        }
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error', event.error)
+          setIsListening(false)
+        }
+
+        recognition.onend = () => {
+          if (isListening) {
+            recognition.start() // Restart if still listening
+          }
+        }
+
+        recognitionRef.current = recognition
+      } else {
+        console.warn('Speech recognition not supported in this browser')
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
+
+  // Handle microphone state changes
+  useEffect(() => {
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.start()
+    } else if (recognitionRef.current) {
+      recognitionRef.current.stop()
+    }
+  }, [isListening])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -81,18 +131,14 @@ const AIChatbot = () => {
       setMessages((prev) => [...prev, { text: inputValue, sender: "user" }])
       const userInput = inputValue
       setInputValue("")
-
-      // Set loading state
+      setIsLoading(false)
 
       try {
         // Get AI response
         const aiResponse = await fetchAIResponse(userInput)
-        // First turn off loading, then add the message to prevent both showing at once
-        setIsLoading(true)
         setMessages((prev) => [...prev, { text: aiResponse, sender: "ai" }])
       } catch (error) {
         console.error("Error in handleSend:", error)
-        setIsLoading(false)
         setMessages((prev) => [
           ...prev,
           {
@@ -100,6 +146,8 @@ const AIChatbot = () => {
             sender: "ai",
           },
         ])
+      } finally {
+        setIsLoading(false)
       }
     }
   }
@@ -115,19 +163,14 @@ const AIChatbot = () => {
     setInputValue("")
     // Add user message
     setMessages((prev) => [...prev, { text: suggestion, sender: "user" }])
-
-    // Set loading state
     setIsLoading(false)
 
     try {
       // Get AI response
       const aiResponse = await fetchAIResponse(suggestion)
-      // First turn off loading, then add the message to prevent both showing at once
-      setIsLoading(false)
       setMessages((prev) => [...prev, { text: aiResponse, sender: "ai" }])
     } catch (error) {
       console.error("Error in handleSuggestion:", error)
-      setIsLoading(false)
       setMessages((prev) => [
         ...prev,
         {
@@ -135,6 +178,8 @@ const AIChatbot = () => {
           sender: "ai",
         },
       ])
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -151,7 +196,6 @@ const AIChatbot = () => {
   }
 
   const formatMessage = (text) => {
-    // Simple formatting for message text
     return text.split("\n").map((line, i) => (
       <span key={i}>
         {line}
@@ -360,7 +404,7 @@ const AIChatbot = () => {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side="top">
-                          <p className="text-xs">Voice input</p>
+                          <p className="text-xs">{isListening ? "Listening..." : "Voice input"}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>

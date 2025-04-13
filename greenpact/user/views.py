@@ -136,8 +136,6 @@ class RegisteredFarmers(APIView):
 
 
 class AdminLoginView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
     def post(self, request):
         try:
             username = request.data.get("username")

@@ -1,46 +1,59 @@
-"use client"
-import { useState, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, EyeOff, Upload, Sun, Wheat, CheckCircle2, Loader2, Trash, Droplets, Cloud, Camera } from "lucide-react"
-import Image from "next/image"
-import { motion } from "framer-motion"
-import FarmerLogo from "@/components/assets/FramerLogo"
-import { useRegisterMutation, useLoginMutation } from "@/redux/Service/auth"
-import Webcam from "react-webcam"
-import { useDispatch, useSelector } from "react-redux"
-import { setCredentials } from "@/redux/features/authFeature"
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Eye,
+  EyeOff,
+  Upload,
+  Sun,
+  Wheat,
+  CheckCircle2,
+  Loader2,
+  Trash,
+  Droplets,
+  Cloud,
+  Camera,
+} from "lucide-react";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import FarmerLogo from "@/components/assets/FramerLogo";
+import { useRegisterMutation, useLoginMutation } from "@/redux/Service/auth";
+import Webcam from "react-webcam";
+import { useDispatch, useSelector } from "react-redux";
+import { setCredentials } from "@/redux/features/authFeature";
 
 const AuthPage = () => {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [signupStep, setSignupStep] = useState(1)
-  const [document, setDocument] = useState(null) // Single document
-  const [isLoading, setIsLoading] = useState(false)
-  const [previewImage, setPreviewImage] = useState(null)
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [aadharDocument, setAadharDocument] = useState(null)
-  const [verificationScreenshot, setVerificationScreenshot] = useState(null)
-  const [isCameraActive, setIsCameraActive] = useState(false)
-  const webcamRef = useRef(null)
-  const router = useRouter()
-  const dispatch = useDispatch()
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [signupStep, setSignupStep] = useState(1);
+  const [document, setDocument] = useState(null); // Single document
+  const [isLoading, setIsLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [aadharDocument, setAadharDocument] = useState(null);
+  const [activeTab, setActiveTab] = useState("login"); // Add this near your other state declarations
+  const [verificationScreenshot, setVerificationScreenshot] = useState(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const webcamRef = useRef(null);
+  const router = useRouter();
+  const dispatch = useDispatch();
 
   // Retrieve user info from Redux state
-  const userInfo = useSelector((state) => state.auth.userInfo)
+  const userInfo = useSelector((state) => state.auth.userInfo);
 
   // Redirect authenticated users
   useEffect(() => {
     if (userInfo) {
-      router.push("/") // Redirect to home page or dashboard
+      router.push("/"); // Redirect to home page or dashboard
     }
-  }, [userInfo, router])
+  }, [userInfo, router]);
 
   const [formData, setFormData] = useState({
     role: "farmer", // Set farmer as default role
@@ -55,140 +68,185 @@ const AuthPage = () => {
     profileImage: null,
     aadharDocument: null,
     verificationScreenshot: null,
-  })
+  });
 
-  const [register] = useRegisterMutation()
-  const [login] = useLoginMutation()
+  const [register] = useRegisterMutation();
+  const [login] = useLoginMutation();
 
   const captureImage = () => {
-    const imageSrc = webcamRef.current.getScreenshot()
-    setPreviewImage(imageSrc)
-    setFormData({ ...formData, profileImage: imageSrc })
-    setIsCameraActive(false) // Close the camera after capturing
-  }
+    const imageSrc = webcamRef.current.getScreenshot();
+
+    // Create a temporary image to resize it
+    const img = new Image();
+    img.src = imageSrc;
+
+    img.onload = () => {
+      // Create a canvas to resize the image
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // Set dimensions (reduce size)
+      const maxWidth = 400;
+      const maxHeight = 400;
+      let width = img.width;
+      let height = img.height;
+
+      // Calculate new dimensions while maintaining aspect ratio
+      if (width > height) {
+        if (width > maxWidth) {
+          height *= maxWidth / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width *= maxHeight / height;
+          height = maxHeight;
+        }
+      }
+
+      // Set canvas dimensions and draw resized image
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Get compressed image as JPEG with reduced quality
+      const compressedImage = canvas.toDataURL("image/jpeg", 0.7);
+
+      // Update state with compressed image
+      setPreviewImage(compressedImage);
+      setFormData({ ...formData, profileImage: compressedImage });
+      setIsCameraActive(false);
+    };
+  };
 
   // Handle document upload
   const handleDocumentUpload = (e) => {
-    const file = e.target.files[0] // Only take the first file
+    const file = e.target.files[0]; // Only take the first file
     if (file) {
-      setFormData({ ...formData, document: file })
-      setDocument(file)
+      setFormData({ ...formData, document: file });
+      setDocument(file);
     }
-  }
+  };
 
   // Remove document
   const removeDocument = () => {
-    setFormData({ ...formData, document: null })
-    setDocument(null)
-  }
+    setFormData({ ...formData, document: null });
+    setDocument(null);
+  };
 
   const handleAadharDocumentUpload = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     if (file) {
-      setFormData({ ...formData, aadharDocument: file })
-      setAadharDocument(file)
+      setFormData({ ...formData, aadharDocument: file });
+      setAadharDocument(file);
     }
-  }
+  };
 
   const handleVerificationScreenshotUpload = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     if (file) {
-      setFormData({ ...formData, verificationScreenshot: file })
-      setVerificationScreenshot(file)
+      setFormData({ ...formData, verificationScreenshot: file });
+      setVerificationScreenshot(file);
     }
-  }
+  };
 
   const removeAadharDocument = () => {
-    setFormData({ ...formData, aadharDocument: null })
-    setAadharDocument(null)
-  }
+    setFormData({ ...formData, aadharDocument: null });
+    setAadharDocument(null);
+  };
 
   const removeVerificationScreenshot = () => {
-    setFormData({ ...formData, verificationScreenshot: null })
-    setVerificationScreenshot(null)
-  }
+    setFormData({ ...formData, verificationScreenshot: null });
+    setVerificationScreenshot(null);
+  };
 
   const handleSignupSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match")
-      return
+      alert("Passwords do not match");
+      return;
     }
 
     if (!formData.role) {
-      alert("Please select a role (Farmer or Buyer).")
-      return
+      alert("Please select a role (Farmer or Buyer).");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const data = new FormData()
-      data.append("role", formData.role) // Append role to FormData
-      data.append("name", formData.name)
-      data.append("username", formData.username)
-      data.append("address", formData.address)
-      data.append("phoneno", formData.phone)
-      data.append("password", formData.password)
+      const data = new FormData();
+      data.append("role", formData.role); // Append role to FormData
+      data.append("name", formData.name);
+      data.append("username", formData.username);
+      data.append("address", formData.address);
+      data.append("phoneno", formData.phone);
+      data.append("password", formData.password);
 
       // Add GSTIN for buyers/contractors
       if (formData.role === "buyer" && formData.gstin) {
-        data.append("gstin", formData.gstin)
+        data.append("gstin", formData.gstin);
       }
 
       if (formData.profileImage) {
-        data.append("image", formData.profileImage)
+        // Convert base64 to blob for more efficient upload
+        const base64Response = await fetch(formData.profileImage);
+        const blob = await base64Response.blob();
+        data.append("image", blob, "profile.jpg");
       }
       if (formData.aadharDocument) {
-        data.append("aadhar_image", formData.aadharDocument)
+        data.append("aadhar_image", formData.aadharDocument);
       }
       if (formData.document) {
-        data.append("documents", formData.document) // Append single document
+        data.append("documents", formData.document); // Append single document
       }
       // Only append verification screenshot for farmers
       if (formData.role === "farmer" && formData.verificationScreenshot) {
-        data.append("ss", formData.verificationScreenshot)
+        data.append("ss", formData.verificationScreenshot);
       }
 
-      const response = await register(data).unwrap()
-      console.log("Registration successful:", response)
-      setShowSuccess(true)
+      const response = await register(data).unwrap();
+      console.log("Registration successful:", response);
+      router.refresh()
+      setActiveTab("login");
+
+      setShowSuccess(true);
     } catch (error) {
-      console.error("Registration failed:", error)
+      console.error("Registration failed:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleLoginSubmit = async (e) => {
-    e.preventDefault()
-    const username = e.target.loginId.value
-    const password = e.target.loginPassword.value
+    e.preventDefault();
+    const username = e.target.loginId.value;
+    const password = e.target.loginPassword.value;
 
     if (!username || !password) {
-      alert("Please enter both username and password.")
-      return
+      alert("Please enter both username and password.");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const response = await login({ username, password }).unwrap()
-      console.log("Login successful:", response)
+      const response = await login({ username, password }).unwrap();
+      console.log("Login successful:", response);
 
       // Dispatch setCredentials to store user info in Redux and local storage
-      dispatch(setCredentials(response))
+      dispatch(setCredentials(response));
 
       // Redirect to the home page or dashboard
-      router.push("/")
+      router.push("/");
     } catch (error) {
-      console.error("Login failed:", error)
-      alert("Login failed. Please check your credentials.")
+      console.error("Login failed:", error);
+      alert("Login failed. Please check your credentials.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const AnimatedBackgroundElements = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -249,11 +307,11 @@ const AuthPage = () => {
         <Droplets className="text-blue-400 h-10 w-10" />
       </motion.div>
     </div>
-  )
+  );
 
   // If the user is logged in, don't render the login/signup page
   if (userInfo) {
-    return null // Or a loading spinner
+    return null; // Or a loading spinner
   }
 
   return (
@@ -274,7 +332,11 @@ const AuthPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <Tabs defaultValue="login" className="space-y-4">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-4"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -357,16 +419,24 @@ const AuthPage = () => {
                       <div className="flex gap-4">
                         <Button
                           type="button"
-                          variant={formData.role === "farmer" ? "default" : "outline"}
-                          onClick={() => setFormData({ ...formData, role: "farmer" })}
+                          variant={
+                            formData.role === "farmer" ? "default" : "outline"
+                          }
+                          onClick={() =>
+                            setFormData({ ...formData, role: "farmer" })
+                          }
                           className="w-full"
                         >
                           Farmer
                         </Button>
                         <Button
                           type="button"
-                          variant={formData.role === "buyer" ? "default" : "outline"}
-                          onClick={() => setFormData({ ...formData, role: "buyer" })}
+                          variant={
+                            formData.role === "buyer" ? "default" : "outline"
+                          }
+                          onClick={() =>
+                            setFormData({ ...formData, role: "buyer" })
+                          }
                           className="w-full"
                         >
                           Buyer
@@ -381,7 +451,9 @@ const AuthPage = () => {
                         className="border-green-200 focus:ring-green-500"
                         placeholder="Full Name"
                         value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -392,7 +464,9 @@ const AuthPage = () => {
                         className="border-green-200 focus:ring-green-500"
                         placeholder="Username"
                         value={formData.username}
-                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, username: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -403,7 +477,9 @@ const AuthPage = () => {
                         className="border-green-200 focus:ring-green-500"
                         placeholder="Address"
                         value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, address: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -417,7 +493,9 @@ const AuthPage = () => {
                           className="border-green-200 focus:ring-green-500"
                           placeholder="e.g. 561651651112345"
                           value={formData.gstin}
-                          onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, gstin: e.target.value })
+                          }
                           required
                         />
                       </div>
@@ -437,7 +515,10 @@ const AuthPage = () => {
                               screenshotFormat="image/jpeg"
                               className="w-full h-auto"
                             />
-                            <Button onClick={captureImage} className="mt-2 bg-green-600 hover:bg-green-700 text-white">
+                            <Button
+                              onClick={captureImage}
+                              className="mt-2 bg-green-600 hover:bg-green-700 text-white"
+                            >
                               Capture Photo
                             </Button>
                           </div>
@@ -483,16 +564,23 @@ const AuthPage = () => {
                           id="aadharDocument"
                           onChange={handleAadharDocumentUpload}
                         />
-                        <Label htmlFor="aadharDocument" className="cursor-pointer block text-center">
+                        <Label
+                          htmlFor="aadharDocument"
+                          className="cursor-pointer block text-center"
+                        >
                           <Upload />
-                          <span className="mt-2 text-sm text-gray-600 block">Upload Aadhar card (PDF or Image)</span>
+                          <span className="mt-2 text-sm text-gray-600 block">
+                            Upload Aadhar card (PDF or Image)
+                          </span>
                         </Label>
 
                         {aadharDocument && (
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between bg-green-50 p-2 rounded">
                               <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium">{aadharDocument.name}</span>
+                                <span className="text-sm font-medium">
+                                  {aadharDocument.name}
+                                </span>
                                 <span className="text-xs text-gray-500">
                                   ({(aadharDocument.size / 1024).toFixed(1)} KB)
                                 </span>
@@ -502,7 +590,11 @@ const AuthPage = () => {
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => window.open(URL.createObjectURL(aadharDocument))}
+                                  onClick={() =>
+                                    window.open(
+                                      URL.createObjectURL(aadharDocument)
+                                    )
+                                  }
                                   className="text-green-600 border-green-200"
                                 >
                                   View
@@ -529,7 +621,9 @@ const AuthPage = () => {
                   <div className="space-y-4 animate-fadeIn">
                     <div className="space-y-2">
                       <Label>
-                        {formData.role === "farmer" ? "Signature Document" : "Signature Document"}
+                        {formData.role === "farmer"
+                          ? "Signature Document"
+                          : "Signature Document"}
                       </Label>
                       <div className="border-2 border-dashed border-green-200 rounded-lg p-4">
                         <input
@@ -539,7 +633,10 @@ const AuthPage = () => {
                           id="document"
                           onChange={handleDocumentUpload}
                         />
-                        <Label htmlFor="document" className="cursor-pointer block text-center">
+                        <Label
+                          htmlFor="document"
+                          className="cursor-pointer block text-center"
+                        >
                           <Upload />
                           <span className="mt-2 text-sm text-gray-600 block">
                             Upload document (PDF or Image)
@@ -552,15 +649,21 @@ const AuthPage = () => {
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between bg-green-50 p-2 rounded">
                               <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium">{document.name}</span>
-                                <span className="text-xs text-gray-500">({(document.size / 1024).toFixed(1)} KB)</span>
+                                <span className="text-sm font-medium">
+                                  {document.name}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  ({(document.size / 1024).toFixed(1)} KB)
+                                </span>
                               </div>
                               <div className="flex space-x-2">
                                 <Button
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => window.open(URL.createObjectURL(document))}
+                                  onClick={() =>
+                                    window.open(URL.createObjectURL(document))
+                                  }
                                   className="text-green-600 border-green-200"
                                 >
                                   View
@@ -589,7 +692,8 @@ const AuthPage = () => {
                       <Label>Aadhar Card Verification</Label>
                       <div className="bg-green-50 p-4 rounded-lg">
                         <p className="text-sm text-gray-600">
-                          Please verify your Aadhar card using the official UIDAI website. Follow these steps:
+                          Please verify your Aadhar card using the official
+                          UIDAI website. Follow these steps:
                         </p>
                         <ol className="list-decimal list-inside text-sm text-gray-600 mt-2">
                           <li>
@@ -604,9 +708,18 @@ const AuthPage = () => {
                             </a>
                             .
                           </li>
-                          <li>Use the "Verify Aadhar" feature to verify your Aadhar card.</li>
-                          <li>Once verified, take a screenshot of the verification page.</li>
-                          <li>Upload the screenshot below as proof of verification.</li>
+                          <li>
+                            Use the "Verify Aadhar" feature to verify your
+                            Aadhar card.
+                          </li>
+                          <li>
+                            Once verified, take a screenshot of the verification
+                            page.
+                          </li>
+                          <li>
+                            Upload the screenshot below as proof of
+                            verification.
+                          </li>
                         </ol>
                       </div>
                     </div>
@@ -621,7 +734,10 @@ const AuthPage = () => {
                           id="verificationScreenshot"
                           onChange={handleVerificationScreenshotUpload}
                         />
-                        <Label htmlFor="verificationScreenshot" className="cursor-pointer block text-center">
+                        <Label
+                          htmlFor="verificationScreenshot"
+                          className="cursor-pointer block text-center"
+                        >
                           <Upload />
                           <span className="mt-2 text-sm text-gray-600 block">
                             Upload verification screenshot (Image)
@@ -632,9 +748,15 @@ const AuthPage = () => {
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between bg-green-50 p-2 rounded">
                               <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium">{verificationScreenshot.name}</span>
+                                <span className="text-sm font-medium">
+                                  {verificationScreenshot.name}
+                                </span>
                                 <span className="text-xs text-gray-500">
-                                  ({(verificationScreenshot.size / 1024).toFixed(1)} KB)
+                                  (
+                                  {(verificationScreenshot.size / 1024).toFixed(
+                                    1
+                                  )}{" "}
+                                  KB)
                                 </span>
                               </div>
                               <div className="flex space-x-2">
@@ -642,7 +764,13 @@ const AuthPage = () => {
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => window.open(URL.createObjectURL(verificationScreenshot))}
+                                  onClick={() =>
+                                    window.open(
+                                      URL.createObjectURL(
+                                        verificationScreenshot
+                                      )
+                                    )
+                                  }
                                   className="text-green-600 border-green-200"
                                 >
                                   View
@@ -683,7 +811,12 @@ const AuthPage = () => {
                             className="border-green-200 focus:ring-green-500"
                             placeholder="Phone Number"
                             value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                phone: e.target.value,
+                              })
+                            }
                             required
                           />
                         </div>
@@ -717,7 +850,9 @@ const AuthPage = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Label htmlFor="confirmPassword">
+                          Confirm Password
+                        </Label>
                         <div className="relative">
                           <Input
                             id="confirmPassword"
@@ -734,7 +869,9 @@ const AuthPage = () => {
                           />
                           <button
                             type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
                             className="absolute right-3 top-1/2 -translate-y-1/2"
                           >
                             {showConfirmPassword ? (
@@ -750,7 +887,10 @@ const AuthPage = () => {
                     {showSuccess && (
                       <Alert className="bg-green-50 border-green-200">
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        <AlertDescription>Registration successful! Welcome to our farming community.</AlertDescription>
+                        <AlertDescription>
+                          Registration successful! Welcome to our farming
+                          community.
+                        </AlertDescription>
                       </Alert>
                     )}
                   </div>
@@ -773,7 +913,12 @@ const AuthPage = () => {
                             className="border-green-200 focus:ring-green-500"
                             placeholder="Phone Number"
                             value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                phone: e.target.value,
+                              })
+                            }
                             required
                           />
                         </div>
@@ -807,7 +952,9 @@ const AuthPage = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Label htmlFor="confirmPassword">
+                          Confirm Password
+                        </Label>
                         <div className="relative">
                           <Input
                             id="confirmPassword"
@@ -824,7 +971,9 @@ const AuthPage = () => {
                           />
                           <button
                             type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
                             className="absolute right-3 top-1/2 -translate-y-1/2"
                           >
                             {showConfirmPassword ? (
@@ -840,7 +989,10 @@ const AuthPage = () => {
                     {showSuccess && (
                       <Alert className="bg-green-50 border-green-200">
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        <AlertDescription>Registration successful! Welcome to our farming community.</AlertDescription>
+                        <AlertDescription>
+                          Registration successful! Welcome to our farming
+                          community.
+                        </AlertDescription>
                       </Alert>
                     )}
                   </div>
@@ -858,7 +1010,8 @@ const AuthPage = () => {
                     </Button>
                   )}
 
-                  {(signupStep < 5 && formData.role === "farmer") || (signupStep < 4 && formData.role === "buyer") ? (
+                  {(signupStep < 5 && formData.role === "farmer") ||
+                  (signupStep < 4 && formData.role === "buyer") ? (
                     <Button
                       type="button"
                       onClick={() => setSignupStep((step) => step + 1)}
@@ -889,8 +1042,7 @@ const AuthPage = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default AuthPage
-
+export default AuthPage;

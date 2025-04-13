@@ -31,7 +31,7 @@ export const authApi = createApi({
 
     getUsers: builder.query({
       query: () => ({
-        url: '/getAllUsers',
+        url: '/allusers/',
       }),
       providesTags: ['User'],
       keepUnusedDataFor: 5,
@@ -43,9 +43,9 @@ export const authApi = createApi({
       }),
     }),
 
-    updateUser: builder.mutation({
-      query: (data) => ({
-        url: `/${data.userId}`,
+    verifyUser: builder.mutation({
+      query: ({id,data}) => ({
+        url: `/${id}`,
         method: 'PUT',
         body: data,
       }),
