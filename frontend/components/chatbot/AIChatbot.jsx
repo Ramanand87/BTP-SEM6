@@ -54,9 +54,8 @@ const AIChatbot = () => {
 
   // Function to fetch response from the chatbot API
   const fetchAIResponse = async (userMessage) => {
-    setIsLoading(true)
     try {
-      const response = await fetch("http://127.0.0.1:3000/message", {
+      const response = await fetch("http://127.0.0.1:4000/message", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -73,8 +72,6 @@ const AIChatbot = () => {
     } catch (error) {
       console.error("Error fetching AI response:", error)
       return "Sorry, I'm having trouble connecting to the server. Please try again later."
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -85,9 +82,25 @@ const AIChatbot = () => {
       const userInput = inputValue
       setInputValue("")
 
-      // Get AI response
-      const aiResponse = await fetchAIResponse(userInput)
-      setMessages((prev) => [...prev, { text: aiResponse, sender: "ai" }])
+      // Set loading state
+
+      try {
+        // Get AI response
+        const aiResponse = await fetchAIResponse(userInput)
+        // First turn off loading, then add the message to prevent both showing at once
+        setIsLoading(true)
+        setMessages((prev) => [...prev, { text: aiResponse, sender: "ai" }])
+      } catch (error) {
+        console.error("Error in handleSend:", error)
+        setIsLoading(false)
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: "Sorry, I couldn't process your request. Please try again.",
+            sender: "ai",
+          },
+        ])
+      }
     }
   }
 
@@ -103,9 +116,26 @@ const AIChatbot = () => {
     // Add user message
     setMessages((prev) => [...prev, { text: suggestion, sender: "user" }])
 
-    // Get AI response
-    const aiResponse = await fetchAIResponse(suggestion)
-    setMessages((prev) => [...prev, { text: aiResponse, sender: "ai" }])
+    // Set loading state
+    setIsLoading(false)
+
+    try {
+      // Get AI response
+      const aiResponse = await fetchAIResponse(suggestion)
+      // First turn off loading, then add the message to prevent both showing at once
+      setIsLoading(false)
+      setMessages((prev) => [...prev, { text: aiResponse, sender: "ai" }])
+    } catch (error) {
+      console.error("Error in handleSuggestion:", error)
+      setIsLoading(false)
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: "Sorry, I couldn't process your request. Please try again.",
+          sender: "ai",
+        },
+      ])
+    }
   }
 
   const toggleMinimize = (e) => {
@@ -354,4 +384,3 @@ const AIChatbot = () => {
 }
 
 export default AIChatbot
-
