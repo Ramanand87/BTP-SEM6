@@ -10,4 +10,6 @@ urlpatterns = [
     path('verify/<uuid:pk>/',views.RegisteredFarmers.as_view()),
     path('verify/',views.RegisteredFarmers.as_view()),
     path('login/admin/',views.AdminLoginView.as_view()),
+    path('allusers/',views.AllUsersView.as_view()),
+
 ]
