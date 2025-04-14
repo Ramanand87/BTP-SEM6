@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.serializers import ModelSerializer, ValidationError
 from . import models
 from rest_framework import serializers
-
+from django.conf import settings
 class userSerializers(ModelSerializer):
     class Meta:
         model = models.CustomUser
@@ -18,8 +18,12 @@ class userSerializers(ModelSerializer):
         elif models.FarmerProfile.objects.filter(phoneno=self.initial_data.get("phoneno")).exists() or \
              models.ContractorProfile.objects.filter(phoneno=self.initial_data.get("phoneno")).exists():
             raise ValidationError({'error': 'Phone no already taken'})
-        elif not self.initial_data.get("documents"):
-            raise ValidationError({'error': 'Documents empty'})
+        elif not self.initial_data.get("signature"):
+            raise ValidationError({'error': 'Signature is required'})
+        elif not self.initial_data.get("qr_code_image"):
+            raise ValidationError({'error': 'QR code image is required'})
+        elif not self.initial_data.get("aadhar_image"):
+            raise ValidationError({'error': 'Aadhaar image is required'})
         return data
 
     def create(self, validated_data):
@@ -42,8 +46,6 @@ class userSerializers(ModelSerializer):
         elif user.type == "contractor":
             profile_data["gstin"] = self.initial_data.get("gstin")
             models.ContractorProfile.objects.create(**profile_data)
-
-        models.Documents.objects.create(doc_user=user, doc=self.initial_data.get("documents"))
         return user
 
 class FarmerProfileSerializer(ModelSerializer):
@@ -58,8 +60,6 @@ class FarmerProfileSerializer(ModelSerializer):
             data['image'] = instance.image.url
         if instance.screenshot:
             data['screenshot'] = instance.screenshot.url
-        if instance.aadhar_image:
-            data['aadhar_image'] = instance.aadhar_image.url
         return data
 
 class ContractorProfileSerializer(ModelSerializer):

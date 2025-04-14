@@ -51,12 +51,12 @@ class Login(APIView):
                 if role == "farmer":
                     farmer_profile = get_object_or_404(models.FarmerProfile, user=user)
                     if farmer_profile.is_verfied:
-                        serialprof = serializers.FarmerProfileSerializer(farmer_profile)
+                        serialprof = serializers.FarmerProfileSerializer(farmer_profile,context={'request': request})
                     else:
                         return Response({'Error':'Wait for the admin to verify your profile'},status=status.HTTP_401_UNAUTHORIZED)
                 elif role == "contractor":
                     contractor_profile = get_object_or_404(models.ContractorProfile, user=user)
-                    serialprof = serializers.ContractorProfileSerializer(contractor_profile)
+                    serialprof = serializers.ContractorProfileSerializer(contractor_profile,context={'request': request})
                 refresh = RefreshToken.for_user(user)
                 return Response({
                     'Success': 'User Logged in Successfully',
