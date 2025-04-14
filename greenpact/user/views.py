@@ -80,10 +80,10 @@ class ProfileView(APIView):
             role = prof_user.type
             if role == "farmer":
                 farmer_profile = get_object_or_404(models.FarmerProfile, user=prof_user)
-                serial = serializers.FarmerProfileSerializer(farmer_profile)
+                serial = serializers.FarmerProfileSerializer(farmer_profile,context={'request': request})
             elif role == "contractor":
                 contractor_profile = get_object_or_404(models.ContractorProfile, user=prof_user)
-                serial = serializers.ContractorProfileSerializer(contractor_profile)
+                serial = serializers.ContractorProfileSerializer(contractor_profile,context={'request': request})
             else:
                 return Response({"error": "Invalid role"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -97,7 +97,7 @@ class ProfileView(APIView):
             role = user.type
             if role == "farmer":
                 farmer_profile = get_object_or_404(models.FarmerProfile, user=user)
-                serializer = serializers.FarmerProfileSerializer(farmer_profile, data=request.data, partial=True)
+                serializer = serializers.FarmerProfileSerializer(farmer_profile, data=request.data, partial=True,context={'request': request})
             elif role == "contractor":
                 contractor_profile = get_object_or_404(models.ContractorProfile, user=user)
                 serializer = serializers.ContractorProfileSerializer(contractor_profile, data=request.data, partial=True)
@@ -117,7 +117,7 @@ class RegisteredFarmers(APIView):
     def get(self,request):
         try:
             farmers=get_list_or_404(models.FarmerProfile,is_verfied=False)
-            serial=serializers.FarmerProfileSerializer(farmers,many=True)
+            serial=serializers.FarmerProfileSerializer(farmers,many=True,context={'request': request})
             return Response({'data':serial.data},status=status.HTTP_202_ACCEPTED)
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -162,7 +162,7 @@ class AllUsersView(APIView):
     def get(self,request):
         try:
             users=models.CustomUser.objects.all()
-            serial=serializers.userSerializers(users,many=True)
+            serial=serializers.userSerializers(users,many=True,context={'request': request})
             return Response({"data":serial.data},status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -7,7 +7,7 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view()),
     path('profile/<str:pk>/', views.ProfileView.as_view()),
     path('profile/', views.ProfileView.as_view()),
-    path('verify/<uuid:pk>/',views.RegisteredFarmers.as_view()),
+    path('verify/<int:pk>/',views.RegisteredFarmers.as_view()),
     path('verify/',views.RegisteredFarmers.as_view()),
     path('login/admin/',views.AdminLoginView.as_view()),
     path('allusers/',views.AllUsersView.as_view()),

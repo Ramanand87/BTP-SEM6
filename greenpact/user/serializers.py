@@ -42,9 +42,11 @@ class userSerializers(ModelSerializer):
         }
         if user.type == "farmer":
             profile_data["screenshot"] = self.initial_data.get("screenshot")
+            profile_data["signature"] = self.initial_data.get("signature")
             models.FarmerProfile.objects.create(**profile_data)
         elif user.type == "contractor":
             profile_data["gstin"] = self.initial_data.get("gstin")
+            profile_data["signature"] = self.initial_data.get("signature")
             models.ContractorProfile.objects.create(**profile_data)
         return user
 
