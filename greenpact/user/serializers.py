@@ -20,8 +20,6 @@ class userSerializers(ModelSerializer):
             raise ValidationError({'error': 'Phone no already taken'})
         elif not self.initial_data.get("signature"):
             raise ValidationError({'error': 'Signature is required'})
-        elif not self.initial_data.get("qr_code_image"):
-            raise ValidationError({'error': 'QR code image is required'})
         elif not self.initial_data.get("aadhar_image"):
             raise ValidationError({'error': 'Aadhaar image is required'})
         return data

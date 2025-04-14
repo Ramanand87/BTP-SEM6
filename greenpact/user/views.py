@@ -124,7 +124,8 @@ class RegisteredFarmers(APIView):
     
     def put(self,request,pk):
         try:
-            farmer=get_object_or_404(models.FarmerProfile,id=pk)
+            user=get_object_or_404(CustomUser,username=pk)
+            farmer=get_object_or_404(models.FarmerProfile,user=user)
             serial=serializers.FarmerProfileSerializer(farmer,data=request.data,partial=True)
             if serial.is_valid():
                 serial.save()
