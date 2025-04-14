@@ -2,9 +2,20 @@
 
 import { fetchBaseQuery, createApi } from '@reduxjs/toolkit/query/react';
 
+const baseQueryWithAuth = fetchBaseQuery({
+    baseUrl: 'http://127.0.0.1:8000/user',
+  prepareHeaders: (headers, { getState }) => {
+    const token = getState().auth.userInfo?.access;
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    return headers;
+  },
+});
+
 export const authApi = createApi({
   reducerPath: 'User',
-  baseQuery: fetchBaseQuery({ baseUrl: 'http://127.0.0.1:8000/user' }),
+  baseQuery: baseQueryWithAuth,
 
   endpoints: (builder) => ({
     login: builder.mutation({
@@ -31,19 +42,19 @@ export const authApi = createApi({
 
     getUsers: builder.query({
       query: () => ({
-        url: '/allusers/',
-      }),
-      providesTags: ['User'],
-      keepUnusedDataFor: 5,
+        url: '/verify/',
+      })
     }),
-    deleteUser: builder.mutation({
-      query: (userId) => ({
-        url: `/${userId}`,
-        method: 'DELETE',
-      }),
-    }),
-
+    
     verifyUser: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `verify/${id}/`,
+        method: 'PUT',
+        body: data,
+      })
+    })
+,    
+    rejectUser: builder.mutation({
       query: ({id,data}) => ({
         url: `/${id}`,
         method: 'PUT',
@@ -51,12 +62,19 @@ export const authApi = createApi({
       }),
       invalidatesTags: ['User'],
     }),
+    deleteUser: builder.mutation({
+      query: (userId) => ({
+        url: `/${userId}`,
+        method: 'DELETE',
+      }),
+    }),
   }),
 });
 
 export const {
   useLoginMutation,
   useAdminloginMutation,
+  useRejectUserMutation,
   useRegisterMutation,
   useGetUsersQuery,
   useDeleteUserMutation,
