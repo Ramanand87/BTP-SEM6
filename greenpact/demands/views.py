@@ -68,9 +68,9 @@ class DemandCurrUser(APIView):
     authentication_classes=[JWTAuthentication]
     permission_classes=[IsAuthenticated]
 
-    def get(self,request):
+    def get(self,request,pk):
         try:
-            demands=get_list_or_404(models.Demand,demand_user=request.user)
+            demands=get_list_or_404(models.Demand,demand_user__username=pk)
             serial=serializers.DemandSerializer(demands,many=True)
             return Response({'data':serial.data},status=status.HTTP_200_OK)
         except Http404:

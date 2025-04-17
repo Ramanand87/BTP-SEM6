@@ -77,7 +77,7 @@ export default function ProfilePage() {
   const { data, isLoading: cropLoading, isError } = useGetCropsQuery();
   const { data:payments, isLoading:paymentLoading } = useGetPaymentsQuery();
   const crops = Array.isArray(data) ? data : [];
-  console.log(payments);
+  console.log(data);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const {
     data: profile,
@@ -562,6 +562,8 @@ export default function ProfilePage() {
           <Star className="w-4 h-4 mr-2" />
           Reviews
         </TabsTrigger>
+
+        {profile.role==='farmer'&&
         <TabsTrigger
           value="Crops"
           className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
@@ -569,6 +571,8 @@ export default function ProfilePage() {
           <Crop className="w-4 h-4 mr-2" />
           Crops
         </TabsTrigger>
+        }
+        
       </TabsList>
     )}
   </div>

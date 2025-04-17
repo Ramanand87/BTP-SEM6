@@ -69,9 +69,9 @@ class CropView(APIView):
 class CurrUserCrops(APIView):
     authentication_classes=[JWTAuthentication]
     permission_classes=[IsAuthenticated]
-    def get(self,request):
+    def get(self,request,pk):
         try:
-            crops=get_list_or_404(models.Crops,publisher=request.user)
+            crops=get_list_or_404(models.Crops,publisher__username=pk)
             serial=serializers.CropsSerializer(crops,many=True)
             return Response(serial.data,status=status.HTTP_200_OK)
         except Http404:
