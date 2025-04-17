@@ -3,10 +3,27 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Trash, Edit, Plus, Loader2 } from "lucide-react";
-import { useGetCropsQuery, useAddCropMutation, useUpdateCropMutation, useDeleteCropMutation } from "@/redux/Service/cropApi";
+import {
+  useGetCropsQuery,
+  useAddCropMutation,
+  useUpdateCropMutation,
+  useDeleteCropMutation,
+} from "@/redux/Service/cropApi";
 import Link from "next/link";
 
 export default function YourCropsPage() {
@@ -24,8 +41,8 @@ export default function YourCropsPage() {
   const [loadingDeleteId, setLoadingDeleteId] = useState(null); // Track which delete button is loading
 
   const handleDelete = async (id) => {
-    console.log(id)
-    console.log(typeof(id))
+    console.log(id);
+    console.log(typeof id);
     setLoadingDeleteId(id); // Set loading state for the specific crop
     try {
       await deleteCrop(id).unwrap();
@@ -39,22 +56,22 @@ export default function YourCropsPage() {
   const handleSave = async (event) => {
     event.preventDefault();
     setLoading(true);
-  
+
     const formData = new FormData(event.target);
-  
+
     // Append file properly
     const fileInput = event.target.crop_image;
     if (fileInput?.files.length > 0) {
       formData.append("crop_image", fileInput.files[0]);
     }
-  
+
     try {
       if (editingCrop) {
         await updateCrop({ id: editingCrop.crop_id, body: formData }).unwrap();
       } else {
         await addCrop(formData).unwrap();
       }
-  
+
       setOpenDialog(false);
       setEditingCrop(null);
     } catch (error) {
@@ -70,13 +87,16 @@ export default function YourCropsPage() {
       <h1 className="text-3xl font-bold text-green-900 mb-8">Your Crops</h1>
 
       {/* Add Crop Button */}
-      <Dialog open={openDialog} onOpenChange={(isOpen) => {
-        setOpenDialog(isOpen);
-        if (!isOpen) {
-          setEditingCrop(null);
-          setSelectedImage(null); // Reset image preview
-        }
-      }}>
+      <Dialog
+        open={openDialog}
+        onOpenChange={(isOpen) => {
+          setOpenDialog(isOpen);
+          if (!isOpen) {
+            setEditingCrop(null);
+            setSelectedImage(null); // Reset image preview
+          }
+        }}
+      >
         <DialogTrigger asChild>
           <Button className="mb-8 bg-green-600 hover:bg-green-700">
             <Plus className="w-4 h-4 mr-2" />
@@ -87,20 +107,64 @@ export default function YourCropsPage() {
         {/* Add/Edit Crop Modal */}
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingCrop ? "Edit Crop" : "Add New Crop"}</DialogTitle>
+            <DialogTitle>
+              {editingCrop ? "Edit Crop" : "Add New Crop"}
+            </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-4" encType="multipart/form-data">
-            <Input name="crop_name" placeholder="Crop Name" defaultValue={editingCrop?.crop_name} required />
-            <Input name="crop_price" type="number" placeholder="Price (₹/kg)" defaultValue={editingCrop?.crop_price} required />
-            <Input name="quantity" placeholder="Quantity" defaultValue={editingCrop?.quantity} required />
-            <Input name="Description" placeholder="Description" defaultValue={editingCrop?.Description} required />
-            <Input name="location" placeholder="Location" defaultValue={editingCrop?.location} required />
-            <Input name="harvested_time" type="date" placeholder="Harvested Time" defaultValue={editingCrop?.harvested_time} required />
+          <form
+            onSubmit={handleSave}
+            className="space-y-4"
+            encType="multipart/form-data"
+          >
+            <Input
+              name="crop_name"
+              placeholder="Crop Name"
+              defaultValue={editingCrop?.crop_name}
+              required
+            />
+            <Input
+              name="crop_price"
+              type="number"
+              placeholder="Price (₹/kg)"
+              defaultValue={editingCrop?.crop_price}
+              required
+            />
+            <Input
+              name="quantity"
+              placeholder="Quantity"
+              defaultValue={editingCrop?.quantity}
+              required
+            />
+            <Input
+              name="Description"
+              placeholder="Description"
+              defaultValue={editingCrop?.Description}
+              required
+            />
+            <Input
+              name="location"
+              placeholder="Location"
+              defaultValue={editingCrop?.location}
+              required
+            />
+            <Input
+              name="harvested_time"
+              type="date"
+              placeholder="Harvested Time"
+              defaultValue={editingCrop?.harvested_time}
+              required
+            />
 
             {/* Image Upload and Preview */}
             <div className="space-y-2">
-              {selectedImage && <img src={selectedImage} alt="Preview" className="w-full h-32 object-cover rounded-md" />}
+              {selectedImage && (
+                <img
+                  src={selectedImage}
+                  alt="Preview"
+                  className="w-full h-32 object-cover rounded-md"
+                />
+              )}
               <Input
                 name="crop_image"
                 type="file"
@@ -115,11 +179,19 @@ export default function YourCropsPage() {
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" className="bg-green-600 hover:bg-green-700" disabled={loading}>
-                {loading ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : null}
+              <Button
+                type="submit"
+                className="bg-green-600 hover:bg-green-700"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="animate-spin w-4 h-4 mr-2" />
+                ) : null}
                 {editingCrop ? "Save Changes" : "Add Crop"}
               </Button>
-              <Button variant="outline" onClick={() => setOpenDialog(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setOpenDialog(false)}>
+                Cancel
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -132,8 +204,13 @@ export default function YourCropsPage() {
         <div>Error fetching crops.</div>
       ) : crops.length === 0 ? (
         <div className="text-center mt-8">
-          <p className="text-gray-600 mb-4">No crops available. Please add a crop.</p>
-          <Button onClick={() => setOpenDialog(true)} className="bg-green-600 hover:bg-green-700">
+          <p className="text-gray-600 mb-4">
+            No crops available. Please add a crop.
+          </p>
+          <Button
+            onClick={() => setOpenDialog(true)}
+            className="bg-green-600 hover:bg-green-700"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add New Crop
           </Button>
@@ -141,21 +218,37 @@ export default function YourCropsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {crops.map((crop) => (
-            <Link href={`/crop/${crop?.crop_id}`}>
-            <Card key={crop.crop_id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <img src={crop.crop_image} alt={crop.crop_name} className="w-full h-48 object-cover rounded-lg" />
-              </CardHeader>
-              <CardContent>
-                <CardTitle className="text-xl">{crop.crop_name}</CardTitle>
-                <div className="space-y-2 mt-4">
-                  <p className="text-green-600 font-semibold">₹{crop.crop_price}/kg</p>
-                  <p className="text-sm text-gray-600">Quantity: {crop.quantity} Kg</p>
-                  <p className="text-sm text-gray-600">Location: {crop.location}</p>
-                  <p className="text-sm text-gray-600">Harvested: {crop.harvested_time}</p>
-                  <p className="text-gray-700">{crop.Description}</p>
-                </div>
-              </CardContent>
+            <Card
+              key={crop.crop_id}
+              className="hover:shadow-lg transition-shadow"
+            >
+              <Link href={`/crop/${crop?.crop_id}`}>
+                <CardHeader>
+                  <img
+                    src={crop.crop_image}
+                    alt={crop.crop_name}
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                </CardHeader>
+                <CardContent>
+                  <CardTitle className="text-xl">{crop.crop_name}</CardTitle>
+                  <div className="space-y-2 mt-4">
+                    <p className="text-green-600 font-semibold">
+                      ₹{crop.crop_price}/kg
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Quantity: {crop.quantity} Kg
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Location: {crop.location}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Harvested: {crop.harvested_time}
+                    </p>
+                    <p className="text-gray-700">{crop.Description}</p>
+                  </div>
+                </CardContent>
+              </Link>
               <CardFooter className="flex gap-4">
                 <Button
                   variant="outline"
@@ -168,8 +261,8 @@ export default function YourCropsPage() {
                   <Edit className="w-4 h-4 mr-2" />
                   Edit
                 </Button>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   onClick={() => handleDelete(crop.crop_id)}
                   disabled={loadingDeleteId === crop.crop_id} // Disable only the deleting button
                 >
@@ -181,7 +274,7 @@ export default function YourCropsPage() {
                   Delete
                 </Button>
               </CardFooter>
-            </Card></Link>
+            </Card>
           ))}
         </div>
       )}

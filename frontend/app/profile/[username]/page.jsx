@@ -1,21 +1,31 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { useParams } from "next/navigation"
-import { useGetProfileQuery, useUpdateProfileMutation } from "@/redux/Service/profileApi"
+import { motion } from "framer-motion";
+import { useParams } from "next/navigation";
+import {
+  useGetProfileQuery,
+  useUpdateProfileMutation,
+} from "@/redux/Service/profileApi";
 import {
   useGetRatingQuery,
   useCreateRatingMutation,
   useDeleteRatingMutation,
   useUpdateRatingMutation,
-} from "@/redux/Service/ratingApi"
-import { useGetAllContractsQuery } from "@/redux/Service/contract" 
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+} from "@/redux/Service/ratingApi";
+import { useGetAllContractsQuery } from "@/redux/Service/contract";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   FileText,
   Star,
@@ -34,209 +44,237 @@ import {
   ArrowLeft,
   MessageSquare,
   ImageIcon,
-} from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useState, useEffect, useRef } from "react"
-import { useSelector } from "react-redux"
-import { useCreateRoomMutation, useGetRoomsQuery } from "@/redux/Service/chatApi"
-import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import Webcam from "react-webcam"
-import Link from "next/link"
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
+import {
+  useCreateRoomMutation,
+  useGetRoomsQuery,
+} from "@/redux/Service/chatApi";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import Webcam from "react-webcam";
+import Link from "next/link";
+import { useGetCropsQuery } from "@/redux/Service/cropApi";
 
 export default function ProfilePage() {
-  const router = useRouter()
-  const { username } = useParams()
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
-  const { data: profile, error, isLoading, refetch } = useGetProfileQuery(username)
-  const { data: ratings, refetch: refetchRatings } = useGetRatingQuery(username)
-  const { data: contracts } = useGetAllContractsQuery()
-  const [updateProfile] = useUpdateProfileMutation()
-  const [createRating] = useCreateRatingMutation()
-  const [deleteRating] = useDeleteRatingMutation()
-  const [updateRating] = useUpdateRatingMutation()
-  const { data: rooms } = useGetRoomsQuery()
-  const [createRoom] = useCreateRoomMutation()
+  const router = useRouter();
+  const { username } = useParams();
+  const { data, isLoading: cropLoading, isError } = useGetCropsQuery();
+  const crops = Array.isArray(data) ? data : [];
+  console.log(crops);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const {
+    data: profile,
+    error,
+    isLoading,
+    refetch,
+  } = useGetProfileQuery(username);
+  const { data: ratings, refetch: refetchRatings } =
+    useGetRatingQuery(username);
+  const { data: contracts } = useGetAllContractsQuery();
+  const [updateProfile] = useUpdateProfileMutation();
+  const [createRating] = useCreateRatingMutation();
+  const [deleteRating] = useDeleteRatingMutation();
+  const [updateRating] = useUpdateRatingMutation();
+  const { data: rooms } = useGetRoomsQuery();
+  const [createRoom] = useCreateRoomMutation();
 
-  const [rating, setRating] = useState(0)
-  const [description, setDescription] = useState("")
-  const [images, setImages] = useState([])
-  const [hasRated, setHasRated] = useState(false)
-  const [editingRatingId, setEditingRatingId] = useState(null)
-  const userInfo = useSelector((state) => state.auth.userInfo)
-  const currentUser = userInfo?.data.username
-  const userRole = userInfo?.role
+  const [rating, setRating] = useState(0);
+  const [description, setDescription] = useState("");
+  const [images, setImages] = useState([]);
+  const [hasRated, setHasRated] = useState(false);
+  const [editingRatingId, setEditingRatingId] = useState(null);
+  const userInfo = useSelector((state) => state.auth.userInfo);
+  const currentUser = userInfo?.data.username;
+  const userRole = userInfo?.role;
 
   // Edit Profile State
-  const [editOpen, setEditOpen] = useState(false)
-  const [phone, setPhone] = useState("")
-  const [address, setAddress] = useState("")
-  const [profilePic, setProfilePic] = useState("")
-  const webcamRef = useRef(null)
-  const [cameraActive, setCameraActive] = useState(false)
+  const [editOpen, setEditOpen] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [profilePic, setProfilePic] = useState("");
+  const webcamRef = useRef(null);
+  const [cameraActive, setCameraActive] = useState(false);
 
   const handleEditClick = () => {
-    setPhone(profile?.data.phoneno || "")
-    setAddress(profile?.data.address || "")
-    setProfilePic(profile?.data.image || "")
-    setEditOpen(true)
-  }
+    setPhone(profile?.data.phoneno || "");
+    setAddress(profile?.data.address || "");
+    setProfilePic(profile?.data.image || "");
+    setEditOpen(true);
+  };
 
   const handleCapture = () => {
-    const imageSrc = webcamRef.current.getScreenshot()
-    setProfilePic(imageSrc)
-  }
+    const imageSrc = webcamRef.current.getScreenshot();
+    setProfilePic(imageSrc);
+  };
 
   const handleProfileSubmit = async () => {
-    setIsUpdatingProfile(true) // Start loading
+    setIsUpdatingProfile(true); // Start loading
     try {
-      const data = new FormData()
-      data.append("phoneno", phone)
-      data.append("address", address)
+      const data = new FormData();
+      data.append("phoneno", phone);
+      data.append("address", address);
 
       // Convert base64 to File object if it's a data URI
       if (profilePic && profilePic.startsWith("data:image")) {
-        const blob = dataURItoBlob(profilePic)
-        const file = new File([blob], "profile.jpg", { type: "image/jpeg" })
-        data.append("image", file)
+        const blob = dataURItoBlob(profilePic);
+        const file = new File([blob], "profile.jpg", { type: "image/jpeg" });
+        data.append("image", file);
       }
 
-      await updateProfile(data).unwrap()
-      refetch()
-      setEditOpen(false)
+      await updateProfile(data).unwrap();
+      refetch();
+      setEditOpen(false);
     } catch (error) {
-      console.error("Failed to update profile:", error)
+      console.error("Failed to update profile:", error);
     } finally {
-      setIsUpdatingProfile(false) // Stop loading regardless of success/error
+      setIsUpdatingProfile(false); // Stop loading regardless of success/error
     }
-  }
+  };
   // Helper function to convert data URI to Blob
   function dataURItoBlob(dataURI) {
-    const byteString = atob(dataURI.split(",")[1])
-    const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0]
-    const ab = new ArrayBuffer(byteString.length)
-    const ia = new Uint8Array(ab)
+    const byteString = atob(dataURI.split(",")[1]);
+    const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
 
     for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i)
+      ia[i] = byteString.charCodeAt(i);
     }
 
-    return new Blob([ab], { type: mimeString })
+    return new Blob([ab], { type: mimeString });
   }
   const handleChatClick = async () => {
     if (rooms?.data?.some((room) => room.chat_user === username)) {
-      router.push(`/chat/${username}`)
+      router.push(`/chat/${username}`);
     } else {
       try {
-        await createRoom(username).unwrap()
-        router.push(`/chat/${username}`)
+        await createRoom(username).unwrap();
+        router.push(`/chat/${username}`);
       } catch (error) {
-        console.error("Error creating room:", error)
+        console.error("Error creating room:", error);
       }
     }
-  }
+  };
 
   // Check if the current user has already rated the profile user
   useEffect(() => {
     if (ratings) {
-      const currentUser = userInfo?.data.username
-      const hasRated = ratings.data.some((r) => r.rating_user === currentUser) || username == currentUser
-      setHasRated(hasRated)
+      const currentUser = userInfo?.data.username;
+      const hasRated =
+        ratings.data.some((r) => r.rating_user === currentUser) ||
+        username == currentUser;
+      setHasRated(hasRated);
     }
-  }, [ratings, userInfo, username])
+  }, [ratings, userInfo, username]);
 
   const handleRatingSubmit = async () => {
-    const imageToSend = images[0] // Send only the first image
+    const imageToSend = images[0]; // Send only the first image
 
-    const formData = new FormData()
-    formData.append("rated_user", username)
-    formData.append("description", description)
-    formData.append("rate", rating)
+    const formData = new FormData();
+    formData.append("rated_user", username);
+    formData.append("description", description);
+    formData.append("rate", rating);
     if (imageToSend) {
-      formData.append("images", imageToSend) // Append the image file
+      formData.append("images", imageToSend); // Append the image file
     }
 
     try {
-      await createRating({ ratingData: formData }).unwrap()
-      refetchRatings()
-      setRating(0) // Reset rating
-      setDescription("") // Reset description
-      setImages([]) // Reset images
+      await createRating({ ratingData: formData }).unwrap();
+      refetchRatings();
+      setRating(0); // Reset rating
+      setDescription(""); // Reset description
+      setImages([]); // Reset images
     } catch (error) {
-      console.error("Failed to submit rating:", error)
+      console.error("Failed to submit rating:", error);
     }
-  }
+  };
 
   const handleImageChange = (e) => {
-    const files = e.target.files
+    const files = e.target.files;
     if (files.length > 1) {
-      alert("Only one image can be uploaded. The first image will be used.")
+      alert("Only one image can be uploaded. The first image will be used.");
     }
-    setImages([files[0]]) // Store only the first image
-  }
+    setImages([files[0]]); // Store only the first image
+  };
 
   // Handle delete rating
   const handleDeleteRating = async (ratingId) => {
     try {
-      await deleteRating(ratingId).unwrap() // Call delete mutation
-      refetchRatings() // Refetch ratings after deletion
+      await deleteRating(ratingId).unwrap(); // Call delete mutation
+      refetchRatings(); // Refetch ratings after deletion
     } catch (error) {
-      console.error("Failed to delete rating:", error)
+      console.error("Failed to delete rating:", error);
     }
-  }
+  };
 
   // Handle update rating
   const handleUpdateRating = async (ratingId) => {
-    const imageToSend = images[0] // Send only the first image
+    const imageToSend = images[0]; // Send only the first image
 
     const updatedRatingData = {
       description,
       rate: rating,
       images: imageToSend, // Send a single image
-    }
+    };
 
     try {
-      await updateRating({ ratingId, updatedRatingData }).unwrap() // Call update mutation
-      refetchRatings() // Refetch ratings after update
-      setEditingRatingId(null) // Reset editing state
-      setRating(0) // Reset rating
-      setDescription("") // Reset description
-      setImages([]) // Reset images
+      await updateRating({ ratingId, updatedRatingData }).unwrap(); // Call update mutation
+      refetchRatings(); // Refetch ratings after update
+      setEditingRatingId(null); // Reset editing state
+      setRating(0); // Reset rating
+      setDescription(""); // Reset description
+      setImages([]); // Reset images
     } catch (error) {
-      console.error("Failed to update rating:", error)
+      console.error("Failed to update rating:", error);
     }
-  }
+  };
 
   // Calculate average rating
   const calculateAverageRating = () => {
-    if (!ratings?.data || ratings.data.length === 0) return 0
-    const sum = ratings.data.reduce((acc, curr) => acc + curr.rate, 0)
-    return (sum / ratings.data.length).toFixed(1)
-  }
+    if (!ratings?.data || ratings.data.length === 0) return 0;
+    const sum = ratings.data.reduce((acc, curr) => acc + curr.rate, 0);
+    return (sum / ratings.data.length).toFixed(1);
+  };
 
   // Count ratings by star value
   const countRatingsByValue = (value) => {
-    if (!ratings?.data) return 0
-    return ratings.data.filter((r) => r.rate === value).length
-  }
+    if (!ratings?.data) return 0;
+    return ratings.data.filter((r) => r.rate === value).length;
+  };
 
   // Calculate percentage for rating bar
   const calculateRatingPercentage = (value) => {
-    if (!ratings?.data || ratings.data.length === 0) return 0
-    return (countRatingsByValue(value) / ratings.data.length) * 100
-  }
+    if (!ratings?.data || ratings.data.length === 0) return 0;
+    return (countRatingsByValue(value) / ratings.data.length) * 100;
+  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-green-50 to-white">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-green-800 font-medium">Loading profile...</p>
+          <p className="text-lg text-green-800 font-medium">
+            Loading profile...
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -244,15 +282,22 @@ export default function ProfilePage() {
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-red-50 to-white">
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Profile Not Found</h2>
-          <p className="text-gray-600 mb-6">We couldn't find the profile you're looking for.</p>
-          <Button onClick={() => router.back()} className="bg-red-600 hover:bg-red-700">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">
+            Profile Not Found
+          </h2>
+          <p className="text-gray-600 mb-6">
+            We couldn't find the profile you're looking for.
+          </p>
+          <Button
+            onClick={() => router.back()}
+            className="bg-red-600 hover:bg-red-700"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Go Back
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -271,7 +316,11 @@ export default function ProfilePage() {
             <div className="relative">
               <div className="rounded-full p-1 bg-gradient-to-r from-green-400 to-green-600">
                 <Avatar className="w-32 h-32 border-4 border-white">
-                  <AvatarImage src={profile?.data.image || "/profile.jpg"} alt="Profile" className="object-cover" />
+                  <AvatarImage
+                    src={profile?.data.image || "/profile.jpg"}
+                    alt="Profile"
+                    className="object-cover"
+                  />
                   <AvatarFallback className="bg-green-100 text-green-800 text-4xl">
                     {profile?.data.name?.charAt(0) || "U"}
                   </AvatarFallback>
@@ -293,7 +342,9 @@ export default function ProfilePage() {
               {ratings?.data && ratings.data.length > 0 && (
                 <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 rounded-full w-10 h-10 flex items-center justify-center shadow-md border-2 border-white">
                   <div className="flex items-center">
-                    <span className="font-bold text-xs">{calculateAverageRating()}</span>
+                    <span className="font-bold text-xs">
+                      {calculateAverageRating()}
+                    </span>
                     <Star className="w-3 h-3 ml-0.5 fill-yellow-900" />
                   </div>
                 </div>
@@ -303,8 +354,12 @@ export default function ProfilePage() {
             <div className="text-center md:text-left flex-1">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-green-800 mb-1">{profile?.data.name || "N/A"}</h1>
-                  <p className="text-gray-600 mb-2">@{profile?.data?.user.username}</p>
+                  <h1 className="text-3xl font-bold text-green-800 mb-1">
+                    {profile?.data.name || "N/A"}
+                  </h1>
+                  <p className="text-gray-600 mb-2">
+                    @{profile?.data?.user.username}
+                  </p>
 
                   <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <div className="flex items-center text-gray-700">
@@ -324,13 +379,18 @@ export default function ProfilePage() {
                       {profile.role === "farmer" ? "Farmer" : "Contractor"}
                     </Badge>
                   )}
-                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-0">Verified</Badge>
+                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-0">
+                    Verified
+                  </Badge>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
                 {currentUser === username && (
-                  <Button className="bg-green-600 hover:bg-green-700 shadow-sm" onClick={handleEditClick}>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 shadow-sm"
+                    onClick={handleEditClick}
+                  >
                     <Edit className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
@@ -353,7 +413,10 @@ export default function ProfilePage() {
                   </Button>
                 )}
                 {currentUser !== username && (
-                  <Button onClick={handleChatClick} className="bg-green-600 hover:bg-green-700 shadow-sm">
+                  <Button
+                    onClick={handleChatClick}
+                    className="bg-green-600 hover:bg-green-700 shadow-sm"
+                  >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Chat
                   </Button>
@@ -372,7 +435,9 @@ export default function ProfilePage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Phone Number</label>
+              <label className="block text-sm font-medium mb-1">
+                Phone Number
+              </label>
               <Input
                 type="text"
                 value={phone}
@@ -390,9 +455,18 @@ export default function ProfilePage() {
               />
             </div>
             <div className="flex flex-col items-center">
-              <label className="block text-sm font-medium mb-2">Profile Picture</label>
-              <Webcam ref={webcamRef} screenshotFormat="image/jpeg" className="w-40 h-40 rounded-lg mb-2" />
-              <Button onClick={handleCapture} className="bg-blue-600 hover:bg-blue-700 mb-2">
+              <label className="block text-sm font-medium mb-2">
+                Profile Picture
+              </label>
+              <Webcam
+                ref={webcamRef}
+                screenshotFormat="image/jpeg"
+                className="w-40 h-40 rounded-lg mb-2"
+              />
+              <Button
+                onClick={handleCapture}
+                className="bg-blue-600 hover:bg-blue-700 mb-2"
+              >
                 Capture Photo
               </Button>
               {profilePic && (
@@ -446,38 +520,57 @@ export default function ProfilePage() {
       <div className="container mx-auto px-4">
         {/* Tabbed Navigation */}
         <Tabs defaultValue="reviews" className="w-full">
-          <div className="bg-white rounded-lg shadow-sm p-1 mb-6">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
-              <TabsTrigger
-                value="reviews"
-                className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-              >
-                <Star className="w-4 h-4 mr-2" />
-                Reviews
-              </TabsTrigger>
-              <TabsTrigger
-                value="documents"
-                className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Documents
-              </TabsTrigger>
-              <TabsTrigger
-                value="contracts"
-                className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Contracts
-              </TabsTrigger>
-              <TabsTrigger
-                value="payments"
-                className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-              >
-                <CreditCard className="w-4 h-4 mr-2" />
-                Payments
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        <div className="bg-white rounded-lg shadow-sm p-1 mb-6">
+    {username === currentUser ? (
+      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
+        <TabsTrigger
+          value="reviews"
+          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+        >
+          <Star className="w-4 h-4 mr-2" />
+          Reviews
+        </TabsTrigger>
+        <TabsTrigger
+          value="documents"
+          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+        >
+          <Shield className="w-4 h-4 mr-2" />
+          Documents
+        </TabsTrigger>
+        <TabsTrigger
+          value="contracts"
+          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+        >
+          <FileText className="w-4 h-4 mr-2" />
+          Contracts
+        </TabsTrigger>
+        <TabsTrigger
+          value="payments"
+          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+        >
+          <CreditCard className="w-4 h-4 mr-2" />
+          Payments
+        </TabsTrigger>
+      </TabsList>
+    ) : (
+      <TabsList className="grid w-full grid-cols-2 gap-2">
+        <TabsTrigger
+          value="reviews"
+          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+        >
+          <Star className="w-4 h-4 mr-2" />
+          Reviews
+        </TabsTrigger>
+        <TabsTrigger
+          value="Crops"
+          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+        >
+          <Crop className="w-4 h-4 mr-2" />
+          Crops
+        </TabsTrigger>
+      </TabsList>
+    )}
+  </div>
 
           {/* Reviews Tab */}
           <TabsContent value="reviews">
@@ -495,7 +588,9 @@ export default function ProfilePage() {
                     <div className="space-y-6">
                       <div className="flex items-center justify-center">
                         <div className="text-center">
-                          <div className="text-5xl font-bold text-green-800">{calculateAverageRating()}</div>
+                          <div className="text-5xl font-bold text-green-800">
+                            {calculateAverageRating()}
+                          </div>
                           <div className="flex items-center justify-center mt-2">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <Star
@@ -508,7 +603,9 @@ export default function ProfilePage() {
                               />
                             ))}
                           </div>
-                          <p className="text-gray-500 mt-2">{ratings.data.length} reviews</p>
+                          <p className="text-gray-500 mt-2">
+                            {ratings.data.length} reviews
+                          </p>
                         </div>
                       </div>
 
@@ -518,9 +615,14 @@ export default function ProfilePage() {
                             <div className="w-8 text-right">{value}</div>
                             <Star className="w-4 h-4 fill-yellow-400 stroke-yellow-400" />
                             <div className="flex-1">
-                              <Progress value={calculateRatingPercentage(value)} className="h-2" />
+                              <Progress
+                                value={calculateRatingPercentage(value)}
+                                className="h-2"
+                              />
                             </div>
-                            <div className="w-8 text-gray-500 text-sm">{countRatingsByValue(value)}</div>
+                            <div className="w-8 text-gray-500 text-sm">
+                              {countRatingsByValue(value)}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -540,13 +642,19 @@ export default function ProfilePage() {
                 {!hasRated && (
                   <Card className="border-0 shadow-md overflow-hidden">
                     <CardHeader className="bg-green-50 border-b border-green-100">
-                      <CardTitle className="text-green-800">Write a Review</CardTitle>
-                      <CardDescription>Share your experience with {profile?.data.name}</CardDescription>
+                      <CardTitle className="text-green-800">
+                        Write a Review
+                      </CardTitle>
+                      <CardDescription>
+                        Share your experience with {profile?.data.name}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="space-y-6">
                         <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">Your Rating</label>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Your Rating
+                          </label>
                           <div className="flex items-center space-x-2">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <TooltipProvider key={star}>
@@ -559,7 +667,9 @@ export default function ProfilePage() {
                                     >
                                       <Star
                                         className={`w-8 h-8 ${
-                                          star <= rating ? "fill-yellow-400 stroke-yellow-400" : "stroke-gray-300"
+                                          star <= rating
+                                            ? "fill-yellow-400 stroke-yellow-400"
+                                            : "stroke-gray-300"
                                         } transition-colors`}
                                       />
                                     </button>
@@ -578,7 +688,9 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">Your Review</label>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Your Review
+                          </label>
                           <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
@@ -588,17 +700,29 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">Add Photo (Optional)</label>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Add Photo (Optional)
+                          </label>
                           <div className="flex items-center space-x-4">
                             <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-green-500 transition-colors bg-gray-50 hover:bg-green-50">
-                              <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className="hidden"
+                              />
                               <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
-                              <span className="text-sm text-gray-500">Add Image</span>
+                              <span className="text-sm text-gray-500">
+                                Add Image
+                              </span>
                             </label>
                             {images.length > 0 && (
                               <div className="relative">
                                 <img
-                                  src={URL.createObjectURL(images[0]) || "/placeholder.svg"}
+                                  src={
+                                    URL.createObjectURL(images[0]) ||
+                                    "/placeholder.svg"
+                                  }
                                   alt="Preview"
                                   className="w-32 h-32 object-cover rounded-lg border border-gray-200"
                                 />
@@ -647,7 +771,9 @@ export default function ProfilePage() {
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <h3 className="font-semibold text-gray-800">{rating.rating_user}</h3>
+                                  <h3 className="font-semibold text-gray-800">
+                                    {rating.rating_user}
+                                  </h3>
                                   <div className="flex items-center mt-1">
                                     {[1, 2, 3, 4, 5].map((star) => (
                                       <Star
@@ -666,17 +792,20 @@ export default function ProfilePage() {
                                 </div>
 
                                 {/* Edit and delete buttons */}
-                                {userInfo?.data.username === rating.rating_user && (
+                                {userInfo?.data.username ===
+                                  rating.rating_user && (
                                   <div className="flex gap-2">
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       className="text-gray-500 hover:text-green-700 hover:bg-green-50"
                                       onClick={() => {
-                                        setEditingRatingId(rating.id)
-                                        setRating(rating.rate)
-                                        setDescription(rating.description)
-                                        setImages(rating.images ? [rating.images] : [])
+                                        setEditingRatingId(rating.id);
+                                        setRating(rating.rate);
+                                        setDescription(rating.description);
+                                        setImages(
+                                          rating.images ? [rating.images] : []
+                                        );
                                       }}
                                     >
                                       <Edit className="w-4 h-4" />
@@ -685,7 +814,9 @@ export default function ProfilePage() {
                                       variant="ghost"
                                       size="sm"
                                       className="text-gray-500 hover:text-red-700 hover:bg-red-50"
-                                      onClick={() => handleDeleteRating(rating.id)}
+                                      onClick={() =>
+                                        handleDeleteRating(rating.id)
+                                      }
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </Button>
@@ -712,10 +843,14 @@ export default function ProfilePage() {
                           {/* Edit form for the selected rating */}
                           {editingRatingId === rating.id && (
                             <div className="mt-6 pt-6 border-t border-gray-200 space-y-4">
-                              <h4 className="font-medium text-green-800">Edit Your Review</h4>
+                              <h4 className="font-medium text-green-800">
+                                Edit Your Review
+                              </h4>
 
                               <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">Update Rating</label>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Update Rating
+                                </label>
                                 <div className="flex items-center space-x-2">
                                   {[1, 2, 3, 4, 5].map((star) => (
                                     <button
@@ -726,7 +861,9 @@ export default function ProfilePage() {
                                     >
                                       <Star
                                         className={`w-5 h-5 ${
-                                          star <= rating ? "fill-yellow-400 stroke-yellow-400" : "stroke-gray-300"
+                                          star <= rating
+                                            ? "fill-yellow-400 stroke-yellow-400"
+                                            : "stroke-gray-300"
                                         }`}
                                       />
                                     </button>
@@ -735,10 +872,14 @@ export default function ProfilePage() {
                               </div>
 
                               <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">Update Description</label>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Update Description
+                                </label>
                                 <textarea
                                   value={description}
-                                  onChange={(e) => setDescription(e.target.value)}
+                                  onChange={(e) =>
+                                    setDescription(e.target.value)
+                                  }
                                   className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
                                   rows="4"
                                 />
@@ -758,13 +899,17 @@ export default function ProfilePage() {
                                     />
                                     <ImageIcon className="w-6 h-6 text-gray-400" />
                                   </label>
-                                  {images.length > 0 && images[0] instanceof File && (
-                                    <img
-                                      src={URL.createObjectURL(images[0]) || "/placeholder.svg"}
-                                      alt="Preview"
-                                      className="w-24 h-24 object-cover rounded-lg"
-                                    />
-                                  )}
+                                  {images.length > 0 &&
+                                    images[0] instanceof File && (
+                                      <img
+                                        src={
+                                          URL.createObjectURL(images[0]) ||
+                                          "/placeholder.svg"
+                                        }
+                                        alt="Preview"
+                                        className="w-24 h-24 object-cover rounded-lg"
+                                      />
+                                    )}
                                 </div>
                               </div>
 
@@ -793,9 +938,12 @@ export default function ProfilePage() {
                   <Card className="border-0 shadow-md">
                     <CardContent className="p-8 text-center">
                       <Star className="w-12 h-12 mx-auto stroke-gray-300 mb-4" />
-                      <h3 className="text-xl font-medium text-gray-700 mb-2">No Reviews Yet</h3>
+                      <h3 className="text-xl font-medium text-gray-700 mb-2">
+                        No Reviews Yet
+                      </h3>
                       <p className="text-gray-500 max-w-md mx-auto">
-                        This user hasn't received any reviews yet. Be the first to share your experience!
+                        This user hasn't received any reviews yet. Be the first
+                        to share your experience!
                       </p>
                     </CardContent>
                   </Card>
@@ -812,7 +960,9 @@ export default function ProfilePage() {
                   <Shield className="w-5 h-5 mr-2" />
                   Verification Documents
                 </CardTitle>
-                <CardDescription>View and manage your verification documents</CardDescription>
+                <CardDescription>
+                  View and manage your verification documents
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -827,7 +977,9 @@ export default function ProfilePage() {
                       <CardContent className="p-4">
                         <div className="aspect-video relative rounded-md overflow-hidden border border-gray-200">
                           <img
-                            src={profile.data.aadhar_image || "/placeholder.svg"}
+                            src={
+                              profile.data.aadhar_image || "/placeholder.svg"
+                            }
                             alt="Aadhar Card"
                             className="w-full h-full object-cover"
                           />
@@ -849,7 +1001,9 @@ export default function ProfilePage() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-6 text-center">
-                        <p className="text-gray-500 mb-4">No Aadhar card uploaded</p>
+                        <p className="text-gray-500 mb-4">
+                          No Aadhar card uploaded
+                        </p>
                         {currentUser === username && (
                           <Button className="bg-green-600 hover:bg-green-700">
                             <Shield className="w-4 h-4 mr-2" />
@@ -893,7 +1047,9 @@ export default function ProfilePage() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-6 text-center">
-                        <p className="text-gray-500 mb-4">No screenshot uploaded</p>
+                        <p className="text-gray-500 mb-4">
+                          No screenshot uploaded
+                        </p>
                         {currentUser === username && (
                           <Button className="bg-green-600 hover:bg-green-700">
                             <Shield className="w-4 h-4 mr-2" />
@@ -916,7 +1072,9 @@ export default function ProfilePage() {
                   <FileText className="w-5 h-5 mr-2" />
                   Contract Details
                 </CardTitle>
-                <CardDescription>Manage your ongoing and past contracts</CardDescription>
+                <CardDescription>
+                  Manage your ongoing and past contracts
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
@@ -928,7 +1086,9 @@ export default function ProfilePage() {
                       >
                         <CardHeader className="p-4 bg-gray-50 border-b border-gray-200">
                           <div className="flex justify-between items-center">
-                            <CardTitle className="text-lg">Contract #{contract.contract_id.substring(0, 8)}</CardTitle>
+                            <CardTitle className="text-lg">
+                              Contract #{contract.contract_id.substring(0, 8)}
+                            </CardTitle>
                             <Badge
                               className={
                                 contract.status
@@ -943,7 +1103,9 @@ export default function ProfilePage() {
                         <CardContent className="p-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <h3 className="font-medium text-gray-700">Contract Details</h3>
+                              <h3 className="font-medium text-gray-700">
+                                Contract Details
+                              </h3>
                               <div className="mt-2 space-y-2">
                                 <div className="flex items-center text-gray-600">
                                   <User className="w-4 h-4 mr-2 text-gray-500" />
@@ -955,20 +1117,35 @@ export default function ProfilePage() {
                                 </div>
                                 <div className="flex items-center text-gray-600">
                                   <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-                                  <span>Delivery Date: {new Date(contract.delivery_date).toLocaleDateString()}</span>
+                                  <span>
+                                    Delivery Date:{" "}
+                                    {new Date(
+                                      contract.delivery_date
+                                    ).toLocaleDateString()}
+                                  </span>
                                 </div>
                                 <div className="flex items-center text-gray-600">
                                   <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                                  <span>Created: {new Date(contract.created_at).toLocaleDateString()}</span>
+                                  <span>
+                                    Created:{" "}
+                                    {new Date(
+                                      contract.created_at
+                                    ).toLocaleDateString()}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                             <div>
-                              <h3 className="font-medium text-gray-700">Financial Details</h3>
+                              <h3 className="font-medium text-gray-700">
+                                Financial Details
+                              </h3>
                               <div className="mt-2 space-y-2">
                                 <div className="flex items-center text-gray-600">
                                   <CreditCard className="w-4 h-4 mr-2 text-gray-500" />
-                                  <span>Price: ₹{contract.nego_price.toLocaleString()}</span>
+                                  <span>
+                                    Price: ₹
+                                    {contract.nego_price.toLocaleString()}
+                                  </span>
                                 </div>
                                 <div className="flex items-center text-gray-600">
                                   <Crop className="w-4 h-4 mr-2 text-gray-500" />
@@ -976,30 +1153,37 @@ export default function ProfilePage() {
                                 </div>
                                 <div className="flex items-center text-gray-600">
                                   <MapPin className="w-4 h-4 mr-2 text-gray-500" />
-                                  <span>Delivery Address: {contract.delivery_address}</span>
+                                  <span>
+                                    Delivery Address:{" "}
+                                    {contract.delivery_address}
+                                  </span>
                                 </div>
                                 <div className="flex items-center text-gray-600">
                                   <FileText className="w-4 h-4 mr-2 text-gray-500" />
-                                  <span>Quantity: {contract.quantity} units</span>
+                                  <span>
+                                    Quantity: {contract.quantity} units
+                                  </span>
                                 </div>
                               </div>
                             </div>
                           </div>
-                          
                         </CardContent>
                         <CardFooter className="bg-gray-50 border-t border-gray-200 p-4">
-                          <Link href='/contracts'>
-                          <Button variant="outline" className="ml-auto">
-                            <FileText className="w-4 h-4 mr-2" />
-                            View Details
-                          </Button></Link>
+                          <Link href="/contracts">
+                            <Button variant="outline" className="ml-auto">
+                              <FileText className="w-4 h-4 mr-2" />
+                              View Details
+                            </Button>
+                          </Link>
                         </CardFooter>
                       </Card>
                     ))
                   ) : (
                     <div className="text-center py-8">
                       <FileText className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                      <h3 className="text-xl font-medium text-gray-700 mb-2">No Contracts Found</h3>
+                      <h3 className="text-xl font-medium text-gray-700 mb-2">
+                        No Contracts Found
+                      </h3>
                       <p className="text-gray-500 max-w-md mx-auto">
                         There are no contracts associated with this account yet.
                       </p>
@@ -1018,7 +1202,9 @@ export default function ProfilePage() {
                   <CreditCard className="w-5 h-5 mr-2" />
                   Payment Details
                 </CardTitle>
-                <CardDescription>View transaction history and manage payments</CardDescription>
+                <CardDescription>
+                  View transaction history and manage payments
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
@@ -1026,30 +1212,55 @@ export default function ProfilePage() {
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="text-left p-3 text-gray-700">Transaction ID</th>
+                          <th className="text-left p-3 text-gray-700">
+                            Transaction ID
+                          </th>
                           <th className="text-left p-3 text-gray-700">Date</th>
-                          <th className="text-left p-3 text-gray-700">Amount</th>
-                          <th className="text-left p-3 text-gray-700">Status</th>
-                          <th className="text-left p-3 text-gray-700">Actions</th>
+                          <th className="text-left p-3 text-gray-700">
+                            Amount
+                          </th>
+                          <th className="text-left p-3 text-gray-700">
+                            Status
+                          </th>
+                          <th className="text-left p-3 text-gray-700">
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {[1, 2, 3].map((_, index) => (
-                          <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                            <td className="p-3 text-gray-700">TXN-{100000 + index}</td>
+                          <tr
+                            key={index}
+                            className="border-b border-gray-200 hover:bg-gray-50"
+                          >
                             <td className="p-3 text-gray-700">
-                              {new Date(Date.now() - index * 86400000).toLocaleDateString()}
+                              TXN-{100000 + index}
                             </td>
-                            <td className="p-3 text-gray-700">₹{(5000 + index * 2000).toLocaleString()}</td>
+                            <td className="p-3 text-gray-700">
+                              {new Date(
+                                Date.now() - index * 86400000
+                              ).toLocaleDateString()}
+                            </td>
+                            <td className="p-3 text-gray-700">
+                              ₹{(5000 + index * 2000).toLocaleString()}
+                            </td>
                             <td className="p-3">
                               <Badge
-                                className={index === 0 ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}
+                                className={
+                                  index === 0
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-blue-100 text-blue-800"
+                                }
                               >
                                 {index === 0 ? "Completed" : "Processed"}
                               </Badge>
                             </td>
                             <td className="p-3">
-                              <Button variant="ghost" size="sm" className="text-gray-700 hover:text-green-700">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-700 hover:text-green-700"
+                              >
                                 <FileText className="w-4 h-4" />
                               </Button>
                             </td>
@@ -1063,8 +1274,12 @@ export default function ProfilePage() {
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                     <div>
-                      <h3 className="font-medium text-gray-700 mb-1">Payment Methods</h3>
-                      <p className="text-sm text-gray-500">Update your payment preferences</p>
+                      <h3 className="font-medium text-gray-700 mb-1">
+                        Payment Methods
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Update your payment preferences
+                      </p>
                     </div>
                     <Button className="bg-green-600 hover:bg-green-700">
                       <CreditCard className="w-4 h-4 mr-2" />
@@ -1075,9 +1290,48 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           </TabsContent>
+          <TabsContent value="Crops">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {crops.map((crop) => (
+                <Card
+                  key={crop.crop_id}
+                  className="hover:shadow-lg transition-shadow"
+                >
+                  <Link href={`/crop/${crop?.crop_id}`}>
+                    <CardHeader>
+                      <img
+                        src={crop.crop_image}
+                        alt={crop.crop_name}
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                    </CardHeader>
+                    <CardContent>
+                      <CardTitle className="text-xl">
+                        {crop.crop_name}
+                      </CardTitle>
+                      <div className="space-y-2 mt-4">
+                        <p className="text-green-600 font-semibold">
+                          ₹{crop.crop_price}/kg
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Quantity: {crop.quantity} Kg
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Location: {crop.location}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Harvested: {crop.harvested_time}
+                        </p>
+                        <p className="text-gray-700">{crop.Description}</p>
+                      </div>
+                    </CardContent>
+                  </Link>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
-  )
+  );
 }
-
