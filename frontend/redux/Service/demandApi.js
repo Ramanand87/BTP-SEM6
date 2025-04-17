@@ -15,7 +15,7 @@ export const demandApi = createApi({
   tagTypes: ["Demand"],
   endpoints: (builder) => ({
     getDemands: builder.query({
-      query: () => "/curr/",
+      query: (username) => `/curr/${username}`,
       providesTags: ["Demand"],
     }),
     getAllDemands: builder.query({

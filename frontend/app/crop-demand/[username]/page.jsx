@@ -22,9 +22,13 @@ import {
   useDeleteDemandMutation,
 } from "@/redux/Service/demandApi"
 import { cn } from "@/lib/utils"
+import { useParams, useRouter } from "next/navigation"
 
 export default function DemandCropsPage() {
-  const { data: demands = [], isLoading, isError, refetch } = useGetAllDemandsQuery()
+    const { username } = useParams();
+    const router = useRouter()
+  
+  const { data: demands = [], isLoading, isError, refetch } = useGetAllDemandsQuery(username)
   const [addDemand, { isLoading: isAdding }] = useAddDemandMutation()
   const [updateDemand, { isLoading: isUpdating }] = useUpdateDemandMutation()
   const [deleteDemand] = useDeleteDemandMutation()
@@ -263,11 +267,12 @@ export default function DemandCropsPage() {
           {demands?.data.map((demand) => (
             <Card
               key={demand.id}
+              onClick={() => router.push(`/demand/${demand.demand_id}`)}
               className="overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 group"
             >
               <CardHeader className="p-0">
                 <div
-                  className={`w-full h-52 flex items-center justify-center bg-gradient-to-br ${generateColor(demand.crop_name)} text-white group-hover:scale-[1.02] transition-transform duration-300 ease-out`}
+                  className={`w-full h-52 cursor-pointer  flex items-center justify-center bg-gradient-to-br ${generateColor(demand.crop_name)} text-white group-hover:scale-[1.02] transition-transform duration-300 ease-out`}
                 >
                   <div className="text-center p-6 backdrop-blur-[2px] backdrop-brightness-90 w-full h-full flex flex-col items-center justify-center">
                     <h2 className="text-4xl font-bold tracking-tight mb-1">{demand.crop_name}</h2>

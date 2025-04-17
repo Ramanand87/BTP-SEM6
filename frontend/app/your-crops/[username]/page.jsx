@@ -25,10 +25,13 @@ import {
   useDeleteCropMutation,
 } from "@/redux/Service/cropApi";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
 export default function YourCropsPage() {
-  const { data, isLoading, isError } = useGetCropsQuery();
+  const { username } = useParams();
+    const { data, isLoading, isError } = useGetCropsQuery(username);
   const crops = Array.isArray(data) ? data : []; // Ensure crops is always an array
+  
 
   const [addCrop, { isLoading: isAdding }] = useAddCropMutation();
   const [updateCrop, { isLoading: isUpdating }] = useUpdateCropMutation();

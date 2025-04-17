@@ -15,7 +15,7 @@ export const cropApi = createApi({
   tagTypes: ["Crop"],
   endpoints: (builder) => ({
     getCrops: builder.query({
-      query: () => "detail/curr/",
+      query: (username) => `detail/curr/${username}`,
       providesTags: ["Crop"],
     }),
     getAllCrops: builder.query({

@@ -12,7 +12,10 @@ import {
   useDeleteRatingMutation,
   useUpdateRatingMutation,
 } from "@/redux/Service/ratingApi";
-import { useGetAllContractsQuery, useGetPaymentsQuery } from "@/redux/Service/contract";
+import {
+  useGetAllContractsQuery,
+  useGetPaymentsQuery,
+} from "@/redux/Service/contract";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -44,6 +47,8 @@ import {
   ArrowLeft,
   MessageSquare,
   ImageIcon,
+  Package,
+  Phone,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -70,12 +75,21 @@ import {
 import Webcam from "react-webcam";
 import Link from "next/link";
 import { useGetCropsQuery } from "@/redux/Service/cropApi";
+import { useGetAllDemandsQuery } from "@/redux/Service/demandApi";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { username } = useParams();
-  const { data, isLoading: cropLoading, isError } = useGetCropsQuery();
-  const { data:payments, isLoading:paymentLoading } = useGetPaymentsQuery();
+  const { data, isLoading: cropLoading } = useGetCropsQuery(username);
+  const {
+    data: demands = [],
+    isLoading: demandLoading,
+    isError,
+  } = useGetAllDemandsQuery(username);
+  console.log(demands);
+
+  const { data: payments, isLoading: paymentLoading } = useGetPaymentsQuery();
   const crops = Array.isArray(data) ? data : [];
   console.log(data);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -111,7 +125,19 @@ export default function ProfilePage() {
   const [profilePic, setProfilePic] = useState("");
   const webcamRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const generateColor = (name) => {
+    const colors = [
+      "from-emerald-400 to-green-600",
+      "from-amber-400 to-orange-600",
+      "from-rose-400 to-red-600",
+      "from-yellow-300 to-amber-500",
+      "from-sky-400 to-blue-600",
+      "from-violet-400 to-purple-600",
+    ];
 
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
   const handleEditClick = () => {
     setPhone(profile?.data.phoneno || "");
     setAddress(profile?.data.address || "");
@@ -399,7 +425,7 @@ export default function ProfilePage() {
                 {userRole === "farmer" ? (
                   <Button
                     className="bg-green-600 hover:bg-green-700 shadow-sm"
-                    onClick={() => router.push("/your-crops")}
+                    onClick={() => router.push(`/your-crops/${currentUser}`)}
                   >
                     <Crop className="w-4 h-4 mr-2" />
                     Your Crops
@@ -407,7 +433,7 @@ export default function ProfilePage() {
                 ) : (
                   <Button
                     className="bg-green-600 hover:bg-green-700 shadow-sm"
-                    onClick={() => router.push("/crop-demand")}
+                    onClick={() => router.push(`/crop-demand/${currentUser}`)}
                   >
                     <Crop className="w-4 h-4 mr-2" />
                     Your Demands
@@ -521,61 +547,68 @@ export default function ProfilePage() {
       <div className="container mx-auto px-4">
         {/* Tabbed Navigation */}
         <Tabs defaultValue="reviews" className="w-full">
-        <div className="bg-white rounded-lg shadow-sm p-1 mb-6">
-    {username === currentUser ? (
-      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
-        <TabsTrigger
-          value="reviews"
-          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-        >
-          <Star className="w-4 h-4 mr-2" />
-          Reviews
-        </TabsTrigger>
-        <TabsTrigger
-          value="documents"
-          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-        >
-          <Shield className="w-4 h-4 mr-2" />
-          Documents
-        </TabsTrigger>
-        <TabsTrigger
-          value="contracts"
-          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-        >
-          <FileText className="w-4 h-4 mr-2" />
-          Contracts
-        </TabsTrigger>
-        <TabsTrigger
-          value="payments"
-          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-        >
-          <CreditCard className="w-4 h-4 mr-2" />
-          Payments
-        </TabsTrigger>
-      </TabsList>
-    ) : (
-      <TabsList className="grid w-full grid-cols-2 gap-2">
-        <TabsTrigger
-          value="reviews"
-          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-        >
-          <Star className="w-4 h-4 mr-2" />
-          Reviews
-        </TabsTrigger>
+          <div className="bg-white rounded-lg shadow-sm p-1 mb-6">
+            {username === currentUser ? (
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
+                <TabsTrigger
+                  value="reviews"
+                  className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+                >
+                  <Star className="w-4 h-4 mr-2" />
+                  Reviews
+                </TabsTrigger>
+                <TabsTrigger
+                  value="documents"
+                  className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Documents
+                </TabsTrigger>
+                <TabsTrigger
+                  value="contracts"
+                  className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Contracts
+                </TabsTrigger>
+                <TabsTrigger
+                  value="payments"
+                  className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Payments
+                </TabsTrigger>
+              </TabsList>
+            ) : (
+              <TabsList className="grid w-full grid-cols-2 gap-2">
+                <TabsTrigger
+                  value="reviews"
+                  className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+                >
+                  <Star className="w-4 h-4 mr-2" />
+                  Reviews
+                </TabsTrigger>
 
-        {profile.role==='farmer'&&
-        <TabsTrigger
-          value="Crops"
-          className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
-        >
-          <Crop className="w-4 h-4 mr-2" />
-          Crops
-        </TabsTrigger>
-        }
-        
-      </TabsList>
-    )}
-  </div>
+                {profile.role === "farmer" ? (
+                  <TabsTrigger
+                    value="Crops"
+                    className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+                  >
+                    <Crop className="w-4 h-4 mr-2" />
+                    Crops
+                  </TabsTrigger>
+                ) : (
+                  <TabsTrigger
+                    value="Demands"
+                    className="data-[state=active]:bg-green-50 data-[state=active]:text-green-800"
+                  >
+                    <Crop className="w-4 h-4 mr-2" />
+                    Demands
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            )}
+          </div>
 
           {/* Reviews Tab */}
           <TabsContent value="reviews">
@@ -1201,240 +1234,405 @@ export default function ProfilePage() {
 
           {/* Payments Tab */}
           {/* Payments Tab */}
-{/* Payments Tab */}
-<TabsContent value="payments">
-  <Card className="border-0 shadow-md">
-    <CardHeader className="bg-green-50 border-b border-green-100">
-      <CardTitle className="flex items-center text-green-800">
-        <CreditCard className="w-5 h-5 mr-2" />
-        Payment History
-      </CardTitle>
-      <CardDescription>
-        View all payment transactions made and received
-      </CardDescription>
-    </CardHeader>
+          {/* Payments Tab */}
+          <TabsContent value="payments">
+            <Card className="border-0 shadow-md">
+              <CardHeader className="bg-green-50 border-b border-green-100">
+                <CardTitle className="flex items-center text-green-800">
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Payment History
+                </CardTitle>
+                <CardDescription>
+                  View all payment transactions made and received
+                </CardDescription>
+              </CardHeader>
 
-    <CardContent className="p-6">
-      {paymentLoading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
-        </div>
-      ) : payments?.data && payments.data.length > 0 ? (
-        <div className="space-y-6">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left p-3 text-gray-700">Payment ID</th>
-                  <th className="text-left p-3 text-gray-700">Date</th>
-                  <th className="text-left p-3 text-gray-700">Description</th>
-                  <th className="text-left p-3 text-gray-700">Amount</th>
-                  {userRole === "farmer" && (
-                    <th className="text-left p-3 text-gray-700">Buyer</th>
-                  )}
-                  {userRole === "contractor" && (
-                    <th className="text-left p-3 text-gray-700">Farmer</th>
-                  )}
-                  {userRole !== "farmer" && userRole !== "contractor" && (
-                    <>
-                      <th className="text-left p-3 text-gray-700">From</th>
-                      <th className="text-left p-3 text-gray-700">To</th>
-                    </>
-                  )}
-                  <th className="text-left p-3 text-gray-700">Receipt</th>
-                  <th className="text-left p-3 text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.data.map((payment) => (
-                  <tr
-                    key={payment.id}
-                    className="border-b border-gray-200 hover:bg-gray-50"
-                  >
-                    <td className="p-3 text-gray-700">
-                      PAY-{payment.id.toString().slice(-6)}
-                    </td>
-                    <td className="p-3 text-gray-700">
-                      {new Date(payment.date).toLocaleDateString()}
-                    </td>
-                    <td className="p-3 text-gray-700">
-                      {payment.description}
-                    </td>
-                    <td className="p-3 text-gray-700 font-medium">
-                      ₹{payment.amount.toLocaleString()}
-                    </td>
-                    {userRole === "farmer" && (
-                      <td className="p-3 text-gray-700">
-                        <Badge variant="outline" className="border-blue-200">
-                          {payment.buyer}
-                        </Badge>
-                      </td>
-                    )}
-                    {userRole === "contractor" && (
-                      <td className="p-3 text-gray-700">
-                        <Badge variant="outline" className="border-green-200">
-                          {payment.farmer}
-                        </Badge>
-                      </td>
-                    )}
-                    {userRole !== "farmer" && userRole !== "contractor" && (
-                      <>
-                        <td className="p-3 text-gray-700">
-                          <Badge variant="outline" className="border-blue-200">
-                            {payment.buyer}
-                          </Badge>
-                        </td>
-                        <td className="p-3 text-gray-700">
-                          <Badge variant="outline" className="border-green-200">
-                            {payment.farmer}
-                          </Badge>
-                        </td>
-                      </>
-                    )}
-                    <td className="p-3">
-                      {payment.receipt ? (
-                        <a
-                          href={payment.receipt}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-sm"
-                        >
-                          <FileText className="w-4 h-4 mr-2" />View Receipt
-                        </a>
-                      ) : (
-                        <span className="text-gray-400">No receipt</span>
+              <CardContent className="p-6">
+                {paymentLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
+                  </div>
+                ) : payments?.data && payments.data.length > 0 ? (
+                  <div className="space-y-6">
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-gray-200">
+                            <th className="text-left p-3 text-gray-700">
+                              Payment ID
+                            </th>
+                            <th className="text-left p-3 text-gray-700">
+                              Date
+                            </th>
+                            <th className="text-left p-3 text-gray-700">
+                              Description
+                            </th>
+                            <th className="text-left p-3 text-gray-700">
+                              Amount
+                            </th>
+                            {userRole === "farmer" && (
+                              <th className="text-left p-3 text-gray-700">
+                                Buyer
+                              </th>
+                            )}
+                            {userRole === "contractor" && (
+                              <th className="text-left p-3 text-gray-700">
+                                Farmer
+                              </th>
+                            )}
+                            {userRole !== "farmer" &&
+                              userRole !== "contractor" && (
+                                <>
+                                  <th className="text-left p-3 text-gray-700">
+                                    From
+                                  </th>
+                                  <th className="text-left p-3 text-gray-700">
+                                    To
+                                  </th>
+                                </>
+                              )}
+                            <th className="text-left p-3 text-gray-700">
+                              Receipt
+                            </th>
+                            <th className="text-left p-3 text-gray-700">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payments.data.map((payment) => (
+                            <tr
+                              key={payment.id}
+                              className="border-b border-gray-200 hover:bg-gray-50"
+                            >
+                              <td className="p-3 text-gray-700">
+                                PAY-{payment.id.toString().slice(-6)}
+                              </td>
+                              <td className="p-3 text-gray-700">
+                                {new Date(payment.date).toLocaleDateString()}
+                              </td>
+                              <td className="p-3 text-gray-700">
+                                {payment.description}
+                              </td>
+                              <td className="p-3 text-gray-700 font-medium">
+                                ₹{payment.amount.toLocaleString()}
+                              </td>
+                              {userRole === "farmer" && (
+                                <td className="p-3 text-gray-700">
+                                  <Badge
+                                    variant="outline"
+                                    className="border-blue-200"
+                                  >
+                                    {payment.buyer}
+                                  </Badge>
+                                </td>
+                              )}
+                              {userRole === "contractor" && (
+                                <td className="p-3 text-gray-700">
+                                  <Badge
+                                    variant="outline"
+                                    className="border-green-200"
+                                  >
+                                    {payment.farmer}
+                                  </Badge>
+                                </td>
+                              )}
+                              {userRole !== "farmer" &&
+                                userRole !== "contractor" && (
+                                  <>
+                                    <td className="p-3 text-gray-700">
+                                      <Badge
+                                        variant="outline"
+                                        className="border-blue-200"
+                                      >
+                                        {payment.buyer}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-3 text-gray-700">
+                                      <Badge
+                                        variant="outline"
+                                        className="border-green-200"
+                                      >
+                                        {payment.farmer}
+                                      </Badge>
+                                    </td>
+                                  </>
+                                )}
+                              <td className="p-3">
+                                {payment.receipt ? (
+                                  <a
+                                    href={payment.receipt}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center text-sm"
+                                  >
+                                    <FileText className="w-4 h-4 mr-2" />
+                                    View Receipt
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400">
+                                    No receipt
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3">
+                                <Button
+                                  variant="ghost"
+                                  size=""
+                                  className="text-gray-900 hover:text-green-700"
+                                  onClick={() =>
+                                    router.push(`/contract/${payment.contract}`)
+                                  }
+                                >
+                                  <FileText className="w-4 h-4 mr-1" />
+                                  View Contract
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <Separator />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {userRole !== "farmer" && (
+                        <Card className="border border-green-100">
+                          <CardHeader className="bg-green-50 p-4">
+                            <CardTitle className="text-green-800 text-lg">
+                              Total Payments Made
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-6">
+                            <div className="text-3xl font-bold text-green-700">
+                              ₹
+                              {payments.data
+                                .filter((p) => p.buyer === currentUser)
+                                .reduce(
+                                  (sum, payment) => sum + payment.amount,
+                                  0
+                                )
+                                .toLocaleString()}
+                            </div>
+                            <p className="text-gray-500 mt-2">
+                              {
+                                payments.data.filter(
+                                  (p) => p.buyer === currentUser
+                                ).length
+                              }{" "}
+                              transactions
+                            </p>
+                          </CardContent>
+                        </Card>
                       )}
-                    </td>
-                    <td className="p-3">
-                      <Button
-                        variant="ghost"
-                        size=""
-                        className="text-gray-900 hover:text-green-700"
-                        onClick={() =>
-                          router.push(`/contract/${payment.contract}`)
-                        }
-                      >
-                        <FileText className="w-4 h-4 mr-1" />
-                        View Contract
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
 
-          <Separator />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {userRole !== "farmer" && (
-              <Card className="border border-green-100">
-                <CardHeader className="bg-green-50 p-4">
-                  <CardTitle className="text-green-800 text-lg">
-                    Total Payments Made
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="text-3xl font-bold text-green-700">
-                    ₹
-                    {payments.data
-                      .filter((p) => p.buyer === currentUser)
-                      .reduce((sum, payment) => sum + payment.amount, 0)
-                      .toLocaleString()}
+                      {userRole !== "contractor" && (
+                        <Card className="border border-blue-100">
+                          <CardHeader className="bg-blue-50 p-4">
+                            <CardTitle className="text-blue-800 text-lg">
+                              Total Payments Received
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-6">
+                            <div className="text-3xl font-bold text-blue-700">
+                              ₹
+                              {payments.data
+                                .filter((p) => p.farmer === currentUser)
+                                .reduce(
+                                  (sum, payment) => sum + payment.amount,
+                                  0
+                                )
+                                .toLocaleString()}
+                            </div>
+                            <p className="text-gray-500 mt-2">
+                              {
+                                payments.data.filter(
+                                  (p) => p.farmer === currentUser
+                                ).length
+                              }{" "}
+                              transactions
+                            </p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-gray-500 mt-2">
-                    {
-                      payments.data.filter((p) => p.buyer === currentUser)
-                        .length
-                    }{" "}
-                    transactions
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {userRole !== "contractor" && (
-              <Card className="border border-blue-100">
-                <CardHeader className="bg-blue-50 p-4">
-                  <CardTitle className="text-blue-800 text-lg">
-                    Total Payments Received
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="text-3xl font-bold text-blue-700">
-                    ₹
-                    {payments.data
-                      .filter((p) => p.farmer === currentUser)
-                      .reduce((sum, payment) => sum + payment.amount, 0)
-                      .toLocaleString()}
+                ) : (
+                  <div className="text-center py-12">
+                    <CreditCard className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-xl font-medium text-gray-700 mb-2">
+                      No Payment History
+                    </h3>
+                    <p className="text-gray-500 max-w-md mx-auto">
+                      There are no payment transactions recorded yet.
+                    </p>
                   </div>
-                  <p className="text-gray-500 mt-2">
-                    {
-                      payments.data.filter((p) => p.farmer === currentUser)
-                        .length
-                    }{" "}
-                    transactions
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <CreditCard className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-xl font-medium text-gray-700 mb-2">
-            No Payment History
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            There are no payment transactions recorded yet.
-          </p>
-        </div>
-      )}
-    </CardContent>
-  </Card>
-</TabsContent>
-
-          <TabsContent value="Crops">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {crops.map((crop) => (
-                <Card
-                  key={crop.crop_id}
-                  className="hover:shadow-lg transition-shadow"
-                >
-                  <Link href={`/crop/${crop?.crop_id}`}>
-                    <CardHeader>
-                      <img
-                        src={crop.crop_image}
-                        alt={crop.crop_name}
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
-                    </CardHeader>
-                    <CardContent>
-                      <CardTitle className="text-xl">
-                        {crop.crop_name}
-                      </CardTitle>
-                      <div className="space-y-2 mt-4">
-                        <p className="text-green-600 font-semibold">
-                          ₹{crop.crop_price}/kg
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Quantity: {crop.quantity} Kg
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Location: {crop.location}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Harvested: {crop.harvested_time}
-                        </p>
-                        <p className="text-gray-700">{crop.Description}</p>
-                      </div>
-                    </CardContent>
-                  </Link>
-                </Card>
-              ))}
-            </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
+          {profile.role === "farmer" ? (
+            <TabsContent value="Crops">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {crops.map((crop) => (
+                  <Card
+                    key={crop.crop_id}
+                    className="hover:shadow-lg transition-shadow"
+                  >
+                    <Link href={`/crop/${crop?.crop_id}`}>
+                      <CardHeader>
+                        <img
+                          src={crop.crop_image}
+                          alt={crop.crop_name}
+                          className="w-full h-48 object-cover rounded-lg"
+                        />
+                      </CardHeader>
+                      <CardContent>
+                        <CardTitle className="text-xl">
+                          {crop.crop_name}
+                        </CardTitle>
+                        <div className="space-y-2 mt-4">
+                          <p className="text-green-600 font-semibold">
+                            ₹{crop.crop_price}/kg
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Quantity: {crop.quantity} Kg
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Location: {crop.location}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Harvested: {crop.harvested_time}
+                          </p>
+                          <p className="text-gray-700">{crop.Description}</p>
+                        </div>
+                      </CardContent>
+                    </Link>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          ) : (
+            <TabsContent value="Demands">
+              {/* List of Demands */}
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+                  <span className="ml-2 text-lg text-gray-600">
+                    Loading demands...
+                  </span>
+                </div>
+              ) : isError ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                  <p className="text-red-600">
+                    Error fetching demands. Please try again later.
+                  </p>
+                </div>
+              ) : demands.length === 0 ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+                  <p className="text-gray-600 mb-4">
+                    No crop demands available yet.
+                  </p>
+                  <Button
+                    onClick={() => setOpenDialog(true)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Create Your First Demand
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {demands?.data.map((demand) => (
+                    <Card
+                      key={demand.id}
+                      onClick={() => router.push(`/demand/${demand.demand_id}`)}
+                      className="overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 group"
+                    >
+                      <CardHeader className="p-0">
+                        <div
+                          className={`w-full h-52 cursor-pointer  flex items-center justify-center bg-gradient-to-br ${generateColor(
+                            demand.crop_name
+                          )} text-white group-hover:scale-[1.02] transition-transform duration-300 ease-out`}
+                        >
+                          <div className="text-center p-6 backdrop-blur-[2px] backdrop-brightness-90 w-full h-full flex flex-col items-center justify-center">
+                            <h2 className="text-4xl font-bold tracking-tight mb-1">
+                              {demand.crop_name}
+                            </h2>
+                            <p className="text-lg opacity-90 font-medium">
+                              Premium Quality
+                            </p>
+                            <div className="mt-3 px-5 py-1.5 bg-white/20 rounded-full inline-block backdrop-blur-sm text-sm">
+                              Fresh Harvest
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-6 pb-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <CardTitle className="text-2xl text-green-800">
+                            {demand.crop_name}
+                          </CardTitle>
+                          <div className="flex items-center bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium">
+                            ₹{demand.crop_price}
+                          </div>
+                        </div>
+
+                        <div className="space-y-3 mt-4">
+                          <div className="flex items-start">
+                            <Package className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
+                            <p className="text-gray-700">
+                              Quantity:{" "}
+                              <span className="font-medium">
+                                {demand.quantity}
+                              </span>
+                            </p>
+                          </div>
+
+                          <div className="flex items-start">
+                            <Phone className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
+                            <p className="text-gray-700">
+                              Contact:{" "}
+                              <span className="font-medium">
+                                {demand.contact_no}
+                              </span>
+                            </p>
+                          </div>
+
+                          <div className="flex items-start">
+                            <MapPin className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
+                            <p className="text-gray-700">
+                              Location:{" "}
+                              <span className="font-medium">
+                                {demand.location}
+                              </span>
+                            </p>
+                          </div>
+
+                          <div className="flex items-start">
+                            <Calendar className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
+                            <p className="text-gray-700">
+                              Harvested:{" "}
+                              <span className="font-medium">
+                                {demand.harvested_time}
+                              </span>
+                            </p>
+                          </div>
+
+                          <div className="pt-2">
+                            <p className="text-gray-700 line-clamp-2">
+                              {demand.description}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
