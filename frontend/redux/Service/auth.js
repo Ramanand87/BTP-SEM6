@@ -45,6 +45,11 @@ export const authApi = createApi({
         url: '/verify/',
       })
     }),
+    getAllUsers: builder.query({
+      query: () => ({
+        url: '/allusers/',
+      })
+    }),
     
     verifyUser: builder.mutation({
       query: ({ id, data }) => ({
@@ -75,8 +80,9 @@ export const {
   useLoginMutation,
   useAdminloginMutation,
   useRejectUserMutation,
-  useRegisterMutation,
   useGetUsersQuery,
+  useRegisterMutation,
+  useGetAllUsersQuery,
   useDeleteUserMutation,
   useVerifyUserMutation,
 } = authApi;

@@ -22,6 +22,10 @@ export const contractApi = createApi({
       query: (id) => `/transaction/${id}/`,
       providesTags: (result, error, id) => [{ type: "Contracts", id }],
     }),
+    getPayments: builder.query({
+      query: () => `/transaction/user/`,
+      providesTags: (result, error) => [{ type: "Contracts" }],
+    }),
     getFramerProgress: builder.query({
       query: (id) => `/progress/${id}/`,
       providesTags: (result, error, id) => [{ type: "Contracts", id }],
@@ -97,6 +101,7 @@ export const contractApi = createApi({
 export const {
   useGetContractQuery,
   useGetAllFramerProgressQuery,
+  useGetPaymentsQuery,
   useGetAllContractorProgressQuery,
   useGetAllContractsQuery,
   useVerifyUserMutation,

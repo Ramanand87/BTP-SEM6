@@ -12,7 +12,7 @@ import {
   useDeleteRatingMutation,
   useUpdateRatingMutation,
 } from "@/redux/Service/ratingApi";
-import { useGetAllContractsQuery } from "@/redux/Service/contract";
+import { useGetAllContractsQuery, useGetPaymentsQuery } from "@/redux/Service/contract";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -75,8 +75,9 @@ export default function ProfilePage() {
   const router = useRouter();
   const { username } = useParams();
   const { data, isLoading: cropLoading, isError } = useGetCropsQuery();
+  const { data:payments, isLoading:paymentLoading } = useGetPaymentsQuery();
   const crops = Array.isArray(data) ? data : [];
-  console.log(crops);
+  console.log(payments);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const {
     data: profile,
@@ -1195,101 +1196,201 @@ export default function ProfilePage() {
           </TabsContent>
 
           {/* Payments Tab */}
-          <TabsContent value="payments">
-            <Card className="border-0 shadow-md">
-              <CardHeader className="bg-green-50 border-b border-green-100">
-                <CardTitle className="flex items-center text-green-800">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Payment Details
-                </CardTitle>
-                <CardDescription>
-                  View transaction history and manage payments
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="text-left p-3 text-gray-700">
-                            Transaction ID
-                          </th>
-                          <th className="text-left p-3 text-gray-700">Date</th>
-                          <th className="text-left p-3 text-gray-700">
-                            Amount
-                          </th>
-                          <th className="text-left p-3 text-gray-700">
-                            Status
-                          </th>
-                          <th className="text-left p-3 text-gray-700">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[1, 2, 3].map((_, index) => (
-                          <tr
-                            key={index}
-                            className="border-b border-gray-200 hover:bg-gray-50"
-                          >
-                            <td className="p-3 text-gray-700">
-                              TXN-{100000 + index}
-                            </td>
-                            <td className="p-3 text-gray-700">
-                              {new Date(
-                                Date.now() - index * 86400000
-                              ).toLocaleDateString()}
-                            </td>
-                            <td className="p-3 text-gray-700">
-                              ₹{(5000 + index * 2000).toLocaleString()}
-                            </td>
-                            <td className="p-3">
-                              <Badge
-                                className={
-                                  index === 0
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-blue-100 text-blue-800"
-                                }
-                              >
-                                {index === 0 ? "Completed" : "Processed"}
-                              </Badge>
-                            </td>
-                            <td className="p-3">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-gray-700 hover:text-green-700"
-                              >
-                                <FileText className="w-4 h-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+          {/* Payments Tab */}
+{/* Payments Tab */}
+<TabsContent value="payments">
+  <Card className="border-0 shadow-md">
+    <CardHeader className="bg-green-50 border-b border-green-100">
+      <CardTitle className="flex items-center text-green-800">
+        <CreditCard className="w-5 h-5 mr-2" />
+        Payment History
+      </CardTitle>
+      <CardDescription>
+        View all payment transactions made and received
+      </CardDescription>
+    </CardHeader>
 
-                  <Separator />
+    <CardContent className="p-6">
+      {paymentLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
+        </div>
+      ) : payments?.data && payments.data.length > 0 ? (
+        <div className="space-y-6">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left p-3 text-gray-700">Payment ID</th>
+                  <th className="text-left p-3 text-gray-700">Date</th>
+                  <th className="text-left p-3 text-gray-700">Description</th>
+                  <th className="text-left p-3 text-gray-700">Amount</th>
+                  {userRole === "farmer" && (
+                    <th className="text-left p-3 text-gray-700">Buyer</th>
+                  )}
+                  {userRole === "contractor" && (
+                    <th className="text-left p-3 text-gray-700">Farmer</th>
+                  )}
+                  {userRole !== "farmer" && userRole !== "contractor" && (
+                    <>
+                      <th className="text-left p-3 text-gray-700">From</th>
+                      <th className="text-left p-3 text-gray-700">To</th>
+                    </>
+                  )}
+                  <th className="text-left p-3 text-gray-700">Receipt</th>
+                  <th className="text-left p-3 text-gray-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.data.map((payment) => (
+                  <tr
+                    key={payment.id}
+                    className="border-b border-gray-200 hover:bg-gray-50"
+                  >
+                    <td className="p-3 text-gray-700">
+                      PAY-{payment.id.toString().slice(-6)}
+                    </td>
+                    <td className="p-3 text-gray-700">
+                      {new Date(payment.date).toLocaleDateString()}
+                    </td>
+                    <td className="p-3 text-gray-700">
+                      {payment.description}
+                    </td>
+                    <td className="p-3 text-gray-700 font-medium">
+                      ₹{payment.amount.toLocaleString()}
+                    </td>
+                    {userRole === "farmer" && (
+                      <td className="p-3 text-gray-700">
+                        <Badge variant="outline" className="border-blue-200">
+                          {payment.buyer}
+                        </Badge>
+                      </td>
+                    )}
+                    {userRole === "contractor" && (
+                      <td className="p-3 text-gray-700">
+                        <Badge variant="outline" className="border-green-200">
+                          {payment.farmer}
+                        </Badge>
+                      </td>
+                    )}
+                    {userRole !== "farmer" && userRole !== "contractor" && (
+                      <>
+                        <td className="p-3 text-gray-700">
+                          <Badge variant="outline" className="border-blue-200">
+                            {payment.buyer}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-gray-700">
+                          <Badge variant="outline" className="border-green-200">
+                            {payment.farmer}
+                          </Badge>
+                        </td>
+                      </>
+                    )}
+                    <td className="p-3">
+                      {payment.receipt ? (
+                        <a
+                          href={payment.receipt}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-sm"
+                        >
+                          <FileText className="w-4 h-4 mr-2" />View Receipt
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">No receipt</span>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      <Button
+                        variant="ghost"
+                        size=""
+                        className="text-gray-900 hover:text-green-700"
+                        onClick={() =>
+                          router.push(`/contract/${payment.contract}`)
+                        }
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        View Contract
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-                  <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-1">
-                        Payment Methods
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        Update your payment preferences
-                      </p>
-                    </div>
-                    <Button className="bg-green-600 hover:bg-green-700">
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Update Payment Method
-                    </Button>
+          <Separator />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {userRole !== "farmer" && (
+              <Card className="border border-green-100">
+                <CardHeader className="bg-green-50 p-4">
+                  <CardTitle className="text-green-800 text-lg">
+                    Total Payments Made
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="text-3xl font-bold text-green-700">
+                    ₹
+                    {payments.data
+                      .filter((p) => p.buyer === currentUser)
+                      .reduce((sum, payment) => sum + payment.amount, 0)
+                      .toLocaleString()}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  <p className="text-gray-500 mt-2">
+                    {
+                      payments.data.filter((p) => p.buyer === currentUser)
+                        .length
+                    }{" "}
+                    transactions
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {userRole !== "contractor" && (
+              <Card className="border border-blue-100">
+                <CardHeader className="bg-blue-50 p-4">
+                  <CardTitle className="text-blue-800 text-lg">
+                    Total Payments Received
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="text-3xl font-bold text-blue-700">
+                    ₹
+                    {payments.data
+                      .filter((p) => p.farmer === currentUser)
+                      .reduce((sum, payment) => sum + payment.amount, 0)
+                      .toLocaleString()}
+                  </div>
+                  <p className="text-gray-500 mt-2">
+                    {
+                      payments.data.filter((p) => p.farmer === currentUser)
+                        .length
+                    }{" "}
+                    transactions
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <CreditCard className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+          <h3 className="text-xl font-medium text-gray-700 mb-2">
+            No Payment History
+          </h3>
+          <p className="text-gray-500 max-w-md mx-auto">
+            There are no payment transactions recorded yet.
+          </p>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+</TabsContent>
+
           <TabsContent value="Crops">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {crops.map((crop) => (
