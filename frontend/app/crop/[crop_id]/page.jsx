@@ -7,6 +7,7 @@ import { useGetSingleCropQuery } from "@/redux/Service/marketApi";
 import { ArrowLeft, ShoppingCart, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 
 
 
@@ -19,7 +20,8 @@ export default function CropDetailsPage() {
   const { data: marketCrops } = useGetMarketPriceQuery(crop?.data.crop_name);
   
   const marketPrice = marketCrops?.results[0].modal_price
-
+  const userInfo = useSelector((state) => state.auth.userInfo)
+  const userRole = userInfo?.role
 
 
 
@@ -69,12 +71,12 @@ export default function CropDetailsPage() {
           </div>
         </CardContent>
         <CardFooter className="flex gap-4">
-          <Link href={`/create-contract/${crop?.data.crop_id}`} className="flex-1">
+          {userRole==='contractor'&&<Link href={`/create-contract/${crop?.data.crop_id}`} className="flex-1">
           <Button className="w-full bg-green-600 hover:bg-green-700">
             <ShoppingCart className="w-4 h-4 mr-2" />
             Create Contract
-          </Button></Link>
-          <Link href={`/profile/${crop?.data.publisher.username}`}>
+          </Button></Link>}
+          <Link href={`/profile/${crop?.data.publisher.username}` } className={`${userRole==='contractor'?'': "flex w-full "}`}>
           <Button variant="outline" className="flex-1">
             <MessageCircle className="w-4 h-4 mr-2" />
             Contact Seller
