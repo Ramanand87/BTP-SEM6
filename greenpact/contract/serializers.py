@@ -48,6 +48,8 @@ class ContractSerializer(serializers.ModelSerializer):
     def create(self,validated_data):
         try:
             request = self.context.get('request')
+            if request.user.type == "farmer":
+                return Response({'Error':'Farmer doesnot have permission'},status=status.HTTP_400_BAD_REQUEST)
             if request and request.user:
                 validated_data['buyer'] = request.user
             validated_data['farmer'] =get_object_or_404(CustomUser,username=self.initial_data.get('farmer_username'))

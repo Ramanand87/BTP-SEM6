@@ -117,8 +117,8 @@ class RegisteredFarmers(APIView):
     def get(self,request):
         try:
             farmers=get_list_or_404(models.FarmerProfile,is_verfied=False)
-            serial=serializers.FarmerProfileSerializer(farmers,many=True,context={'request': request})
-            return Response({'data':serial.data},status=status.HTTP_202_ACCEPTED)
+            serialfarmer=serializers.FarmerProfileSerializer(farmers,many=True,context={'request': request})
+            return Response({"data":serialfarmer.data},status=status.HTTP_202_ACCEPTED)
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -133,8 +133,6 @@ class RegisteredFarmers(APIView):
             return Response(serial.errors,status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-
 
 class AdminLoginView(APIView):
     def post(self, request):
@@ -162,8 +160,10 @@ class AllUsersView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self,request):
         try:
-            users=models.CustomUser.objects.all()
-            serial=serializers.userSerializers(users,many=True,context={'request': request})
-            return Response({"data":serial.data},status=status.HTTP_200_OK)
+            farmers=get_list_or_404(models.FarmerProfile,is_verfied=True)
+            contractors=get_list_or_404(models.ContractorProfile,is_verfied=True)
+            serialfarmer=serializers.FarmerProfileSerializer(farmers,many=True,context={'request': request})
+            serialcontractor=serializers.ContractorProfileSerializer(contractors,many=True,context={'request': request})
+            return Response({"farmer":serialfarmer.data,"contractor":serialcontractor.data},status=status.HTTP_202_ACCEPTED)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
