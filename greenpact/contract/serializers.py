@@ -73,12 +73,19 @@ class ContractDocSerializer(serializers.ModelSerializer):
         return obj.document.url
 
 class TransactionSerializer(serializers.ModelSerializer):
+    buyer=serializers.SerializerMethodField()
+    farmer=serializers.SerializerMethodField()
+
     class Meta:
         model=models.Transaction
         fields='__all__'
         extra_kwargs = {
             'contract': {'required': False},
         }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['buyer'] = self.get_fields()['buyer']
+        self.fields['farmer'] = self.get_fields()['farmer']
 
     def create(self,validated_data):
         contract=get_object_or_404(models.Contract,contract_id=self.initial_data.get('contract_id'))
@@ -93,8 +100,11 @@ class TransactionSerializer(serializers.ModelSerializer):
         elif instance.receipt:
             data['receipt'] = instance.receipt.url
         return data
+    def get_buyer(self, obj):
+        return obj.contract.buyer.username if obj.contract.buyer else None
     
-
+    def get_farmer(self, obj):
+        return obj.contract.farmer.username if obj.contract.farmer else None
 class FarmerProgressSerializer(serializers.ModelSerializer):
     class Meta:
         model=models.FarmerProgress

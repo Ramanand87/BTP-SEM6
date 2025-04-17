@@ -160,8 +160,8 @@ class AllUsersView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self,request):
         try:
-            farmers=get_list_or_404(models.FarmerProfile,is_verfied=True)
-            contractors=get_list_or_404(models.ContractorProfile,is_verfied=True)
+            farmers=models.FarmerProfile.objects.filter(is_verfied=True)
+            contractors=models.ContractorProfile.objects.filter(is_verfied=True)
             serialfarmer=serializers.FarmerProfileSerializer(farmers,many=True,context={'request': request})
             serialcontractor=serializers.ContractorProfileSerializer(contractors,many=True,context={'request': request})
             return Response({"farmer":serialfarmer.data,"contractor":serialcontractor.data},status=status.HTTP_202_ACCEPTED)
