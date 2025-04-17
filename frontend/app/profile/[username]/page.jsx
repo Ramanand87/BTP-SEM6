@@ -422,7 +422,8 @@ export default function ProfilePage() {
                     Edit Profile
                   </Button>
                 )}
-                {userRole === "farmer" ? (
+                {currentUser===username &&(
+                userRole === "farmer" ? (
                   <Button
                     className="bg-green-600 hover:bg-green-700 shadow-sm"
                     onClick={() => router.push(`/your-crops/${currentUser}`)}
@@ -438,7 +439,7 @@ export default function ProfilePage() {
                     <Crop className="w-4 h-4 mr-2" />
                     Your Demands
                   </Button>
-                )}
+                ))}
                 {currentUser !== username && (
                   <Button
                     onClick={handleChatClick}
