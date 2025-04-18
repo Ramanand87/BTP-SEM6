@@ -283,7 +283,7 @@ export function RecentRegistrations() {
                   </Button>
                   <Button
                     className="w-[48%] bg-green-600 hover:bg-green-700"
-                    onClick={() => handleVerify(selectedUser.id)}
+                    onClick={() => handleVerify(selectedUser.user.username)}
                   >
                     <ThumbsUp className="mr-2 h-4 w-4" />
                     Verify

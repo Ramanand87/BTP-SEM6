@@ -9,6 +9,7 @@ import Footer from "@/components/Footer/Footer";
 import DynamicFooter from "@/components/Footer/DynamicFooter";
 import AIChatbot from "@/components/chatbot/AIChatbot";
 import ConditionalNavbar from "@/components/Navbar/ConditionalNavbar";
+import ConditionalChatbot from "@/components/chatbot/ConditionalChatbot";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,7 +25,7 @@ export default function RootLayout({ children }) {
         <ReduxProvider>
           <ConditionalNavbar/>
           <main className="">{children}</main>
-          <AIChatbot/>
+          <ConditionalChatbot/>
           <DynamicFooter/>
         </ReduxProvider>
         <Toaster />

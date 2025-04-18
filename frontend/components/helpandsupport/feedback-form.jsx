@@ -21,12 +21,13 @@ export function FeedbackForm({ userType }) {
     setTimeout(() => {
       setSubmitting(false)
       setSubmitted(true)
-
-      setTimeout(() => {
-        setSubmitted(false)
-        setRating(null)
-      }, 5000)
     }, 1500)
+  }
+
+  const handleReset = () => {
+    setSubmitted(false)
+    setRating(null)
+    setHoveredRating(null)
   }
 
   const containerVariants = {
@@ -53,16 +54,19 @@ export function FeedbackForm({ userType }) {
   if (submitted) {
     return (
       <motion.div
-        className="p-6 text-center bg-primary/10 rounded-lg border-2 border-primary/20"
+        className="p-6 text-center bg-primary/10 rounded-lg border-2 border-primary/20 space-y-4"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20">
+        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-2 rounded-full bg-primary/20">
           <ThumbsUp className="w-8 h-8 text-primary" />
         </div>
-        <h3 className="mb-2 text-xl font-medium text-primary">Thank You for Your Feedback!</h3>
+        <h3 className="text-xl font-medium text-primary">Thank You for Your Feedback!</h3>
         <p className="text-primary/80">Your feedback helps us improve our platform for everyone.</p>
+        <Button onClick={handleReset} className="mt-4">
+          Submit Another Feedback
+        </Button>
       </motion.div>
     )
   }

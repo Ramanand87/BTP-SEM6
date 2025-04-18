@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,68 +14,91 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-
-// Sample data - in a real app, this would come from your API
-const concerns = [
-  {
-    id: "CON-001",
-    raisedBy: "Rajesh Kumar",
-    userType: "Farmer",
-    concernType: "Payment Delay",
-    raisedOn: "2023-04-01",
-    status: "pending",
-    description: "Payment for the last harvest has been delayed by more than 30 days.",
-  },
-  {
-    id: "CON-002",
-    raisedBy: "Aditya Mehta",
-    userType: "Contractor",
-    concernType: "Quality Issue",
-    raisedOn: "2023-04-02",
-    status: "pending",
-    description: "The quality of the wheat delivered does not meet the agreed standards.",
-  },
-  {
-    id: "CON-003",
-    raisedBy: "Priya Sharma",
-    userType: "Farmer",
-    concernType: "Contract Breach",
-    raisedOn: "2023-04-03",
-    status: "inProgress",
-    description: "The contractor is not honoring the agreed price in the contract.",
-  },
-  {
-    id: "CON-004",
-    raisedBy: "Neha Gupta",
-    userType: "Contractor",
-    concernType: "Delivery Delay",
-    raisedOn: "2023-04-04",
-    status: "inProgress",
-    description: "The farmer has not delivered the crop as per the agreed schedule.",
-  },
-  {
-    id: "CON-005",
-    raisedBy: "Vikram Singh",
-    userType: "Farmer",
-    concernType: "Payment Dispute",
-    raisedOn: "2023-04-05",
-    status: "resolved",
-    description: "There is a discrepancy in the payment amount received.",
-  },
-]
-
-
+import { toast } from "sonner"
 
 export function ConcernsTable({ status }) {
-  const [selectedConcern, setSelectedConcern] = useState(null)
+  const [complaints, setComplaints] = useState([])
+  const [selectedComplaint, setSelectedComplaint] = useState(null)
   const [open, setOpen] = useState(false)
+  const [responseMessage, setResponseMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Filter concerns based on status
-  const filteredConcerns = concerns.filter((concern) => concern.status === status)
+  const fetchComplaints = async () => {
+    try {
+      const res = await fetch("http://localhost:7000/complaints")
+      const data = await res.json()
+      console.log(data)
+      const enriched = data.map((c, index) => ({
+        ...c,
+        id: `CMP-${index + 1}`,
+        raisedBy: c.name,
+        userType: c.userType==="farmer" ? "Farmer" : "Contractor",
+        concernType: c.complaint.length > 30 ? "Detailed Issue" : "Quick Feedback",
+        raisedOn: new Date(c.createdAt).toLocaleDateString(),
+        status: c.status.toLowerCase() || "pending",
+        response: c.response || [],
+        description: c.complaint,
+        _id: c._id,
+      }))
+      setComplaints(enriched)
+    } catch (err) {
+      console.error("Failed to fetch complaints", err)
+      toast.error("Failed to fetch complaints")
+    }
+  }
 
-  const handleView = (concerny) => {
-    setSelectedConcern(concern)
+  useEffect(() => {
+    fetchComplaints()
+  }, [])
+
+  const filteredComplaints = complaints.filter((c) => c.status?.toLowerCase() === status?.toLowerCase())
+
+  const handleView = (complaint) => {
+    setSelectedComplaint(complaint)
+    setResponseMessage("")
     setOpen(true)
+  }
+
+  const handleStatusUpdate = async (newStatus) => {
+    if (newStatus === "resolved" && !responseMessage.trim()) {
+      toast.error("Please provide a response before resolving")
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const res = await fetch(`http://localhost:7000/complaints/${selectedComplaint._id}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus.charAt(0).toUpperCase() + newStatus.slice(1), // Capitalize first letter
+          responseMessage: responseMessage.trim(),
+        }),
+      })
+
+      if (!res.ok) throw new Error("Update failed")
+
+      toast.success(`Marked as ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`)
+      setOpen(false)
+      fetchComplaints()
+    } catch (err) {
+      console.error("Failed to update complaint status", err)
+      toast.error("Failed to update complaint status")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSendResponse = async () => {
+    if (!responseMessage.trim()) {
+      toast.error("Please enter a response message")
+      return
+    }
+
+    // When sending a response, automatically mark as Resolved
+    await handleStatusUpdate("resolved")
   }
 
   return (
@@ -93,40 +116,36 @@ export function ConcernsTable({ status }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredConcerns.map((concern) => (
-            <TableRow key={concern.id}>
-              <TableCell className="font-medium">{concern.id}</TableCell>
-              <TableCell>{concern.raisedBy}</TableCell>
-              <TableCell>
-                <Badge variant={concern.userType === "Farmer" ? "outline" : "secondary"}>{concern.userType}</Badge>
-              </TableCell>
-              <TableCell>{concern.concernType}</TableCell>
-              <TableCell>{concern.raisedOn}</TableCell>
-              <TableCell>
-                <Badge
-                  variant={
-                    concern.status === "pending"
-                      ? "destructive"
-                      : concern.status === "inProgress"
-                        ? "outline"
-                        : "success"
-                  }
-                >
-                  {concern.status === "pending"
-                    ? "Pending"
-                    : concern.status === "inProgress"
-                      ? "In Progress"
-                      : "Resolved"}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <Button variant="ghost" size="sm" onClick={() => handleView(concern)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View
-                </Button>
+          {filteredComplaints.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                No {status.toLowerCase()} concerns found
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            filteredComplaints.map((c) => (
+              <TableRow key={c._id}>
+                <TableCell>{c.id}</TableCell>
+                <TableCell>{c.raisedBy}</TableCell>
+                <TableCell>
+                  <Badge variant={c.userType === "Farmer" ? "outline" : "secondary"}>{c.userType}</Badge>
+                </TableCell>
+                <TableCell>{c.concernType}</TableCell>
+                <TableCell>{c.raisedOn}</TableCell>
+                <TableCell>
+                  <Badge variant={c.status === "pending" ? "destructive" : "success"}>
+                    {c.status === "pending" ? "Pending" : "Resolved"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm" onClick={() => handleView(c)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
 
@@ -136,77 +155,78 @@ export function ConcernsTable({ status }) {
             <DialogTitle>Concern Details</DialogTitle>
             <DialogDescription>Complete information about the concern.</DialogDescription>
           </DialogHeader>
-          {selectedConcern && (
+          {selectedComplaint && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <div className="font-medium">ID:</div>
-                <div className="col-span-3">{selectedConcern.id}</div>
+                <div className="col-span-3">{selectedComplaint.id}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <div className="font-medium">Raised By:</div>
-                <div className="col-span-3">{selectedConcern.raisedBy}</div>
+                <div className="col-span-3">{selectedComplaint.raisedBy}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <div className="font-medium">User Type:</div>
-                <div className="col-span-3">
-                  <Badge variant={selectedConcern.userType === "Farmer" ? "outline" : "secondary"}>
-                    {selectedConcern.userType}
-                  </Badge>
-                </div>
+                <div className="font-medium">Email:</div>
+                <div className="col-span-3">{selectedComplaint.email}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <div className="font-medium">Concern Type:</div>
-                <div className="col-span-3">{selectedConcern.concernType}</div>
+                <div className="col-span-3">{selectedComplaint.concernType}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <div className="font-medium">Raised On:</div>
-                <div className="col-span-3">{selectedConcern.raisedOn}</div>
+                <div className="col-span-3">{selectedComplaint.raisedOn}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <div className="font-medium">Status:</div>
                 <div className="col-span-3">
-                  <Badge
-                    variant={
-                      selectedConcern.status === "pending"
-                        ? "destructive"
-                        : selectedConcern.status === "inProgress"
-                          ? "outline"
-                          : "success"
-                    }
-                  >
-                    {selectedConcern.status === "pending"
-                      ? "Pending"
-                      : selectedConcern.status === "inProgress"
-                        ? "In Progress"
-                        : "Resolved"}
+                  <Badge variant={selectedComplaint.status === "pending" ? "destructive" : "success"}>
+                    {selectedComplaint.status === "pending" ? "Pending" : "Resolved"}
                   </Badge>
                 </div>
               </div>
               <div className="grid grid-cols-4 items-start gap-4">
                 <div className="font-medium">Description:</div>
-                <div className="col-span-3">{selectedConcern.description}</div>
+                <div className="col-span-3 whitespace-pre-wrap">{selectedComplaint.description}</div>
               </div>
 
-              {selectedConcern.status !== "resolved" && (
+              {/* Previous responses */}
+              {selectedComplaint.response?.length > 0 && (
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <div className="font-medium">Past Responses:</div>
+                  <div className="col-span-3 space-y-2">
+                    {selectedComplaint.response.map((r, idx) => (
+                      <div key={idx} className="p-2 border rounded">
+                        {r.updatedAt && (
+                          <p className="text-sm text-muted-foreground">{new Date(r.updatedAt).toLocaleString()}</p>
+                        )}
+                        <p>{r.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedComplaint.status !== "resolved" && (
                 <>
                   <div className="grid grid-cols-4 items-start gap-4">
                     <div className="font-medium">Response:</div>
                     <div className="col-span-3">
-                      <Textarea placeholder="Enter your response to this concern..." />
+                      <Textarea
+                        placeholder="Enter your response..."
+                        value={responseMessage}
+                        onChange={(e) => setResponseMessage(e.target.value)}
+                      />
                     </div>
                   </div>
                   <DialogFooter>
-                    {selectedConcern.status === "pending" && (
-                      <Button variant="outline" className="mr-2">
-                        Mark as In Progress
-                      </Button>
-                    )}
-                    {selectedConcern.status === "inProgress" && (
-                      <Button variant="outline" className="mr-2">
-                        Mark as Resolved
-                      </Button>
-                    )}
-                    <Button className="bg-green-600 hover:bg-green-700">Send Response</Button>
+                    <Button
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={handleSendResponse}
+                      disabled={isSubmitting || !responseMessage.trim()}
+                    >
+                      {isSubmitting ? "Sending..." : "Send Response & Resolve"}
+                    </Button>
                   </DialogFooter>
                 </>
               )}
@@ -217,4 +237,3 @@ export function ConcernsTable({ status }) {
     </>
   )
 }
-

@@ -1,12 +1,77 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useGetAllDemandsQuery } from "@/redux/Service/demandApi"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Plus, Trash, Edit, Loader2, Calendar, MapPin, Phone, Package, DollarSign } from "lucide-react"
+import { Loader2, Calendar, MapPin, Phone, Package, Search, Filter, X } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
+import { Badge } from "@/components/ui/badge"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+
 export default function DemandCropsPage() {
   const { data: demands = [], isLoading, isError } = useGetAllDemandsQuery()
   const router = useRouter()
+  const demandsData = demands?.data || []
+
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState("")
+  const [priceRange, setPriceRange] = useState([0, 10000])
+  const [selectedLocation, setSelectedLocation] = useState("")
+  const [filteredDemands, setFilteredDemands] = useState([])
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+
+  // Get unique locations for filter dropdown
+  const locations = demandsData ? [...new Set(demandsData.map((demand) => demand.location))].filter(Boolean) : []
+
+  // Apply filters whenever dependencies change
+  useEffect(() => {
+    if (!demandsData.length) return
+
+    let filtered = [...demandsData]
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(
+        (demand) =>
+          demand.crop_name.toLowerCase().includes(query) ||
+          demand.description?.toLowerCase().includes(query) ||
+          demand.location?.toLowerCase().includes(query),
+      )
+    }
+
+    // Apply price filter
+    filtered = filtered.filter((demand) => {
+      const price = Number.parseFloat(demand.crop_price)
+      return price >= priceRange[0] && price <= priceRange[1]
+    })
+
+    // Apply location filter
+    if (selectedLocation) {
+      filtered = filtered.filter((demand) => demand.location === selectedLocation)
+    }
+
+    setFilteredDemands(filtered)
+  }, [demandsData, searchQuery, priceRange, selectedLocation])
+
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchQuery("")
+    setPriceRange([0, 10000])
+    setSelectedLocation("")
+    setIsFilterOpen(false)
+  }
+
+  // Get max price for slider
+  const maxPrice = demandsData.length
+    ? Math.max(...demandsData.map((demand) => Number.parseFloat(demand.crop_price || 0)), 10000)
+    : 10000
 
   // Function to generate a color based on crop name
   const generateColor = (name) => {
@@ -28,13 +93,143 @@ export default function DemandCropsPage() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-green-900 mb-8">Demand Crops</h1>
 
+      {/* Search and Filter Section */}
+      <div className="mb-8 space-y-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search demands by crop name, description, location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2"
+              >
+                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+              </button>
+            )}
+          </div>
+
+          <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <span>Filters</span>
+                {(selectedLocation || priceRange[0] > 0 || priceRange[1] < maxPrice) && (
+                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                    {(selectedLocation ? 1 : 0) + (priceRange[0] > 0 || priceRange[1] < maxPrice ? 1 : 0)}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">Filters</h3>
+                  <Button variant="ghost" size="sm" onClick={resetFilters}>
+                    Reset
+                  </Button>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Price Range (₹)</Label>
+                  <div className="pt-4">
+                    <Slider
+                      defaultValue={[0, maxPrice]}
+                      value={priceRange}
+                      max={maxPrice}
+                      step={100}
+                      onValueChange={setPriceRange}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span>₹{priceRange[0]}</span>
+                    <span>₹{priceRange[1]}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Locations</SelectItem>
+                      {locations.map((location) => (
+                        <SelectItem key={location} value={location}>
+                          {location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Active filters */}
+        {(selectedLocation || priceRange[0] > 0 || priceRange[1] < maxPrice) && (
+          <div className="flex flex-wrap gap-2">
+            {selectedLocation && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Location: {selectedLocation}
+                <button onClick={() => setSelectedLocation("")}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Price: ₹{priceRange[0]} - ₹{priceRange[1]}
+                <button onClick={() => setPriceRange([0, maxPrice])}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="h-6">
+              Clear all
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Results count */}
+      <div className="mb-4 text-muted-foreground">
+        {!isLoading && (
+          <p>
+            Showing {filteredDemands.length} {filteredDemands.length === 1 ? "demand" : "demands"}
+            {searchQuery && ` for "${searchQuery}"`}
+          </p>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-          <div>Loading...</div>
+          <div className="col-span-full flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+            <span className="ml-2">Loading demands...</span>
+          </div>
         ) : isError ? (
-          <div>Error fetching demands.</div>
+          <div className="col-span-full text-center py-12 text-red-500">
+            Error fetching demands. Please try again later.
+          </div>
+        ) : filteredDemands.length === 0 ? (
+          <div className="col-span-full text-center py-12">
+            <p className="text-lg text-muted-foreground">No demands found matching your criteria.</p>
+            <Button variant="outline" onClick={resetFilters} className="mt-4">
+              Reset Filters
+            </Button>
+          </div>
         ) : (
-          demands?.data.map((demand) => (
+          filteredDemands.map((demand) => (
             <Card
               key={demand.id}
               className="hover:shadow-lg transition-shadow cursor-pointer"
@@ -102,4 +297,3 @@ export default function DemandCropsPage() {
     </div>
   )
 }
-

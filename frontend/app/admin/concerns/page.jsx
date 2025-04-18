@@ -17,7 +17,6 @@ export default function ConcernsPage() {
       <Tabs defaultValue="pending" className="space-y-4">
         <TabsList>
           <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="inProgress">In Progress</TabsTrigger>
           <TabsTrigger value="resolved">Resolved</TabsTrigger>
         </TabsList>
         <TabsContent value="pending" className="space-y-4">
