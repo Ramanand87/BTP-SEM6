@@ -12,7 +12,7 @@ import re
 from user.models import FarmerProfile
 import tempfile
 import requests
-from deepface import DeepFace
+# from deepface import DeepFace
 from .tests import verify_faces
 class ContractView(APIView):
     authentication_classes=[JWTAuthentication]

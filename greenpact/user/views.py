@@ -15,21 +15,22 @@ class SignUp(APIView):
     permission_classes = []
     def post(self, request):
         try:
-            serializer = serializers.userSerializers(data=request.data)
+            print(request.data)
+            serializer = None
+            role = request.data.get("role")
+            if role == "farmer":
+                aadhaar_image = request.FILES.get("aadhar_image")
+                if not aadhaar_image:
+                    return Response({"error": "Aadhaar image is required"}, status=status.HTTP_400_BAD_REQUEST)
+            elif role == "contractor":
+                gstin = request.data.get("gstin")
+                if not gstin:
+                    return Response({"error": "GSTIN is required for contractors"}, status=status.HTTP_400_BAD_REQUEST)
+                if not validate_gstin(gstin):
+                    return Response({"error": "Invalid GSTIN"}, status=status.HTTP_400_BAD_REQUEST)
+            serializer=serializers.userSerializers(data=request.data)
             if serializer.is_valid():
-                role = request.data.get("role")
-                if role == "farmer":
-                    aadhaar_image = request.FILES.get("aadhar_image")
-                    if not aadhaar_image:
-                        return Response({"error": "Aadhaar image is required"}, status=status.HTTP_400_BAD_REQUEST)
-                elif role == "contractor":
-                    gstin = request.data.get("gstin")
-                    if not gstin:
-                        return Response({"error": "GSTIN is required for contractors"}, status=status.HTTP_400_BAD_REQUEST)
-
-                    if not validate_gstin(gstin):
-                        return Response({"error": "Invalid GSTIN"}, status=status.HTTP_400_BAD_REQUEST)
-                user = serializer.save()
+                serializer.save()
                 return Response({"success": "User registered successfully"}, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
@@ -161,7 +162,7 @@ class AllUsersView(APIView):
     def get(self,request):
         try:
             farmers=models.FarmerProfile.objects.filter(is_verfied=True)
-            contractors=models.ContractorProfile.objects.filter(is_verfied=True)
+            contractors=models.ContractorProfile.objects.all()
             serialfarmer=serializers.FarmerProfileSerializer(farmers,many=True,context={'request': request})
             serialcontractor=serializers.ContractorProfileSerializer(contractors,many=True,context={'request': request})
             return Response({"farmer":serialfarmer.data,"contractor":serialcontractor.data},status=status.HTTP_202_ACCEPTED)
