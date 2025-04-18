@@ -28,7 +28,8 @@ def validate_gstin(gstin):
             data = response.json()
             return data.get("valid", False)
         return False
-    except requests.RequestException:
+    except Exception as e:
+        print(e)
         return False
 def extract_text_from_image(image_path):
     reader = easyocr.Reader(['en']) 

@@ -137,9 +137,10 @@ const AuthPage = () => {
       data.append("password", formData.password)
 
       // Add GSTIN for buyers/contractors
-      if (formData.role === "buyer" && formData.gstin) {
+      if (formData.role === "contractor" && formData.gstin) {
         data.append("gstin", formData.gstin)
       }
+      
 
       if (formData.profileImage) {
         // If profileImage is a base64 string (from webcam), it might be too large
@@ -382,8 +383,8 @@ const AuthPage = () => {
                         </Button>
                         <Button
                           type="button"
-                          variant={formData.role === "buyer" ? "default" : "outline"}
-                          onClick={() => setFormData({ ...formData, role: "buyer" })}
+                          variant={formData.role === "contractor" ? "default" : "outline"}
+                          onClick={() => setFormData({ ...formData, role: "contractor" })}
                           className="w-full"
                         >
                           Buyer
@@ -428,7 +429,7 @@ const AuthPage = () => {
                     </div>
 
                     {/* GSTIN field for buyers/contractors */}
-                    {formData.role === "buyer" && (
+                    {formData.role === "contractor" && (
                       <div className="space-y-2">
                         <Label htmlFor="gstin">GSTIN Number</Label>
                         <Input
@@ -560,7 +561,7 @@ const AuthPage = () => {
                           <Upload />
                           <span className="mt-2 text-sm text-gray-600 block">
                             Upload document (PDF or Image)
-                            {formData.role === "buyer" && " (Optional)"}
+                            {formData.role === "contractor" && " (Optional)"}
                           </span>
                         </Label>
 
@@ -683,7 +684,7 @@ const AuthPage = () => {
                 )}
 
                 {/* Skip step 4 for buyers and go directly to step 5 */}
-                {signupStep === 4 && formData.role === "buyer" && (
+                {signupStep === 4 && formData.role === "contractor" && (
                   <div className="space-y-4 animate-fadeIn">
                     <motion.div
                       className="space-y-4"
@@ -883,7 +884,7 @@ const AuthPage = () => {
                     </Button>
                   )}
 
-                  {(signupStep < 5 && formData.role === "farmer") || (signupStep < 4 && formData.role === "buyer") ? (
+                  {(signupStep < 5 && formData.role === "farmer") || (signupStep < 4 && formData.role === "contractor") ? (
                     <Button
                       type="button"
                       onClick={() => setSignupStep((step) => step + 1)}
