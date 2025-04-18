@@ -57,7 +57,10 @@ class Login(APIView):
                         return Response({'Error':'Wait for the admin to verify your profile'},status=status.HTTP_401_UNAUTHORIZED)
                 elif role == "contractor":
                     contractor_profile = get_object_or_404(models.ContractorProfile, user=user)
-                    serialprof = serializers.ContractorProfileSerializer(contractor_profile,context={'request': request})
+                    if contractor_profile.is_verfied:
+                        serialprof = serializers.ContractorProfileSerializer(contractor_profile,context={'request': request})
+                    else:
+                        return Response({'Error':'Wait for the admin to verify your profile'},status=status.HTTP_401_UNAUTHORIZED)
                 refresh = RefreshToken.for_user(user)
                 return Response({
                     'Success': 'User Logged in Successfully',
@@ -117,20 +120,27 @@ class RegisteredFarmers(APIView):
 
     def get(self,request):
         try:
-            farmers=get_list_or_404(models.FarmerProfile,is_verfied=False)
+            farmers=models.FarmerProfile.objects.filter(is_verfied=False)
+            contractor=models.ContractorProfile.objects.filter(is_verfied=False)
             serialfarmer=serializers.FarmerProfileSerializer(farmers,many=True,context={'request': request})
-            return Response({"data":serialfarmer.data},status=status.HTTP_202_ACCEPTED)
+            serialcontractor=serializers.ContractorProfileSerializer(contractor,many=True,context={'request': request})
+            return Response({"farmer":serialfarmer.data,"contractor":serialcontractor.data},status=status.HTTP_202_ACCEPTED)
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def put(self,request,pk):
         try:
             user=get_object_or_404(CustomUser,username=pk)
-            farmer=get_object_or_404(models.FarmerProfile,user=user)
-            serial=serializers.FarmerProfileSerializer(farmer,data=request.data,partial=True)
+            role=user.type
+            if role=="farmer":  
+                farmer=get_object_or_404(models.FarmerProfile,user=user)
+                serial=serializers.FarmerProfileSerializer(farmer,data=request.data,partial=True)
+            elif role=="contractor":
+                contractor=get_object_or_404(models.ContractorProfile,user=user)
+                serial=serializers.ContractorProfileSerializer(contractor,data=request.data,partial=True)
             if serial.is_valid():
                 serial.save()
-                return Response({'Sucess':'Farmer Verified'},status=status.HTTP_202_ACCEPTED)
+                return Response({'Sucess':'User Verified'},status=status.HTTP_202_ACCEPTED)
             return Response(serial.errors,status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -162,7 +172,7 @@ class AllUsersView(APIView):
     def get(self,request):
         try:
             farmers=models.FarmerProfile.objects.filter(is_verfied=True)
-            contractors=models.ContractorProfile.objects.all()
+            contractors=models.ContractorProfile.objects.filter(is_verfied=True)
             serialfarmer=serializers.FarmerProfileSerializer(farmers,many=True,context={'request': request})
             serialcontractor=serializers.ContractorProfileSerializer(contractors,many=True,context={'request': request})
             return Response({"farmer":serialfarmer.data,"contractor":serialcontractor.data},status=status.HTTP_202_ACCEPTED)
