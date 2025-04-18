@@ -40,7 +40,7 @@ class ContractorProfile(models.Model):
     gstin = models.CharField(max_length=15, unique=True)
     aadhar_image = models.FileField(upload_to='aadhar/', null=True, blank=True)
     signature = models.FileField(upload_to='signature/', null=True, blank=True)
-    # is_verfied=models.BooleanField(default=True)
+    is_verfied=models.BooleanField(default=False)
     
     def __str__(self):
         return self.user.username
