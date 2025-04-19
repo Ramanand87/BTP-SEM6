@@ -26,8 +26,6 @@ class SignUp(APIView):
                 gstin = request.data.get("gstin")
                 if not gstin:
                     return Response({"error": "GSTIN is required for contractors"}, status=status.HTTP_400_BAD_REQUEST)
-                if not validate_gstin(gstin):
-                    return Response({"error": "Invalid GSTIN"}, status=status.HTTP_400_BAD_REQUEST)
             serializer=serializers.userSerializers(data=request.data)
             if serializer.is_valid():
                 serializer.save()
