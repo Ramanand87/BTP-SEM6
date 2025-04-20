@@ -27,16 +27,12 @@ export default function UsersPage() {
       </div>
       <Tabs defaultValue="pending" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="pending">Pending Verification</TabsTrigger>
-          <TabsTrigger value="verified">Verified</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          <TabsTrigger value="pending">All Users</TabsTrigger>
+          
         </TabsList>
         <TabsContent value="pending" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Pending Verification</CardTitle>
-              <CardDescription>Review and verify the Aadhaar details of recently registered users.</CardDescription>
-            </CardHeader>
+            
             <CardContent>
               <AllUsers status="pending" />
             </CardContent>

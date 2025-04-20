@@ -1,6 +1,5 @@
 "use client"
 
-/* global BigInt  */
 import { useState } from "react"
 import { Eye, MoreHorizontal, ThumbsDown, ThumbsUp, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -35,7 +34,7 @@ import {
   useVerifyUserMutation,
   useRejectUserMutation,
 } from "@/redux/Service/auth"
-import Image from "next/image"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function RecentRegistrations() {
   const [selectedUser, setSelectedUser] = useState(null)
@@ -45,9 +44,9 @@ export function RecentRegistrations() {
     url: "",
     title: ""
   })
+  const [activeTab, setActiveTab] = useState("farmer")
 
   const { data: unverifiedUsers, isLoading, refetch } = useGetUsersQuery()
-  console.log(unverifiedUsers)
   const [verifyUser] = useVerifyUserMutation()
   const [rejectUser] = useRejectUserMutation()
 
@@ -90,120 +89,148 @@ export function RecentRegistrations() {
     })
   }
 
+  const renderUserTable = (users) => (
+    <div className="border rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table className="min-w-full">
+          <TableHeader className="bg-gray-50">
+            <TableRow>
+              <TableHead className="min-w-[150px]">User</TableHead>
+              <TableHead className="min-w-[120px]">Username</TableHead>
+              <TableHead className="min-w-[120px]">Phone</TableHead>
+              <TableHead className="min-w-[150px]">Address</TableHead>
+              <TableHead className="min-w-[150px]">Documents</TableHead>
+              <TableHead className="min-w-[100px]">Status</TableHead>
+              <TableHead className="min-w-[80px] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {!isLoading && users
+              ?.filter((user) => !user.is_verfied)
+              .map((user) => (
+                <TableRow key={user.id} className="hover:bg-gray-50">
+                  <TableCell>
+                    <div 
+                      className="flex items-center gap-3 cursor-pointer"
+                      onClick={() => user.image && handlePreviewImage(user.image, `${user.name}'s Profile`)}
+                    >
+                      <Avatar>
+                        <AvatarImage src={user.image || ""} alt={user.name} />
+                        <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="font-medium">{user.name}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium">{user.user.username}</TableCell>
+                  <TableCell>{user.phoneno}</TableCell>
+                  <TableCell className="truncate max-w-[150px]">{user.address}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {user.aadhar_image && (
+                        <Badge 
+                          variant="outline" 
+                          className="cursor-pointer hover:bg-gray-100"
+                          onClick={() => handlePreviewImage(user.aadhar_image, "Aadhaar Document")}
+                        >
+                          Aadhaar
+                        </Badge>
+                      )}
+                      {user.signature && (
+                        <Badge 
+                          variant="outline" 
+                          className="cursor-pointer hover:bg-gray-100"
+                          onClick={() => handlePreviewImage(user.signature, "Signature")}
+                        >
+                          Signature
+                        </Badge>
+                      )}
+                      {user.screenshot && (
+                        <Badge 
+                          variant="outline" 
+                          className="cursor-pointer hover:bg-gray-100"
+                          onClick={() => handlePreviewImage(user.screenshot, "Verification Screenshot")}
+                        >
+                          Screenshot
+                        </Badge>
+                      )}
+                      {user.gstin && (
+                        <Badge 
+                          variant="outline" 
+                          className="cursor-pointer hover:bg-gray-100"
+                        >
+                          GSTIN
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">Pending</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleView(user)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleVerify(user.user.username)}>
+                          <ThumbsUp className="mr-2 h-4 w-4 text-green-600" />
+                          Verify
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleReject(user.id)}>
+                          <ThumbsDown className="mr-2 h-4 w-4 text-red-600" />
+                          Reject
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+
   return (
     <>
       <div className="p-4 md:p-6">
         <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Pending Verification</h1>
-        <p className="text-gray-600 mb-4 md:mb-6">Review and verify the Aadhaar details of recently registered users.</p>
+        <p className="text-gray-600 mb-4 md:mb-6">Review and verify the details of recently registered users.</p>
         
-        <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table className="min-w-full">
-              <TableHeader className="bg-gray-50">
-                <TableRow>
-                  <TableHead className="min-w-[150px]">User</TableHead>
-                  <TableHead className="min-w-[120px]">Username</TableHead>
-                  <TableHead className="min-w-[120px]">Phone</TableHead>
-                  <TableHead className="min-w-[150px]">Address</TableHead>
-                  <TableHead className="min-w-[150px]">Documents</TableHead>
-                  <TableHead className="min-w-[100px]">Status</TableHead>
-                  <TableHead className="min-w-[80px] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!isLoading &&
-                  unverifiedUsers?.data
-                    ?.filter((user) => !user.is_verified)
-                    .map((user) => (
-                      <TableRow key={user.id} className="hover:bg-gray-50">
-                        <TableCell>
-                          <div 
-                            className="flex items-center gap-3 cursor-pointer"
-                            onClick={() => user.image && handlePreviewImage(user.image, `${user.name}'s Profile`)}
-                          >
-                            <Avatar>
-                              <AvatarImage src={user.image || ""} alt={user.name} />
-                              <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <div className="font-medium">{user.name}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{user.user.username}</TableCell>
-                        <TableCell>{user.phoneno}</TableCell>
-                        <TableCell className="truncate max-w-[150px]">{user.address}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {user.aadhar_image && (
-                              <Badge 
-                                variant="outline" 
-                                className="cursor-pointer hover:bg-gray-100"
-                                onClick={() => handlePreviewImage(user.aadhar_image, "Aadhaar Document")}
-                              >
-                                Aadhaar
-                              </Badge>
-                            )}
-                            {user.signature && (
-                              <Badge 
-                                variant="outline" 
-                                className="cursor-pointer hover:bg-gray-100"
-                                onClick={() => handlePreviewImage(user.signature, "Signature")}
-                              >
-                                Signature
-                              </Badge>
-                            )}
-                            {user.screenshot && (
-                              <Badge 
-                                variant="outline" 
-                                className="cursor-pointer hover:bg-gray-100"
-                                onClick={() => handlePreviewImage(user.screenshot, "Verification Screenshot")}
-                              >
-                                Verification
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">Pending</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => handleView(user)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleVerify(user.user.username)}>
-                                <ThumbsUp className="mr-2 h-4 w-4 text-green-600" />
-                                Verify
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleReject(user.id)}>
-                                <ThumbsDown className="mr-2 h-4 w-4 text-red-600" />
-                                Reject
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <Tabs defaultValue="farmer" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="farmer" onClick={() => setActiveTab("farmer")}>
+              Farmers
+            </TabsTrigger>
+            <TabsTrigger value="contractor" onClick={() => setActiveTab("contractor")}>
+              Contractors
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="farmer">
+            {renderUserTable(unverifiedUsers?.farmer || [])}
+          </TabsContent>
+          <TabsContent value="contractor">
+            {renderUserTable(unverifiedUsers?.contractor || [])}
+          </TabsContent>
+        </Tabs>
 
         {/* User Details Dialog */}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>User Details</DialogTitle>
-              <DialogDescription>Complete information about the user.</DialogDescription>
+              <DialogTitle>{activeTab === 'farmer' ? 'Farmer' : 'Contractor'} Details</DialogTitle>
+              <DialogDescription>
+                Complete information about the {activeTab}.
+              </DialogDescription>
             </DialogHeader>
             {selectedUser && (
               <div className="grid gap-4 py-4">
@@ -220,6 +247,9 @@ export function RecentRegistrations() {
                   <div>
                     <h3 className="text-lg font-semibold">{selectedUser.name}</h3>
                     <p className="text-gray-600">@{selectedUser.user.username}</p>
+                    <Badge variant="outline" className="capitalize mt-1">
+                      {activeTab}
+                    </Badge>
                   </div>
                 </div>
 
@@ -231,6 +261,13 @@ export function RecentRegistrations() {
                   <div className="font-medium">Address:</div>
                   <div className="col-span-3">{selectedUser.address}</div>
                 </div>
+                
+                {selectedUser.gstin && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <div className="font-medium">GSTIN:</div>
+                    <div className="col-span-3">{selectedUser.gstin}</div>
+                  </div>
+                )}
                 
                 {selectedUser.aadhar_image && (
                   <div className="grid grid-cols-4 items-start gap-4">
@@ -245,10 +282,6 @@ export function RecentRegistrations() {
                           alt="Aadhaar"
                           className="rounded border w-full h-auto max-h-40 object-contain"
                         />
-                      </div>
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Aadhaar Signature Verification</span>
-                        <Badge variant="outline">Pending</Badge>
                       </div>
                     </div>
                   </div>
@@ -265,6 +298,24 @@ export function RecentRegistrations() {
                         <img
                           src={selectedUser.signature}
                           alt="Signature"
+                          className="rounded border w-full h-auto max-h-40 object-contain"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedUser.screenshot && (
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <div className="font-medium">Screenshot:</div>
+                    <div className="col-span-3">
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => handlePreviewImage(selectedUser.screenshot, "Verification Screenshot")}
+                      >
+                        <img
+                          src={selectedUser.screenshot}
+                          alt="Screenshot"
                           className="rounded border w-full h-auto max-h-40 object-contain"
                         />
                       </div>
@@ -299,7 +350,13 @@ export function RecentRegistrations() {
           <DialogContent className="max-w-[90vw] max-h-[90vh]">
             <div className="flex justify-between items-center mb-4">
               <DialogTitle>{imagePreview.title}</DialogTitle>
-              
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setImagePreview(prev => ({...prev, open: false}))}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
             <div className="flex items-center justify-center h-full">
               <img
