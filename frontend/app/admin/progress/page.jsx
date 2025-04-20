@@ -9,10 +9,7 @@ export default function ProgressPage() {
     <div className="flex flex-col gap-4  px-12 py-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Progress Tracking</h1>
-        <div className="flex items-center gap-2">
-          <Input placeholder="Search by name or ID..." className="w-[250px]" />
-          <Button>Search</Button>
-        </div>
+      
       </div>
       <Tabs defaultValue="farmers" className="space-y-4">
         <TabsList>

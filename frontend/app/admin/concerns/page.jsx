@@ -9,10 +9,7 @@ export default function ConcernsPage() {
     <div className="flex flex-col gap-4  px-12 py-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Concerns & Disputes</h1>
-        <div className="flex items-center gap-2">
-          <Input placeholder="Search concerns..." className="w-[250px]" />
-          <Button>Search</Button>
-        </div>
+        
       </div>
       <Tabs defaultValue="pending" className="space-y-4">
         <TabsList>

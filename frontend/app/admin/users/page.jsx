@@ -14,16 +14,8 @@ export default function UsersPage() {
   return (
     <div className="flex flex-col gap-4 px-12 py-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Aadhaar Registrations</h1>
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Search registrations..."
-            className="w-[250px]"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Button>Search</Button>
-        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Registrations</h1>
+        
       </div>
       <Tabs defaultValue="pending" className="space-y-4">
         <TabsList>
