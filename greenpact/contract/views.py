@@ -266,3 +266,15 @@ class TransactionUser(APIView):
             return Response({'data':serial.data},status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AllContracts(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        try:
+            contracts=models.Contract.objects.all()
+            serial=serializers.ContractSerializer(contracts,many=True)
+            return Response({'data':serial.data},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

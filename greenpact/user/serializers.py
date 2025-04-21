@@ -6,7 +6,7 @@ from django.conf import settings
 class userSerializers(ModelSerializer):
     class Meta:
         model = models.CustomUser
-        fields = ["username", "email", "password"]
+        fields = ["username", "email", "password","date_joined"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def get_role(self, obj):
