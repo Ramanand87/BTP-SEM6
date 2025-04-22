@@ -38,6 +38,8 @@ import {
   ChevronLeft,
   ChevronRight,
   FileTextIcon,
+  Download,
+  X,
 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -74,7 +76,27 @@ const harvestStatusOptions = [
     icon: <Truck className="h-4 w-4 mr-2" />,
   },
 ]
+const handleDownload = (imageUrl, fileName) => {
+  fetch(imageUrl)
+    .then((response) => response.blob())
+    .then((blob) => {
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.style.display = "none"
+      a.href = url
+      a.download = fileName || "receipt"
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    })
+    .catch((error) => console.error("Error downloading image:", error))
+}
 
+// Function to open image in new tab
+const handleOpenImage = (imageUrl) => {
+  window.open(imageUrl, "_blank")
+}
 // Function to get progress percentage based on harvest status
 const getProgressPercentage = (status) => {
   const statusMap = {
@@ -95,6 +117,8 @@ export default function ContractPage() {
   const userRole = userInfo?.role
   const [contractPdfUrl, setContractPdfUrl] = useState(null)
   const [showQrPopup, setShowQrPopup] = useState(false)
+  const [showReceiptPopup, setShowReceiptPopup] = useState(false);
+const [currentReceipt, setCurrentReceipt] = useState(null);
   // Fetch contract details
   const { data: contractData, isLoading: isLoadingContract, error: contractError } = useGetContractQuery(contract_id)
 
@@ -470,6 +494,66 @@ export default function ContractPage() {
                   <p className="text-xs text-muted-foreground mt-1">Click to view larger QR code</p>
                 </div>
               )}
+              {/* Receipt Popup */}
+{showReceiptPopup && currentReceipt && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Payment Receipt</h3>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => setShowReceiptPopup(false)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="w-full relative" style={{ minHeight: '300px' }}>
+        {typeof currentReceipt === 'string' && (
+          currentReceipt.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+            <Image
+              src={currentReceipt}
+              alt="Payment Receipt"
+              fill
+              className="object-contain"
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full">
+              <FileText className="h-16 w-16 text-gray-400 mb-4" />
+              <p className="text-gray-500">Receipt document</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => window.open(currentReceipt, '_blank')}
+              >
+                Open in new tab
+              </Button>
+            </div>
+          )
+        )}
+      </div>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button 
+          variant="outline"
+          onClick={() => {
+            handleDownload(
+              currentReceipt,
+              typeof currentReceipt === 'string' 
+                ? currentReceipt.split('/').pop() 
+                : 'receipt'
+            )
+          }}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Download
+        </Button>
+        <Button onClick={() => setShowReceiptPopup(false)}>
+          Close
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
               {/* QR Code Popup */}
               {showQrPopup && contract.qr_code && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -606,6 +690,7 @@ export default function ContractPage() {
                                     ? payment.receipt.split("/").pop()
                                     : "Receipt attached"}
                                 </p>
+                                
                               )}
                             </div>
                           </div>
@@ -793,19 +878,42 @@ export default function ContractPage() {
                                     Reference: {payments[currentPaymentIndex].reference_number}
                                   </p>
                                   {payments[currentPaymentIndex].receipt && (
-                                    <div className="mt-3">
-                                      <p className="flex items-center gap-1 text-muted-foreground mb-2">
-                                        <FileText className="h-3 w-3" />
-                                        {typeof payments[currentPaymentIndex].receipt === "string"
-                                          ? payments[currentPaymentIndex].receipt.split("/").pop()
-                                          : "Receipt attached"}
-                                      </p>
-                                      <Button variant="outline" size="sm" className="w-full">
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        View Receipt
-                                      </Button>
-                                    </div>
-                                  )}
+  <div className="mt-3">
+    <p className="flex items-center gap-1 text-muted-foreground mb-2">
+      <FileText className="h-3 w-3" />
+      {typeof payments[currentPaymentIndex].receipt === "string"
+        ? payments[currentPaymentIndex].receipt.split("/").pop()
+        : "Receipt attached"}
+    </p>
+    <div className="flex gap-2">
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="w-full"
+        onClick={() => {
+          setCurrentReceipt(payments[currentPaymentIndex].receipt);
+          setShowReceiptPopup(true);
+        }}
+      >
+        <FileText className="h-4 w-4 mr-2" />
+        View Receipt
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() =>
+          handleDownload(
+            payments[currentPaymentIndex].receipt,
+            payments[currentPaymentIndex].receipt.split("/").pop()
+          )
+        }
+      >
+        <Download className="h-4 w-4 mr-2" />
+        Download
+      </Button>
+    </div>
+  </div>
+)}
                                 </div>
                               </div>
                             ) : (
