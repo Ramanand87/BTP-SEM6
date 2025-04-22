@@ -27,7 +27,23 @@ import { useParams, useRouter } from "next/navigation"
 export default function DemandCropsPage() {
     const { username } = useParams();
     const router = useRouter()
-  
+    const [contactNo, setContactNo] = useState('');
+    const [contactError, setContactError] = useState('');
+    const validateContactNo = (value) => {
+      if (!value) return 'Contact number is required';
+      if (!/^\d*$/.test(value)) return 'Only numbers are allowed';
+      if (value.length < 10) return `Enter ${10 - value.length} more digits`;
+      if (value.length > 10) return 'Maximum 10 digits allowed';
+      return '';
+    };
+    const handleContactChange = (e) => {
+      const value = e.target.value;
+      // Only allow numeric input
+      if (/^\d*$/.test(value)) {
+        setContactNo(value);
+        setContactError(validateContactNo(value));
+      }
+    };
   const { data: demands = [], isLoading, isError, refetch } = useGetAllDemandsQuery(username)
   const [addDemand, { isLoading: isAdding }] = useAddDemandMutation()
   const [updateDemand, { isLoading: isUpdating }] = useUpdateDemandMutation()
@@ -39,13 +55,19 @@ export default function DemandCropsPage() {
 
   const handleSave = async (event) => {
     event.preventDefault()
+    
     const formData = new FormData(event.target)
+    const contactError = validateContactNo(contactNo);
+    if (contactError) {
+      setContactError(contactError);
+      return;
+    }
 
     const newDemand = {
       crop_name: formData.get("crop_name"),
       crop_price: formData.get("crop_price"),
       crop_image: formData.get("crop_image") ? URL.createObjectURL(formData.get("crop_image")) : "",
-      contact_no: formData.get("contact_no"),
+      contact_no: contactNo,
       quantity: formData.get("quantity"),
       description: formData.get("description"),
       location: formData.get("location"),
@@ -147,29 +169,34 @@ export default function DemandCropsPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="crop_image">Crop Image</Label>
-                <Input
-                  id="crop_image"
-                  name="crop_image"
-                  type="file"
-                  accept="image/*"
-                  className="focus-visible:ring-green-500"
-                />
-              </div>
+            
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contact_no">Contact Number</Label>
-                  <Input
-                    id="contact_no"
-                    name="contact_no"
-                    placeholder="Enter contact number"
-                    defaultValue={editingDemand?.contact_no}
-                    className="focus-visible:ring-green-500"
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+  <Label htmlFor="contact_no">Contact Number</Label>
+  <Input
+    id="contact_no"
+    name="contact_no"
+    placeholder="Enter contact number"
+    value={editingDemand ? editingDemand.contact_no : contactNo}
+    onChange={handleContactChange}
+    className={cn(
+      "focus-visible:ring-green-500",
+      contactError && "border-red-500 focus-visible:ring-red-500"
+    )}
+    required
+    type="tel"
+    maxLength={10}
+  />
+  {contactError && (
+    <p className={cn(
+      "text-sm",
+      contactError.includes('more digits') ? "text-amber-600" : "text-red-500"
+    )}>
+      {contactError}
+    </p>
+  )}
+</div>
 
                 <div className="space-y-2">
                   <Label htmlFor="quantity">Quantity</Label>
