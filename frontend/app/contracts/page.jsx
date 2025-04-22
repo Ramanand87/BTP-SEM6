@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Filter, ArrowUpDown, Trash2, Edit, FileText, Check, Bell } from "lucide-react"
+import { Search, Filter, ArrowUpDown, Trash2, Edit, FileText, Check, Bell, Camera, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -21,16 +21,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Loader2 } from "lucide-react"
 import { format } from "date-fns"
-import { cn } from "@/lib/utils"
 import { useSelector } from "react-redux"
 import { toast } from "sonner"
 import Link from "next/link"
-import { Camera } from "lucide-react"
 import Webcam from "react-webcam"
+import { useUpdateProfileMutation } from "@/redux/Service/profileApi"
+
 const statusColors = {
   active: "bg-green-100 text-green-800 border-green-200",
   pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -49,6 +46,9 @@ export default function ContractsListPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [updateContract, { isLoading: isUpdating }] = useUpdateContractMutation()
   const [deleteContract, { isLoading: isDeleting }] = useDeleteContractMutation()
+  const [updateProfile] = useUpdateProfileMutation()
+  const [qrCodeUploading, setQrCodeUploading] = useState(false)
+  const [qrCodeUploaded, setQrCodeUploaded] = useState(false)
 
   const [verifyUser] = useVerifyUserMutation()
 
@@ -122,10 +122,34 @@ export default function ContractsListPage() {
     }
   }
 
+  const handleQrCodeUpload = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setQrCodeUploading(true)
+
+      try {
+        const formData = new FormData()
+        formData.append("qr_code_image", file)
+
+        // Call updateProfile mutation
+        await updateProfile(formData).unwrap()
+        toast.success("QR code uploaded successfully")
+        setQrCodeUploaded(true)
+      } catch (error) {
+        console.error("Failed to upload QR code:", error)
+        toast.error("Failed to upload QR code")
+      } finally {
+        setQrCodeUploading(false)
+      }
+    }
+  }
+
   const retryVerification = () => {
     setVerificationImage(null)
     setVerificationStatus(null)
+    setQrCodeUploaded(false)
   }
+
   // Initialize WebSocket connection
   useEffect(() => {
     if (!token) return
@@ -254,6 +278,11 @@ export default function ContractsListPage() {
       return
     }
 
+    if (!qrCodeUploaded) {
+      toast.error("Please upload QR code first")
+      return
+    }
+
     console.log("approve req sent")
 
     if (ws.current && ws.current.readyState === WebSocket.OPEN && contractToApprove) {
@@ -277,6 +306,7 @@ export default function ContractsListPage() {
       // Reset verification state
       setVerificationImage(null)
       setVerificationStatus(null)
+      setQrCodeUploaded(false)
 
       // Remove from approving IDs after a short delay
       setTimeout(() => {
@@ -367,7 +397,6 @@ export default function ContractsListPage() {
   }
 
   // Update the search functionality to properly filter by crop name, farmer name, and contract ID
-  // Replace the existing filteredContracts definition with this improved version:
   const filteredContracts = contracts.filter((contract) => {
     // Search functionality - check if search term matches crop name, farmer name, or contract ID
     const matchesSearch =
@@ -386,7 +415,6 @@ export default function ContractsListPage() {
   const [sortOption, setSortOption] = useState("newest")
 
   // Add sorting functionality - update the filteredContracts to include sorting
-  // Replace the filteredContracts definition with this version that includes sorting:
   const filteredAndSortedContracts = [...filteredContracts].sort((a, b) => {
     switch (sortOption) {
       case "newest":
@@ -411,7 +439,6 @@ export default function ContractsListPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       {/* Approval Confirmation Dialog */}
-      {/* Approval Confirmation Dialog */}
       <AlertDialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -431,7 +458,7 @@ export default function ContractsListPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {verificationStatus === null && (
+          {verificationStatus === null ? (
             <div className="my-4">
               {!verificationImage ? (
                 <div className="space-y-4">
@@ -470,22 +497,54 @@ export default function ContractsListPage() {
                 </div>
               )}
             </div>
-          )}
+          ) : verificationStatus ? (
+            <div className="my-4 space-y-4">
+              <h3 className="text-sm font-medium">Upload QR Code Image</h3>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                <Input
+                  type="file"
+                  id="qr_code_image"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleQrCodeUpload}
+                />
+                <label
+                  htmlFor="qr_code_image"
+                  className="cursor-pointer flex flex-col items-center justify-center gap-2"
+                >
+                  <div className="bg-gray-100 p-3 rounded-full">
+                    <FileText className="h-6 w-6 text-gray-500" />
+                  </div>
+                  <span className="text-sm font-medium">
+                    {qrCodeUploaded ? "QR Code Uploaded ✓" : "Click to upload QR code"}
+                  </span>
+                  <span className="text-xs text-gray-500">PNG, JPG up to 5MB</span>
+                </label>
+              </div>
 
-          <AlertDialogFooter>
-            {verificationStatus === null ? (
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-            ) : verificationStatus ? (
-              <>
+              <div className="flex gap-2 mt-4">
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
-                  Yes, Approve Contract
+                <AlertDialogAction
+                  onClick={handleApprove}
+                  className="bg-green-600 hover:bg-green-700"
+                  disabled={qrCodeUploading || !qrCodeUploaded}
+                >
+                  {qrCodeUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    "Yes, Approve Contract"
+                  )}
                 </AlertDialogAction>
-              </>
-            ) : (
+              </div>
+            </div>
+          ) : (
+            <AlertDialogFooter>
               <AlertDialogAction onClick={retryVerification}>Try Again</AlertDialogAction>
-            )}
-          </AlertDialogFooter>
+            </AlertDialogFooter>
+          )}
         </AlertDialogContent>
       </AlertDialog>
 
@@ -616,29 +675,16 @@ export default function ContractsListPage() {
 
             <div>
               <label className="block text-sm font-medium mb-1">Delivery Date</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !deliveryDate && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {deliveryDate ? format(deliveryDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={deliveryDate}
-                    onSelect={setDeliveryDate}
-                    initialFocus
-                    fromDate={new Date()}
-                  />
-                </PopoverContent>
-              </Popover>
+              <Input
+                type="date"
+                value={deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : ""}
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value) : new Date()
+                  setDeliveryDate(date)
+                }}
+                min={format(new Date(), "yyyy-MM-dd")}
+                className="w-full"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -790,7 +836,7 @@ export default function ContractsListPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input
@@ -800,7 +846,7 @@ export default function ContractsListPage() {
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-start">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2">
@@ -831,7 +877,7 @@ export default function ContractsListPage() {
         </div>
 
         <Tabs defaultValue="all" onValueChange={setActiveTab} value={activeTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 overflow-x-auto w-full flex justify-start">
             <TabsTrigger value="all">All Contracts</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="pending">
@@ -853,7 +899,7 @@ export default function ContractsListPage() {
           )}
 
           <TabsContent value={activeTab} className="mt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {filteredAndSortedContracts.length > 0
                 ? filteredAndSortedContracts.map((contract, index) => (
                     <motion.div
@@ -917,7 +963,7 @@ export default function ContractsListPage() {
                               </div>
                             </CardHeader>
                             <CardContent className="pb-2">
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                              <div className="grid grid-cols-1 xs:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                                 <div>
                                   <p className="text-gray-500">Farmer</p>
                                   <p className="font-medium">{contract.farmer}</p>

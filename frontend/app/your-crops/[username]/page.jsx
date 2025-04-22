@@ -153,7 +153,7 @@ export default function YourCropsPage() {
             />
             <Input
               name="harvested_time"
-              type="date"
+              type="date" 
               placeholder="Harvested Time"
               defaultValue={editingCrop?.harvested_time}
               required

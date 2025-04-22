@@ -60,6 +60,9 @@ class FarmerProfileSerializer(ModelSerializer):
             data['image'] = instance.image.url
         if instance.screenshot:
             data['screenshot'] = instance.screenshot.url
+        request = self.context.get('request')
+        if instance.qr_code_image and request:
+            data['qr_code_image'] = request.build_absolute_uri(instance.qr_code_image.url)
         return data
 
 class ContractorProfileSerializer(ModelSerializer):

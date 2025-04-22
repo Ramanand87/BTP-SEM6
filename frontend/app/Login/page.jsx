@@ -506,7 +506,7 @@ const AuthPage = () => {
                     {/* GSTIN field for buyers/contractors */}
                     {formData.role === "contractor" && (
                       <div className="space-y-2">
-                        <Label htmlFor="gstin">GSTIN Number</Label>
+                        <Label htmlFor="gstin">GSTIN Number {"(15-digit)"}</Label>
                         <Input
                           id="gstin"
                           className="border-green-200 focus:ring-green-500"

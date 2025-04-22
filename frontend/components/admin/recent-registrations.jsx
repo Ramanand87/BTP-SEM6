@@ -350,13 +350,13 @@ export function RecentRegistrations() {
           <DialogContent className="max-w-[90vw] max-h-[90vh]">
             <div className="flex justify-between items-center mb-4">
               <DialogTitle>{imagePreview.title}</DialogTitle>
-              <Button 
+              {/* <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setImagePreview(prev => ({...prev, open: false}))}
               >
                 <X className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
             <div className="flex items-center justify-center h-full">
               <img

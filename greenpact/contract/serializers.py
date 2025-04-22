@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from . import models
-from user.models import CustomUser
+from user.models import FarmerProfile
 from crops.models import Crops
 # from user.serializers import userSerializers
 # from crops.serializers import CropsSerializer
@@ -13,6 +13,7 @@ class ContractSerializer(serializers.ModelSerializer):
     farmer_name = serializers.SerializerMethodField()
     buyer_name = serializers.SerializerMethodField()
     crop_name = serializers.SerializerMethodField()
+    qr_code = serializers.SerializerMethodField()
     terms = serializers.ListField(
         child=serializers.CharField(),
         required=False
@@ -31,7 +32,15 @@ class ContractSerializer(serializers.ModelSerializer):
             'delivery_date',
             'terms',
             'status',
+            'qr_code',
         ]
+    def get_qr_code(self,obj):
+        try:
+            request=self.context.get('request')
+            prof=FarmerProfile.objects.get(user=obj.farmer)
+            return request.build_absolute_uri(prof.qr_code_image.url)
+        except AttributeError:
+            return obj.farmer.username
     def get_farmer_name(self, obj):
         try:
             return obj.farmer.farmer_profile.name

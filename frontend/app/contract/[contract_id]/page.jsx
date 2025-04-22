@@ -111,6 +111,7 @@ export default function ContractPage() {
   const userInfo = useSelector((state) => state.auth.userInfo);
   const userRole = userInfo?.role;
   const [contractPdfUrl, setContractPdfUrl] = useState(null);
+  const [showQrPopup, setShowQrPopup] = useState(false);
   // Fetch contract details
   const {
     data: contractData,
@@ -506,7 +507,57 @@ export default function ContractPage() {
 
                 
               </div>
-
+              {contract.qr_code && (
+  <div className="mt-4">
+    <h3 className="text-sm font-medium text-muted-foreground mb-2">
+      QR Code
+    </h3>
+    <div 
+      className="w-32 h-32 relative cursor-pointer hover:opacity-80 transition-opacity"
+      onClick={() => setShowQrPopup(true)}
+    >
+      <Image
+        src={contract.qr_code}
+        alt="Field QR Code"
+        fill
+        className="object-contain"
+      />
+    </div>
+    <p className="text-xs text-muted-foreground mt-1">
+      Click to view larger QR code
+    </p>
+  </div>
+)}
+{/* QR Code Popup */}
+{showQrPopup && contract.qr_code && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-lg p-6 max-w-md w-full">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Field QR Code</h3>
+        {/* <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => setShowQrPopup(false)}
+        >
+          <X className="h-4 w-4" />
+        </Button> */}
+      </div>
+      <div className="w-full aspect-square relative">
+        <Image
+          src={contract.qr_code}
+          alt="Field QR Code"
+          fill
+          className="object-contain"
+        />
+      </div>
+      <div className="mt-4 flex justify-end">
+        <Button onClick={() => setShowQrPopup(false)}>
+          Close
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
             
               <div className="mt-8">
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">

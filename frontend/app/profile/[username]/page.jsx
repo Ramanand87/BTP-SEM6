@@ -123,7 +123,6 @@ export default function ProfilePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [qrCodeImage, setQrCodeImage] = useState(null);
   const [profilePic, setProfilePic] = useState("");
   const webcamRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
@@ -140,16 +139,9 @@ export default function ProfilePage() {
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
   };
-  const handleQrCodeUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setQrCodeImage(file);
-    }
-  };
+ 
   
-  const removeQrCode = () => {
-    setQrCodeImage(null);
-  };
+ 
   const handleEditClick = () => {
     setPhone(profile?.data.phoneno || "");
     setAddress(profile?.data.address || "");
@@ -176,10 +168,7 @@ export default function ProfilePage() {
         data.append("image", file);
       }
   
-      // Add QR code if uploaded
-      if (qrCodeImage) {
-        data.append("qr_code_image", qrCodeImage);
-      }
+    
   
       await updateProfile(data).unwrap();
       refetch();
@@ -522,64 +511,7 @@ export default function ProfilePage() {
                 />
               )}
             </div>
-            <div>
-        <label className="block text-sm font-medium mb-1">
-          QR Code Image
-        </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            id="qrCodeImage"
-            onChange={handleQrCodeUpload}
-          />
-          <label
-            htmlFor="qrCodeImage"
-            className="cursor-pointer block text-center"
-          >
-            <Upload />
-            <span className="mt-2 text-sm text-gray-600 block">
-              Upload QR Code Image
-            </span>
-          </label>
-
-          {qrCodeImage && (
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between bg-green-50 p-2 rounded">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium">
-                    {qrCodeImage.name}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    ({(qrCodeImage.size / 1024).toFixed(1)} KB)
-                  </span>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => window.open(URL.createObjectURL(qrCodeImage))}
-                    className="text-green-600 border-green-200"
-                  >
-                    View
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={removeQrCode}
-                    className="text-red-600 border-red-200"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+        
           </div>
           <DialogFooter>
             <Button

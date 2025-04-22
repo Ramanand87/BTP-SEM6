@@ -25,11 +25,11 @@ class ContractView(APIView):
                     contract=get_list_or_404(models.Contract,farmer=request.user)
                 else:
                     contract=get_list_or_404(models.Contract,buyer=request.user)
-                serial=serializers.ContractSerializer(contract,many=True)
+                serial=serializers.ContractSerializer(contract,many=True,context={'request':request})
                 return Response({'data':serial.data},status=status.HTTP_200_OK)
             else:
                 contract=get_object_or_404(models.Contract,contract_id=pk)
-                serial=serializers.ContractSerializer(contract)
+                serial=serializers.ContractSerializer(contract,context={'request':request})
                 return Response({'data':serial.data},status.HTTP_200_OK)
         except Exception as e:
                 return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
