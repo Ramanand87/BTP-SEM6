@@ -186,7 +186,7 @@ export default function MarketPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-green-900">Marketplace</h1>
-        {currentUser && (
+        {currentUser && userRole === "farmer" && (
           <Button 
             onClick={() => router.push(`/your-crops/${currentUser}`)}
             variant="outline"
@@ -316,7 +316,7 @@ export default function MarketPage() {
         )}
       </div>
 
-      {currentUser ? (
+      {currentUser && userRole === "farmer" ? (
         <Tabs defaultValue="all" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="all">All Crops</TabsTrigger>

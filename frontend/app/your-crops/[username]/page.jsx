@@ -233,6 +233,8 @@ export default function YourCropsPage() {
                     className="w-full h-48 object-cover rounded-lg"
                   />
                 </CardHeader>
+                </Link>
+
                 <CardContent>
                   <CardTitle className="text-xl">{crop.crop_name}</CardTitle>
                   <div className="space-y-2 mt-4">
@@ -251,7 +253,6 @@ export default function YourCropsPage() {
                     <p className="text-gray-700">{crop.Description}</p>
                   </div>
                 </CardContent>
-              </Link>
               <CardFooter className="flex gap-4">
                 <Button
                   variant="outline"
