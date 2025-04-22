@@ -78,6 +78,7 @@ export function RecentRegistrations() {
       setOpen(false)
     } catch (error) {
       toast.error("Rejection failed.")
+      console.log(error)
     }
   }
 
@@ -185,7 +186,7 @@ export function RecentRegistrations() {
                           <ThumbsUp className="mr-2 h-4 w-4 text-green-600" />
                           Verify
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleReject(user.id)}>
+                        <DropdownMenuItem onClick={() => handleReject(user.user.username)}>
                           <ThumbsDown className="mr-2 h-4 w-4 text-red-600" />
                           Reject
                         </DropdownMenuItem>
@@ -327,7 +328,7 @@ export function RecentRegistrations() {
                   <Button
                     variant="outline"
                     className="w-[48%]"
-                    onClick={() => handleReject(selectedUser.id)}
+                    onClick={() => handleReject(selectedUser.user.username)}
                   >
                     <ThumbsDown className="mr-2 h-4 w-4" />
                     Reject
