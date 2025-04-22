@@ -341,22 +341,6 @@ export default function HelpAndSupport() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-primary">Help & Support</h1>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={toggleAudio}
-          className="relative border-primary/30"
-          aria-label={audioEnabled ? "Disable audio assistance" : "Enable audio assistance"}
-        >
-          {audioEnabled ? (
-            <Volume2 className="w-5 h-5 text-primary" />
-          ) : (
-            <VolumeX className="w-5 h-5 text-muted-foreground" />
-          )}
-          <span className="absolute px-2 py-1 text-xs -bottom-8 whitespace-nowrap bg-background border rounded">
-            {audioEnabled ? "Audio On" : "Audio Off"}
-          </span>
-        </Button>
       </motion.div>
 
       <Tabs defaultValue="farmer" className="w-full" onValueChange={setActiveTab}>

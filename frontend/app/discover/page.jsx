@@ -8,9 +8,19 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { User, MapPin, Search } from "lucide-react"
 import { useGetAllUsersQuery } from "@/redux/Service/auth"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const router = useRouter()
+
+  const handleCardClick = () => {
+    const username = user.user?.username
+    if (username) {
+      router.push(`/profile/${username}`)
+    }
+  }
 
   const { data: userData, isLoading, error } = useGetAllUsersQuery(undefined)
 
@@ -64,8 +74,11 @@ export default function UsersPage() {
         boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
       }}
       className="w-full"
+
     >
-      <Card className="overflow-hidden border-none shadow-lg">
+      <Card className="overflow-hidden border-none shadow-lg cursor-pointer">
+      <Link href={`/profile/${user?.user?.username}`}  
+      >
         <CardContent className="p-0">
           <div className="relative">
             <div className="h-24 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
@@ -99,6 +112,7 @@ export default function UsersPage() {
             </div>
           </div>
         </CardContent>
+      </Link>
       </Card>
     </motion.div>
   )
