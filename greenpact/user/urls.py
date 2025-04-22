@@ -11,5 +11,6 @@ urlpatterns = [
     path('verify/',views.RegisteredFarmers.as_view()),
     path('login/admin/',views.AdminLoginView.as_view()),
     path('allusers/',views.AllUsersView.as_view()),
+    path('allusers/<str:pk>/',views.AllUsersView.as_view()),
 
 ]

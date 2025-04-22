@@ -176,3 +176,10 @@ class AllUsersView(APIView):
             return Response({"farmer":serialfarmer.data,"contractor":serialcontractor.data},status=status.HTTP_202_ACCEPTED)
         except Exception as e:
             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def delete(self,request,pk):
+        try:
+            user=get_object_or_404(models.CustomUser,username=pk)
+            user.delete()
+            return Response({'Sucess':'User Rejected'},status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
