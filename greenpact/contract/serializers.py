@@ -158,4 +158,5 @@ class TransactionListSerializer(serializers.ModelSerializer):
         ]
 
     def get_receipt(self, obj):
-        return obj.receipt.url if obj.receipt else None
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.receipt.url)

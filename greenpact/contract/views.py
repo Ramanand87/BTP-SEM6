@@ -210,7 +210,7 @@ class AllTransactionView(APIView):
     def get(self, request):
         try:
             transactions = models.Transaction.objects.select_related("contract__buyer")
-            serializer = serializers.TransactionListSerializer(transactions, many=True)
+            serializer = serializers.TransactionListSerializer(transactions, many=True,context={'request': request})
             return Response({"data": serializer.data}, status=200)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
