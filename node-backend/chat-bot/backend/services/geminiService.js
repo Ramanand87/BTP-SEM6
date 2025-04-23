@@ -16,12 +16,81 @@ function getCurrentDateTime() {
 }
 
 // 📌 Static Project Details (Modify as needed)
-const PROJECT_DETAILS = `Project: Student Chatbot
-- Name: Janmesh Rajput
-- Age: 19
-- College: IIIT Pune
-- Functionality: Our project name is GreenPact which aims to provide a trust contract between farmers/sellers and customers/buyers. Both of them can interact with each other and make a contract.
-- Restrictions: Do NOT answer general questions outside this scope.`;
+const PROJECT_DETAILS = `Project: GreenPact
+🌱 GreenPact – A Crop Trading and Communication Platform
+Tech Stack: Django, PostgreSQL, Django Channels (WebSockets), HTML/CSS/JS, Bootstrap, Redis (for Channels), Django REST Framework (if used), Celery (if used for notifications)
+
+🔍 Overview:
+GreenPact is a full-stack web application designed to streamline agricultural commerce by connecting farmers and contractors (buyers). It allows users to list crops, post demands, negotiate contracts, communicate in real-time, and build trust through a mutual rating system. The goal is to digitize crop trading while maintaining transparency and efficiency.
+
+📦 Core Apps and Features:
+1. user
+Centralized authentication and role-based system using Django's AbstractUser or User model.
+
+Two extended profile models:
+
+FarmerProfile: Includes farm details, location, crop history, etc.
+
+ContractorProfile: Contains company name, crop demand patterns, etc.
+
+Clean separation of permissions and dashboard access.
+
+2. crops
+Farmers can add, update, or delete crop listings.
+
+Each crop includes name, quantity, price, location, and availability status.
+
+Displayed in a searchable and filterable listing for contractors.
+
+3. demands
+Contractors can post their requirements for specific crops.
+
+Fields include crop type, required quantity, price offer, and location.
+
+Farmers can view and respond to demands that match their inventory.
+
+4. contract
+Enables formal contract creation between farmer and buyer.
+
+Each contract includes selected crop, agreed price, quantity, and delivery details.
+
+Option for both parties to digitally approve the contract.
+
+Contracts are stored and visible in respective dashboards.
+
+5. ratings
+Both farmers and contractors can rate each other after a successful contract.
+
+Each rating includes stars (1–5) and a short review.
+
+Helps improve credibility and maintain a trustworthy ecosystem.
+
+6. chat
+Real-time messaging between farmers and contractors.
+
+Implemented using Django Channels and WebSockets.
+
+Enables users to discuss crop details, negotiate deals, and clarify terms.
+
+Messages stored persistently and organized by conversation.
+
+7. notifications (optional but recommended)
+Real-time notifications for:
+
+New chat messages
+
+Contract updates
+
+Demand/crop matches
+
+Could be implemented using Django signals + Channels + Celery/Redis.
+
+📊 Additional Features:
+Admin panel to monitor users, crops, demands, and ratings.
+
+Search and filter functionality for quick access to relevant crops/demands.
+
+Responsive UI using Bootstrap or similar framework.`;
 
 // 📌 Function to call Gemini API
 async function callGemini(userQuery) {
