@@ -159,7 +159,7 @@ export default function DemandCropsPage() {
                 <div className="flex justify-between items-start mb-4">
                   <CardTitle className="text-2xl text-green-800">{demand.crop_name}</CardTitle>
                   <div className="flex items-center bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium">
-                    ₹{demand.crop_price}
+                    ₹{demand.crop_price}/Kg
                   </div>
                 </div>
 
@@ -167,7 +167,7 @@ export default function DemandCropsPage() {
                   <div className="flex items-start">
                     <Package className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
                     <p className="text-gray-700">
-                      Quantity: <span className="font-medium">{demand.quantity}</span>
+                      Quantity: <span className="font-medium">{demand.quantity}/Kg</span>
                     </p>
                   </div>
 

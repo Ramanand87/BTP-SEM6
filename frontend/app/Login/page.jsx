@@ -217,7 +217,7 @@ const AuthPage = () => {
       router.push("/")
     } catch (error) {
       console.error("Login failed:", error)
-      alert("Login failed. Please check your credentials.")
+      alert(error.data.Error || "Login failed. Please try again.")
     } finally {
       setIsLoading(false)
     }

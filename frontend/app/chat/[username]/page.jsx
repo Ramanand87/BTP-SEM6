@@ -86,25 +86,34 @@ const ChatPage = () => {
   }, [])
 
   // WebSocket connection
-  useEffect(() => {
-    if (currentChat?.name) {
-      console.log("Connecting to WebSocket for room:", currentChat.name)
-      const ws = new WebSocket(`ws://localhost:5000/ws/chat/${currentChat.name}/`)
+  // WebSocket connection
+useEffect(() => {
+  let ws;
 
-      ws.onopen = () => console.log("WebSocket Connected!")
-      ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data)
-        console.log("Message received:", msg)
-        setReceiveMessages((prev) => (Array.isArray(msg.messages) ? msg.messages : [...prev, msg]))
-      }
+  if (currentChat?.name) {
+    console.log("Connecting to WebSocket for room:", currentChat.name);
+    ws = new WebSocket(`ws://localhost:5000/ws/chat/${currentChat.name}/`);
 
-      ws.onerror = (error) => console.error("WebSocket Error:", error)
-      ws.onclose = () => console.log("WebSocket Closed!")
+    ws.onopen = () => console.log("WebSocket Connected!");
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      console.log("Message received:", msg);
+      setReceiveMessages((prev) => (Array.isArray(msg.messages) ? msg.messages : [...prev, msg]));
+    };
+    ws.onerror = (error) => console.error("WebSocket Error:", error);
+    ws.onclose = () => console.log("WebSocket Closed!");
 
-      setSocket(ws)
-      return () => ws.close()
+    setSocket(ws);
+  }
+
+  return () => {
+    if (ws) {
+      console.log("Cleaning up WebSocket connection...");
+      ws.close();
     }
-  }, [currentChat])
+  };
+}, [currentChat]);
+
 
   // Auto-scroll to bottom
   useEffect(() => {

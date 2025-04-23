@@ -98,7 +98,7 @@ export default function DemandCropDetailsPage() {
                 
               </div>
               <div className="text-3xl font-bold text-green-700 mb-2">
-                ₹{demandDetails.crop_price}
+                ₹{demandDetails.crop_price}/Kg
               </div>
               <p className="text-green-600 text-sm">Market competitive price</p>
             </div>
@@ -108,7 +108,7 @@ export default function DemandCropDetailsPage() {
                 <Package className="w-5 h-5 text-gray-500 mr-3" />
                 <div>
                   <p className="text-sm text-gray-500">Quantity</p>
-                  <p className="font-medium">{demandDetails.quantity}</p>
+                  <p className="font-medium">{demandDetails.quantity}/Kg</p>
                 </div>
               </div>
               
@@ -184,14 +184,14 @@ export default function DemandCropDetailsPage() {
                   </Button>
                 </Link>
               )}
-              <Button 
+              {/* <Button 
                 variant="outline" 
                 className="flex-1 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-colors h-12"
                 onClick={() => window.location.href = `tel:${demandDetails.contact_no}`}
               >
                 <Phone className="w-5 h-5 mr-2" />
                 Call Buyer
-              </Button>
+              </Button> */}
             </div>
           </div>
         </Card>

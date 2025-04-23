@@ -26,12 +26,12 @@ import {
 } from "@/redux/Service/cropApi";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Label } from "@/components/ui/label";
 
 export default function YourCropsPage() {
   const { username } = useParams();
-    const { data, isLoading, isError } = useGetCropsQuery(username);
+  const { data, isLoading, isError } = useGetCropsQuery(username);
   const crops = Array.isArray(data) ? data : []; // Ensure crops is always an array
-  
 
   const [addCrop, { isLoading: isAdding }] = useAddCropMutation();
   const [updateCrop, { isLoading: isUpdating }] = useUpdateCropMutation();
@@ -135,7 +135,7 @@ export default function YourCropsPage() {
             />
             <Input
               name="quantity"
-              placeholder="Quantity"
+              placeholder="Quantity(/Kg)"
               defaultValue={editingCrop?.quantity}
               required
             />
@@ -151,13 +151,17 @@ export default function YourCropsPage() {
               defaultValue={editingCrop?.location}
               required
             />
+           <div>
+           <label htmlFor="harvested_time" className="text-sm text-gray-700">Harvested Date</label>
             <Input
+              id="harvested_time"
               name="harvested_time"
-              type="date" 
+              type="date"
               placeholder="Harvested Time"
               defaultValue={editingCrop?.harvested_time}
               required
             />
+           </div>
 
             {/* Image Upload and Preview */}
             <div className="space-y-2">
@@ -192,7 +196,11 @@ export default function YourCropsPage() {
                 ) : null}
                 {editingCrop ? "Save Changes" : "Add Crop"}
               </Button>
-              <Button variant="outline" onClick={() => setOpenDialog(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpenDialog(false)}
+              >
                 Cancel
               </Button>
             </div>
@@ -233,26 +241,26 @@ export default function YourCropsPage() {
                     className="w-full h-48 object-cover rounded-lg"
                   />
                 </CardHeader>
-                </Link>
+              </Link>
 
-                <CardContent>
-                  <CardTitle className="text-xl">{crop.crop_name}</CardTitle>
-                  <div className="space-y-2 mt-4">
-                    <p className="text-green-600 font-semibold">
-                      ₹{crop.crop_price}/kg
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Quantity: {crop.quantity} Kg
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Location: {crop.location}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Harvested: {crop.harvested_time}
-                    </p>
-                    <p className="text-gray-700">{crop.Description}</p>
-                  </div>
-                </CardContent>
+              <CardContent>
+                <CardTitle className="text-xl">{crop.crop_name}</CardTitle>
+                <div className="space-y-2 mt-4">
+                  <p className="text-green-600 font-semibold">
+                    ₹{crop.crop_price}/kg
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Quantity: {crop.quantity} Kg
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Location: {crop.location}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Harvested: {crop.harvested_time}
+                  </p>
+                  <p className="text-gray-700">{crop.Description}</p>
+                </div>
+              </CardContent>
               <CardFooter className="flex gap-4">
                 <Button
                   variant="outline"
