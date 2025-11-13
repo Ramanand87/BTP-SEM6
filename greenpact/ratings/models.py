@@ -1,8 +1,6 @@
 from django.db import models
 from user.models import CustomUser
 from uuid import uuid4
-from cloudinary.models import CloudinaryField
-from django.contrib.auth import get_user_model
 
 class Rating(models.Model):
     RATING_CHOICES = [
@@ -16,7 +14,7 @@ class Rating(models.Model):
     rated_user=models.ForeignKey(CustomUser,on_delete=models.CASCADE,related_name="received_ratings")
     rating_user=models.ForeignKey(CustomUser,on_delete=models.CASCADE,related_name="given_ratings")
     description=models.TextField(blank=True)
-    images=CloudinaryField('image',blank=True)
+    image = models.ImageField(upload_to='rating/image/', null=True, blank=True)
     rate=models.IntegerField(choices=RATING_CHOICES)
 
     def __str__(self):

@@ -1,7 +1,6 @@
 from django.db import models
 from user.models import CustomUser
 import uuid
-from cloudinary.models import CloudinaryField
 
 class Demand(models.Model):
     demand_id=models.UUIDField(primary_key = True,default=uuid.uuid4,editable=False)

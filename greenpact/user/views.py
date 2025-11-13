@@ -1,10 +1,10 @@
-from django.shortcuts import render, get_object_or_404,get_list_or_404
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from . import serializers
 from . import models
-from utils.userauth import verify, validate_gstin,authen
+from utils.userauth import authen
 from rest_framework_simplejwt.tokens import RefreshToken
 from user.models import CustomUser
 from rest_framework.permissions import IsAuthenticated

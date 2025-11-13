@@ -1,12 +1,11 @@
-
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
-
+from pathlib import Path
+import sys
 from pathlib import Path
 import os
+import dj_database_url
 from datetime import timedelta
 from dotenv import load_dotenv
+
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,8 +26,6 @@ INSTALLED_APPS = [
     'user',
     'rest_framework_simplejwt',
     'corsheaders',
-    'cloudinary',
-    'cloudinary_storage',
     'crops',
     'ratings',
     'demands',
@@ -76,16 +73,10 @@ WSGI_APPLICATION = 'greenpact.wsgi.application'
 #     }
 # }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django_cockroachdb',
-        'NAME': os.environ.get('NAME'),
-        'USER': os.environ.get('USER'),
-        'PASSWORD': os.environ.get('PASSWORD'),
-        'HOST': os.environ.get('HOST'),
-        'PORT': os.environ.get('PORT'),
-    }
+    "default": dj_database_url.parse(
+        os.getenv("DATABASE_URL")  
+    )
 }
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -112,10 +103,10 @@ USE_TZ = True
 
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static')  
-]
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') 
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, 'static')  
+# ]
 
 
 MEDIA_URL='/media/'
@@ -140,36 +131,26 @@ SIMPLE_JWT = {
 }
 CORS_ALLOW_ALL_ORIGINS=True
 
-cloudinary.config( 
-    cloud_name='dgr9zq2an', 
-    api_key='718967744721371', 
-    api_secret='hcaZ1F3Kp5p5vYwTk0umVUHEZYY',
-    secure=True
-)
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': 'dgr9zq2an',
-    'API_KEY': '718967744721371',
-    'API_SECRET': 'hcaZ1F3Kp5p5vYwTk0umVUHEZYY',
-}
-
-
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticCloudinaryStorage'
-STATICFILES_DIRS = [BASE_DIR / "static"]
+MEDIA_URL='/media/'
+MEDIA_ROOT=os.path.join(BASE_DIR,'media')
 
 AUTH_USER_MODEL = 'user.CustomUser'
 
 ASGI_APPLICATION = 'greenpact.asgi.application'
 
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [{
+#                 "address": os.getenv('redis_host'),
+#                 "ssl_cert_reqs": None
+#         }],
+#         },
+#     },
+# }
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [{
-                "address": os.getenv('redis_host'),
-                "ssl_cert_reqs": None
-        }],
-        },
-    },
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
 }

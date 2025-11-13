@@ -5,7 +5,6 @@ from crops.models import Crops
 from django.contrib.postgres.fields import ArrayField
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from cloudinary.models import CloudinaryField
 
 class Contract(models.Model):
     contract_id=models.UUIDField(primary_key = True,default=uuid.uuid4,editable=False)
@@ -95,7 +94,7 @@ class FarmerProgress(models.Model):
     current_status=models.CharField(max_length=255)
     date=models.DateField()
     notes=models.TextField(blank=True)
-    image=CloudinaryField('image',null=True,blank=True)
+    image = models.ImageField(upload_to='progess/image/', null=True, blank=True)
 
     def __str__(self):
         return f'{self.current_status} by {self.farmer.username}'

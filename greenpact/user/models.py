@@ -3,7 +3,6 @@ from django.db import models
 # Create your models here.
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
-from cloudinary.models import CloudinaryField
 
 class CustomUser(AbstractUser):
     class Types(models.TextChoices):
@@ -21,8 +20,8 @@ class FarmerProfile(models.Model):
     name = models.CharField(max_length=100)
     address = models.TextField()
     phoneno = models.CharField(max_length=15, unique=True)
-    image = CloudinaryField('image')
-    screenshot = CloudinaryField('screenshot', null=True, blank=True)
+    image = models.ImageField(upload_to='farmer/image/', null=True, blank=True)
+    screenshot = models.ImageField(upload_to='screenshots/', null=True, blank=True)
     aadhar_image = models.FileField(upload_to='aadhar/', null=True, blank=True)
     signature = models.FileField(upload_to='signature/', null=True, blank=True)
     is_verfied=models.BooleanField(default=False)
@@ -36,7 +35,7 @@ class ContractorProfile(models.Model):
     name = models.CharField(max_length=100)
     address = models.TextField()
     phoneno = models.CharField(max_length=15, unique=True)
-    image = CloudinaryField('image')
+    image = models.ImageField(upload_to='contractor/image/', null=True, blank=True)
     gstin = models.CharField(max_length=15, unique=True)
     aadhar_image = models.FileField(upload_to='aadhar/', null=True, blank=True)
     signature = models.FileField(upload_to='signature/', null=True, blank=True)
