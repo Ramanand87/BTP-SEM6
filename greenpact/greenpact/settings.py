@@ -1,6 +1,4 @@
 from pathlib import Path
-import sys
-from pathlib import Path
 import os
 import dj_database_url
 from datetime import timedelta
@@ -32,6 +30,7 @@ INSTALLED_APPS = [
     'chat',
     'contract',
     'channels',
+    'greenbot',
 ]
 
 MIDDLEWARE = [
@@ -154,3 +153,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer"
     }
 }
+
+GREENBOT_API_KEY = os.getenv("GREENBOT_API_KEY")
+GREENBOT_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+GREENBOT_MODEL = "meta-llama/llama-3.3-8b-instruct" 

@@ -11,6 +11,7 @@ urlpatterns = [
     path('demands/',include('demands.urls')),
     path('chat/',include('chat.urls')),
     path('contracts/',include('contract.urls')),
+    path('greenbot/',include('greenbot.urls')),
 ]
 
 urlpatterns+=static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)   

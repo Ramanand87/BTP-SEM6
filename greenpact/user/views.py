@@ -11,21 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import os
 class SignUp(APIView):
-    authentication_classes = []
-    permission_classes = []
     def post(self, request):
         try:
-            print(request.data)
-            serializer = None
-            role = request.data.get("role")
-            if role == "farmer":
-                aadhaar_image = request.FILES.get("aadhar_image")
-                if not aadhaar_image:
-                    return Response({"error": "Aadhaar image is required"}, status=status.HTTP_400_BAD_REQUEST)
-            elif role == "contractor":
-                gstin = request.data.get("gstin")
-                if not gstin:
-                    return Response({"error": "GSTIN is required for contractors"}, status=status.HTTP_400_BAD_REQUEST)
             serializer=serializers.userSerializers(data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -35,9 +22,6 @@ class SignUp(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 class Login(APIView):
-    authentication_classes = []
-    permission_classes = []
-
     def post(self, request):
         try:
             username = request.data.get('username')
@@ -72,6 +56,7 @@ class Login(APIView):
                 return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 class ProfileView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -92,9 +77,9 @@ class ProfileView(APIView):
             return Response({'data': serial.data,'role':role}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
     def put(self, request):
         try:
-        # print(request.data)
             user = request.user
             role = user.type
             if role == "farmer":
