@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import GreenBotChatSerializer
 from utils.llama_client import call_llama
 
 class GreenBotChatView(APIView):

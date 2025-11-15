@@ -1,148 +1,181 @@
+# contracts/serializers.py
 from rest_framework import serializers
-from . import models
-from user.models import FarmerProfile
-from crops.models import Crops
-# from user.serializers import userSerializers
-# from crops.serializers import CropsSerializer
-from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework.response import Response
-from rest_framework import status
+from . import models
+from user.models import FarmerProfile, CustomUser
+from crops.models import Crops
+
 
 class ContractSerializer(serializers.ModelSerializer):
     farmer_name = serializers.SerializerMethodField()
     buyer_name = serializers.SerializerMethodField()
     crop_name = serializers.SerializerMethodField()
     qr_code = serializers.SerializerMethodField()
-    terms = serializers.ListField(
-        child=serializers.CharField(),
-        required=False
-    )
+    pdf_url = serializers.SerializerMethodField()   # ✅ NEW
+    terms = serializers.ListField(child=serializers.CharField(), required=False)
+
     class Meta:
         model = models.Contract
         fields = [
-            'contract_id',
-            'farmer_name',
-            'buyer_name',
-            'crop_name',
-            'nego_price',
-            'quantity',
-            'created_at',
-            'delivery_address',
-            'delivery_date',
-            'terms',
-            'status',
-            'qr_code',
+            "contract_id",
+            "farmer_name",
+            "buyer_name",
+            "crop_name",
+            "nego_price",
+            "quantity",
+            "created_at",
+            "delivery_address",
+            "delivery_date",
+            "terms",
+            "status",
+            "qr_code",
+            "pdf_url",   # ✅ NEW
         ]
-    def get_qr_code(self,obj):
+
+    def get_qr_code(self, obj):
+        request = self.context.get("request")
         try:
-            request=self.context.get('request')
-            prof=FarmerProfile.objects.get(user=obj.farmer)
-            return request.build_absolute_uri(prof.qr_code_image.url)
-        except AttributeError:
+            prof = FarmerProfile.objects.get(user=obj.farmer)
+            if request is not None:
+                return request.build_absolute_uri(prof.qr_code_image.url)
+            return prof.qr_code_image.url
+        except (FarmerProfile.DoesNotExist, AttributeError):
             return obj.farmer.username
+
+    def get_pdf_url(self, obj):
+        """
+        Return absolute URL for the contract PDF if it exists.
+        """
+        if not obj.pdf_document:
+            return None
+
+        request = self.context.get("request")
+        if request is not None:
+            return request.build_absolute_uri(obj.pdf_document.url)
+        return obj.pdf_document.url
+
     def get_farmer_name(self, obj):
         try:
             return obj.farmer.farmer_profile.name
         except AttributeError:
-            return obj.farmer.username 
+            return obj.farmer.username
 
     def get_buyer_name(self, obj):
         try:
             return obj.buyer.contractor_profile.name
         except AttributeError:
             return obj.buyer.username
-    def get_crop_name(self, obj):
-        return obj.crop.crop_name 
-    def create(self,validated_data):
-        try:
-            request = self.context.get('request')
-            if request.user.type == "farmer":
-                return Response({'Error':'Farmer doesnot have permission'},status=status.HTTP_400_BAD_REQUEST)
-            if request and request.user:
-                validated_data['buyer'] = request.user
-            validated_data['farmer'] =get_object_or_404(CustomUser,username=self.initial_data.get('farmer_username'))
-            validated_data['crop'] = get_object_or_404(Crops,crop_id=self.initial_data.get('crop_id'))
-            return models.Contract.objects.create(**validated_data)
-        except Http404:
-                return Response({'Error': 'Cant Create Contract'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            raise serializers.ValidationError({"error": str(e)})
-        
 
-class ContractDocSerializer(serializers.ModelSerializer):
-    document = serializers.SerializerMethodField()
-    class Meta:
-        model = models.ContractDoc
-        fields = ["contract", "document"]
-    def get_document(self, obj):
-        request = self.context.get('request')
-        if request is not None:
-            return request.build_absolute_uri(obj.document.url)
-        return obj.document.url
+    def get_crop_name(self, obj):
+        return obj.crop.crop_name
+
+    def create(self, validated_data):
+        """
+        - buyer = request.user (must NOT be farmer)
+        - farmer_username & crop_id come from initial_data
+        """
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication required")
+
+        if request.user.type == "farmer":
+            raise serializers.ValidationError(
+                "Farmer does not have permission to create contract"
+            )
+
+        validated_data["buyer"] = request.user
+
+        farmer_username = self.initial_data.get("farmer_username")
+        crop_id = self.initial_data.get("crop_id")
+
+        try:
+            validated_data["farmer"] = CustomUser.objects.get(username=farmer_username)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError(
+                {"farmer_username": "Invalid farmer username"}
+            )
+
+        try:
+            validated_data["crop"] = Crops.objects.get(crop_id=crop_id)
+        except Crops.DoesNotExist:
+            raise serializers.ValidationError({"crop_id": "Invalid crop ID"})
+
+        return super().create(validated_data)
+
 
 class TransactionSerializer(serializers.ModelSerializer):
-    buyer=serializers.SerializerMethodField()
-    farmer=serializers.SerializerMethodField()
+    buyer = serializers.SerializerMethodField(read_only=True)
+    farmer = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model=models.Transaction
-        fields='__all__'
+        model = models.Transaction
+        fields = "__all__"
         extra_kwargs = {
-            'contract': {'required': False},
-        }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['buyer'] = self.get_fields()['buyer']
-        self.fields['farmer'] = self.get_fields()['farmer']
-
-    def create(self,validated_data):
-        contract=get_object_or_404(models.Contract,contract_id=self.initial_data.get('contract_id'))
-        validated_data['contract']=contract
-        return models.Transaction.objects.create(**validated_data)
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        request = self.context.get('request')
-        if instance.receipt and request:
-            data['receipt'] = request.build_absolute_uri(instance.receipt.url)
-        elif instance.receipt:
-            data['receipt'] = instance.receipt.url
-        return data
-    def get_buyer(self, obj):
-        return obj.contract.buyer.username if obj.contract.buyer else None
-    
-    def get_farmer(self, obj):
-        return obj.contract.farmer.username if obj.contract.farmer else None
-class FarmerProgressSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=models.FarmerProgress
-        fields="__all__"
-        extra_kwargs = {
-            'farmer': {'required': False},
-            'contract': {'required': False},
+            "contract": {"required": False},
         }
 
     def create(self, validated_data):
-        request=self.context.get('request')
-        if request.user.type == "contractor":
-            return Response({'Error':'Contractor doesnot have permission'},status=status.HTTP_400_BAD_REQUEST)
-        validated_data['farmer']=request.user
-        contract=get_object_or_404(models.Contract,contract_id=self.initial_data.get('contract_id'))
-        validated_data['contract']=contract
-        return models.FarmerProgress.objects.create(**validated_data)
-    
+        contract_id = self.initial_data.get("contract_id")
+        contract = get_object_or_404(models.Contract, contract_id=contract_id)
+        validated_data["contract"] = contract
+        return super().create(validated_data)
+
     def to_representation(self, instance):
-        """ Ensure the full URL of crop_image is included in the GET response. """
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        if instance.receipt:
+            if request:
+                data["receipt"] = request.build_absolute_uri(instance.receipt.url)
+            else:
+                data["receipt"] = instance.receipt.url
+        return data
+
+    def get_buyer(self, obj):
+        return obj.contract.buyer.username if obj.contract and obj.contract.buyer else None
+
+    def get_farmer(self, obj):
+        return obj.contract.farmer.username if obj.contract and obj.contract.farmer else None
+
+
+class FarmerProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.FarmerProgress
+        fields = "__all__"
+        extra_kwargs = {
+            "farmer": {"required": False},
+            "contract": {"required": False},
+        }
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication required")
+
+        if request.user.type == "contractor":
+            raise serializers.ValidationError("Contractor does not have permission")
+
+        validated_data["farmer"] = request.user
+
+        contract_id = self.initial_data.get("contract_id")
+        contract = get_object_or_404(models.Contract, contract_id=contract_id)
+        validated_data["contract"] = contract
+
+        return super().create(validated_data)
+
+    def to_representation(self, instance):
         data = super().to_representation(instance)
         if instance.image:
-            data['image'] = instance.image.url
+            request = self.context.get("request")
+            if request:
+                data["image"] = request.build_absolute_uri(instance.image.url)
+            else:
+                data["image"] = instance.image.url
         return data
-    
+
 
 class TransactionListSerializer(serializers.ModelSerializer):
-    contract_id = serializers.UUIDField(source='contract.contract_id', read_only=True)
-    buyer_name = serializers.CharField(source='contract.buyer.username', read_only=True)
+    contract_id = serializers.UUIDField(source="contract.contract_id", read_only=True)
+    buyer_name = serializers.CharField(source="contract.buyer.username", read_only=True)
     receipt = serializers.SerializerMethodField()
 
     class Meta:
@@ -154,9 +187,11 @@ class TransactionListSerializer(serializers.ModelSerializer):
             "date",
             "amount",
             "reference_number",
-            "description"
+            "description",
         ]
 
     def get_receipt(self, obj):
-        request = self.context.get('request')
-        return request.build_absolute_uri(obj.receipt.url)
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.receipt.url)
+        return obj.receipt.url

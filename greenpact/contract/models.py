@@ -7,75 +7,52 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 class Contract(models.Model):
-    contract_id=models.UUIDField(primary_key = True,default=uuid.uuid4,editable=False)
+    contract_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     farmer = models.ForeignKey(CustomUser, related_name="farmer_contracts", on_delete=models.CASCADE)
     buyer = models.ForeignKey(CustomUser, related_name="buyer_contracts", on_delete=models.CASCADE)
     crop = models.ForeignKey(Crops, related_name="crop_detail", on_delete=models.CASCADE)
-    nego_price=models.IntegerField()
-    quantity=models.IntegerField()
+    nego_price = models.IntegerField()
+    quantity = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
-    delivery_address=models.TextField()
-    delivery_date=models.DateField()
+    delivery_address = models.TextField()
+    delivery_date = models.DateField()
     terms = ArrayField(models.TextField(), blank=True, default=list)
-    status=models.BooleanField(default=False)
+    status = models.BooleanField(default=False)
+    pdf_document = models.FileField(upload_to="contracts_pdfs/", null=True, blank=True)
+
     def __str__(self):
         return f"Contract {self.farmer} & {self.buyer}"
 
-    def save(self, *args, **kwargs):
-        """Override save method to send WebSocket notifications on contract creation"""
-        super().save(*args, **kwargs)
+    def _notify_counts(self, farmer_delta=0, buyer_delta=0):
         channel_layer = get_channel_layer()
         if not channel_layer:
-            print("Channel Layer is None") 
             return
-        farmer_contracts_count = Contract.objects.filter(farmer=self.farmer).count()
-        buyer_contracts_count = Contract.objects.filter(buyer=self.buyer).count()
+
+        farmer_contracts_count = (
+            Contract.objects.filter(farmer=self.farmer).count() + farmer_delta
+        )
+        buyer_contracts_count = (
+            Contract.objects.filter(buyer=self.buyer).count() + buyer_delta
+        )
+
         async_to_sync(channel_layer.group_send)(
             f"contract_{self.farmer.username}",
-            {
-                "type": "contract_notification",
-                "contract": farmer_contracts_count,
-            },
+            {"type": "contract_notification", "contract": max(0, farmer_contracts_count)},
         )
 
         async_to_sync(channel_layer.group_send)(
             f"contract_{self.buyer.username}",
-            {
-                "type": "contract_notification",
-                "contract": buyer_contracts_count,
-            },
+            {"type": "contract_notification", "contract": max(0, buyer_contracts_count)},
         )
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        self._notify_counts()
 
     def delete(self, *args, **kwargs):
-        channel_layer = get_channel_layer()
-
-        farmer_contracts_count = Contract.objects.filter(farmer=self.farmer).count() - 1
-        buyer_contracts_count = Contract.objects.filter(buyer=self.buyer).count() - 1
-
         super().delete(*args, **kwargs)
-
-        async_to_sync(channel_layer.group_send)(
-            f"contract_{self.farmer.username}",
-            {
-                "type": "contract_notification",
-                "contract": max(0, farmer_contracts_count), 
-            },
-        )
-
-        async_to_sync(channel_layer.group_send)(
-            f"contract_{self.buyer.username}",
-            {
-                "type": "contract_notification",
-                "contract": max(0, buyer_contracts_count), 
-            },
-        )
-
-class ContractDoc(models.Model):
-    contract = models.ForeignKey(Contract, related_name="pdf_doc", on_delete=models.CASCADE)
-    document = models.FileField(upload_to='contracts_pdfs/')
-
-    def __str__(self):
-        return f"PDF for Contract {self.contract.contract_id}"
+        self._notify_counts(farmer_delta=-1, buyer_delta=-1)
 
 class Transaction(models.Model):
     contract=models.ForeignKey(Contract,on_delete=models.CASCADE)

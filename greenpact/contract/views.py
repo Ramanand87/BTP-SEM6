@@ -10,60 +10,90 @@ from . import serializers
 from django.http import Http404
 from user.models import FarmerProfile
 import tempfile
-
+from utils.contract_pdf import attach_contract_pdf
 class ContractView(APIView):
-    authentication_classes=[JWTAuthentication]
-    permission_classes=[IsAuthenticated]
-    def get(self,request,pk=None):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset_for_user(self, user):
+        qs = models.Contract.objects.select_related("farmer", "buyer", "crop")
+        if user.type == "farmer":
+            return qs.filter(farmer=user)
+        return qs.filter(buyer=user)
+
+    def get(self, request, pk=None):
         try:
             if pk is None:
-                role=request.user.type
-                if(role=="farmer"):
-                    contract=get_list_or_404(models.Contract,farmer=request.user)
-                else:
-                    contract=get_list_or_404(models.Contract,buyer=request.user)
-                serial=serializers.ContractSerializer(contract,many=True,context={'request':request})
-                return Response({'data':serial.data},status=status.HTTP_200_OK)
-            else:
-                contract=get_object_or_404(models.Contract,contract_id=pk)
-                serial=serializers.ContractSerializer(contract,context={'request':request})
-                return Response({'data':serial.data},status.HTTP_200_OK)
+                contracts = self.get_queryset_for_user(request.user)
+                serial = serializers.ContractSerializer(
+                    contracts, many=True, context={"request": request}
+                )
+                return Response({"data": serial.data}, status=status.HTTP_200_OK)
+
+            contract = get_object_or_404(
+                models.Contract.objects.select_related("farmer", "buyer", "crop"),
+                contract_id=pk,
+            )
+            serial = serializers.ContractSerializer(
+                contract, context={"request": request}
+            )
+            return Response({"data": serial.data}, status=status.HTTP_200_OK)
+
         except Exception as e:
-                return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"Error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def post(self, request):
         try:
-            serial=serializers.ContractSerializer(data=request.data,context={'request':request})
+            serial = serializers.ContractSerializer(
+                data=request.data, context={"request": request}
+            )
+            if serial.is_valid():
+                # Save contract instance
+                contract = serial.save()
+
+                # ✅ Generate and attach PDF
+                try:
+                    attach_contract_pdf(contract)
+                except Exception as pdf_err:
+                    # You can decide:
+                    # - either fail the whole request
+                    # - or just log and still succeed
+                    print("Error generating contract PDF:", pdf_err)
+
+                return Response(
+                    {"Success": "Contract Successfully Created"},
+                    status=status.HTTP_200_OK,
+                )
+
+            return Response({"Error": serial.errors}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"Error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def put(self, request, pk):
+        try:
+            if request.user.type == "farmer":
+                return Response(
+                    {"Access Denied": "You cannot change the Contract"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            contract = get_object_or_404(models.Contract, contract_id=pk)
+            serial = serializers.ContractSerializer(
+                contract,
+                data=request.data,
+                partial=True,
+                context={"request": request},
+            )
             if serial.is_valid():
                 serial.save()
-                return Response({"Success":"Contract Successfully Created"},status=status.HTTP_200_OK)
-            return Response({'Error':serial.errors},status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"Sucess": "Contract Updated"},
+                    status=status.HTTP_200_OK,
+                )
+            return Response({"Error": serial.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    def put(self,request,pk):
-        try:
-            role=request.user.type
-            if role=="farmer":
-                return Response({"Acess Denied":"You cannot change the Contract"},status=status.HTTP_400_BAD_REQUEST)
-            contract=get_object_or_404(models.Contract,contract_id=pk)
-            serial=serializers.ContractSerializer(contract,data=request.data,partial=True)
-            if serial.is_valid():
-                serial.save()
-                contract.save()
-                return Response({"Sucess":"Contract Updated"},status=status.HTTP_200_OK)
-            return Response({'Error':serial.errors},status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    def delete(self,request,pk):
-        try:
-            contract=get_object_or_404(models.Contract,contract_id=pk)
-            contract.delete()
-            return Response({'Sucess':'Contract Deleted'},status=status.HTTP_200_OK)
-        except Http404:
-            return Response({'Error': 'No Contract found'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-                return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"Error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         
 class TransactionView(APIView):
     authentication_classes=[JWTAuthentication]
@@ -114,16 +144,16 @@ class TransactionView(APIView):
         except Exception as e:
                 return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ContractDocView(APIView):
-    authentication_classes=[JWTAuthentication]
-    permission_classes=[IsAuthenticated]
-    def get(self,request,pk=None):
-        try:
-            contractDoc=get_object_or_404(models.ContractDoc,contract__contract_id=pk)
-            serial=serializers.ContractDocSerializer(contractDoc,context={'request':request})
-            return Response({'data':serial.data},status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# class ContractDocView(APIView):
+#     authentication_classes=[JWTAuthentication]
+#     permission_classes=[IsAuthenticated]
+#     def get(self,request,pk=None):
+#         try:
+#             contractDoc=get_object_or_404(models.ContractDoc,contract__contract_id=pk)
+#             serial=serializers.ContractDocSerializer(contractDoc,context={'request':request})
+#             return Response({'data':serial.data},status.HTTP_200_OK)
+#         except Exception as e:
+#             return Response({'Error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class GetProgressView(APIView):
     authentication_classes=[JWTAuthentication]
@@ -268,10 +298,12 @@ class AllContracts(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self,request):
+    def get(self, request):
         try:
-            contracts=models.Contract.objects.all()
-            serial=serializers.ContractSerializer(contracts,many=True)
-            return Response({'data':serial.data},status=status.HTTP_200_OK)
+            contracts = models.Contract.objects.all().select_related("farmer", "buyer", "crop")
+            serial = serializers.ContractSerializer(
+                contracts, many=True, context={"request": request}
+            )
+            return Response({"data": serial.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
